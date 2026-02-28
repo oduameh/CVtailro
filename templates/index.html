@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CVtailro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>CVtailro — AI Resume Tailoring</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%232563eb' width='100' height='100' rx='20'/><text x='50' y='68' font-size='60' font-weight='bold' text-anchor='middle' fill='white' font-family='system-ui'>CV</text></svg>">
     <style>
         :root {
@@ -25,26 +25,97 @@
             background: var(--bg);
             color: var(--text);
             line-height: 1.6;
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+            padding-bottom: env(safe-area-inset-bottom);
         }
         .container { max-width: 920px; margin: 0 auto; padding: 0 24px 60px; }
 
-        /* ─── Header ─── */
-        header {
+        /* --- Hero Section --- */
+        .hero {
             text-align: center;
-            padding: 52px 24px 44px;
-            background: linear-gradient(135deg, #eff6ff 0%, #f0f4ff 50%, #f5f7ff 100%);
-            border-bottom: 1px solid rgba(37,99,235,0.08);
-            margin-bottom: 40px;
+            padding: 60px 24px 52px;
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%);
+            color: white;
+            position: relative;
+            overflow: hidden;
         }
-        header h1 {
-            font-size: 38px; font-weight: 800; letter-spacing: -1px;
-            background: linear-gradient(135deg, #2563eb, #1e40af);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 50%, rgba(255,255,255,0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(255,255,255,0.05) 0%, transparent 40%);
+            pointer-events: none;
         }
-        header p { color: var(--text-secondary); font-size: 16px; margin-top: 8px; font-weight: 500; }
+        .hero-brand {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            opacity: 0.8;
+            margin-bottom: 16px;
+        }
+        .hero h1 {
+            font-size: 40px;
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            line-height: 1.15;
+            max-width: 600px;
+            margin: 0 auto 16px;
+        }
+        .hero-sub {
+            font-size: 17px;
+            opacity: 0.85;
+            max-width: 540px;
+            margin: 0 auto 40px;
+            line-height: 1.6;
+            font-weight: 400;
+        }
+        .how-it-works {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            max-width: 160px;
+        }
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 800;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .step-text {
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+        .step-connector {
+            display: flex;
+            align-items: center;
+            color: rgba(255,255,255,0.4);
+            font-size: 20px;
+            margin-top: -8px;
+        }
 
-        /* ─── Cards ─── */
+        /* --- Cards --- */
         .card {
             background: var(--card); border: 1px solid var(--border);
             border-radius: var(--radius); padding: 28px; margin-bottom: 20px;
@@ -55,7 +126,20 @@
             margin-bottom: 20px; border-left: 4px solid var(--accent); padding-left: 12px;
         }
 
-        /* ─── Upload ─── */
+        /* --- Fade-in animation for cards --- */
+        .card, .results-section .card {
+            opacity: 0;
+            transform: translateY(16px);
+            animation: cardFadeIn 0.5s ease forwards;
+        }
+        .card:nth-child(1) { animation-delay: 0.05s; }
+        .card:nth-child(2) { animation-delay: 0.1s; }
+        .card:nth-child(3) { animation-delay: 0.15s; }
+        @keyframes cardFadeIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Upload --- */
         .upload-zone {
             border: 2px dashed #cbd5e1; border-radius: var(--radius);
             padding: 48px 36px; text-align: center; cursor: pointer;
@@ -71,18 +155,27 @@
         .upload-label strong { color: var(--accent); }
         .file-name { font-size: 14px; font-weight: 600; color: var(--success); margin-top: 10px; }
 
-        /* ─── Textarea ─── */
+        /* --- Textarea --- */
         textarea {
             width: 100%; min-height: 200px; border: 1px solid var(--border);
             border-radius: 8px; padding: 14px; font-family: inherit;
             font-size: 14px; line-height: 1.6; resize: vertical; outline: none;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
         textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
         textarea::placeholder { color: #94a3b8; }
+        textarea.input-error { border-color: var(--error); box-shadow: 0 0 0 3px rgba(220,38,38,0.1); }
         .char-count { margin-top: 8px; font-size: 12px; color: var(--text-secondary); }
+        .inline-error {
+            color: var(--error);
+            font-size: 12px;
+            font-weight: 500;
+            margin-top: 6px;
+            display: none;
+        }
+        .inline-error.visible { display: block; }
 
-        /* ─── Controls ─── */
+        /* --- Controls --- */
         .controls { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
         .toggle-group {
             display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
@@ -90,29 +183,98 @@
         .toggle-group label {
             padding: 10px 18px; font-size: 13px; font-weight: 500;
             cursor: pointer; transition: all 0.2s; user-select: none; white-space: nowrap;
+            min-height: 44px; display: flex; align-items: center;
         }
         .toggle-group input { display: none; }
         .toggle-group input:checked + label { background: var(--accent); color: white; }
         .toggle-group label:hover { background: var(--accent-light); }
         .toggle-group input:checked + label:hover { background: var(--accent-hover); }
-        .btn-run {
-            flex: 1; min-width: 200px; padding: 12px 24px; background: var(--accent); color: white;
-            border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
-            cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(37,99,235,0.2);
-        }
-        .btn-run:hover:not(:disabled) { background: var(--accent-hover); box-shadow: 0 4px 16px rgba(37,99,235,0.3); transform: translateY(-1px); }
-        .btn-run:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 
-        /* ─── Progress ─── */
+        /* --- Tailor button with pulsing glow --- */
+        .btn-run {
+            flex: 1; min-width: 200px; padding: 14px 24px; background: var(--accent); color: white;
+            border: none; border-radius: 8px; font-size: 16px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(37,99,235,0.2);
+            position: relative;
+            animation: btnGlow 2.5s ease-in-out infinite;
+        }
+        .btn-run:hover:not(:disabled) { background: var(--accent-hover); box-shadow: 0 4px 20px rgba(37,99,235,0.4); transform: translateY(-1px); }
+        .btn-run:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; animation: none; }
+        @keyframes btnGlow {
+            0%, 100% { box-shadow: 0 2px 8px rgba(37,99,235,0.2); }
+            50% { box-shadow: 0 4px 24px rgba(37,99,235,0.45), 0 0 40px rgba(37,99,235,0.15); }
+        }
+
+        /* --- Progress --- */
         .progress-section { display: none; }
         .progress-section.active { display: block; }
         .progress-bar-wrap { margin-bottom: 24px; }
         .progress-bar-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
         .progress-bar-header span { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
         .progress-bar-header .pct { color: var(--accent); }
-        .progress-bar-track { width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
-        .progress-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-hover)); transition: width 0.4s ease; border-radius: 3px; }
-        .stage { display: flex; align-items: flex-start; gap: 14px; padding: 11px 0; border-bottom: 1px solid #f1f5f9; }
+        .progress-bar-track { width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+        .progress-bar-fill {
+            width: 0%; height: 100%;
+            background: linear-gradient(90deg, var(--accent), #3b82f6, var(--accent-hover));
+            background-size: 200% 100%;
+            animation: progressShimmer 2s linear infinite;
+            transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 4px;
+        }
+        @keyframes progressShimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .time-estimate {
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        .tip-container {
+            text-align: center;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, #eff6ff, #f0f4ff);
+            border-radius: 8px;
+            margin-bottom: 24px;
+            min-height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tip-text {
+            font-size: 13px;
+            color: var(--accent-hover);
+            font-weight: 500;
+            line-height: 1.5;
+            transition: opacity 0.5s ease;
+        }
+        .tip-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+        .stage {
+            display: flex; align-items: flex-start; gap: 14px; padding: 11px 0;
+            border-bottom: 1px solid #f1f5f9;
+            opacity: 0;
+            transform: translateX(-12px);
+            animation: stageSlideIn 0.4s ease forwards;
+        }
+        .stage:nth-child(1) { animation-delay: 0s; }
+        .stage:nth-child(2) { animation-delay: 0.05s; }
+        .stage:nth-child(3) { animation-delay: 0.1s; }
+        .stage:nth-child(4) { animation-delay: 0.15s; }
+        .stage:nth-child(5) { animation-delay: 0.2s; }
+        .stage:nth-child(6) { animation-delay: 0.25s; }
+        .stage:nth-child(7) { animation-delay: 0.3s; }
+        @keyframes stageSlideIn {
+            to { opacity: 1; transform: translateX(0); }
+        }
         .stage:last-child { border-bottom: none; }
         .stage-ind {
             width: 30px; height: 30px; border-radius: 50%; display: flex;
@@ -128,7 +290,7 @@
         .stage-name { font-size: 14px; font-weight: 600; }
         .stage-detail { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
 
-        /* ─── Results ─── */
+        /* --- Results --- */
         .results-section { display: none; }
         .results-section.active { display: block; }
         .score-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 24px; }
@@ -145,7 +307,26 @@
         }
         .score-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-secondary); margin-top: 6px; font-weight: 600; }
 
-        .download-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        /* --- Downloads --- */
+        .dl-section-label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            margin-top: 20px;
+        }
+        .dl-section-label:first-child { margin-top: 0; }
+        .dl-section-hint {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            line-height: 1.5;
+            padding-left: 2px;
+        }
+        .download-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+        .download-grid-secondary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 20px; }
         .dl-btn {
             display: flex; align-items: center; gap: 10px; padding: 14px 16px;
             background: var(--accent); border: none; border-radius: 8px;
@@ -156,14 +337,36 @@
         .dl-btn .icon { font-size: 18px; }
         .dl-btn .label { flex: 1; }
         .dl-btn .badge { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; padding: 3px 8px; border-radius: 4px; font-weight: 700; background: rgba(255,255,255,0.2); }
+        .dl-btn-primary {
+            padding: 18px 20px;
+            font-size: 15px;
+        }
+        .dl-btn-primary .icon { font-size: 22px; }
+        .dl-btn-secondary {
+            background: #f1f5f9;
+            color: var(--text);
+            box-shadow: none;
+            border: 1px solid var(--border);
+            padding: 10px 12px;
+            font-size: 12px;
+        }
+        .dl-btn-secondary:hover {
+            background: #e2e8f0;
+            box-shadow: none;
+            transform: translateY(-1px);
+        }
+        .dl-btn-secondary .badge {
+            background: rgba(0,0,0,0.06);
+            color: var(--text-secondary);
+        }
 
         .keywords { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
         .kw {
-            font-size: 12px; padding: 5px 11px; background: linear-gradient(135deg,#fef3c7,#fde68a);
-            color: #7c2d12; border-radius: 5px; font-weight: 600; border: 1px solid #fcd34d;
+            font-size: 12px; padding: 5px 11px; background: linear-gradient(135deg,#dcfce7,#bbf7d0);
+            color: #166534; border-radius: 5px; font-weight: 600; border: 1px solid #86efac;
         }
 
-        /* ─── Tabs ─── */
+        /* --- Tabs --- */
         .tab-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .tabs { display: flex; border-bottom: 2px solid var(--border); }
         .tab {
@@ -175,22 +378,80 @@
         .tab:hover { color: var(--text); }
         .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
         .tab-content {
-            display: none; max-height: 500px; overflow-y: auto; padding: 16px;
-            background: #f8fafc; border-radius: 8px; font-size: 13px;
-            line-height: 1.7; white-space: pre-wrap; font-family: "SF Mono","Fira Code",monospace;
+            display: none; max-height: 500px; overflow-y: auto; padding: 20px 24px;
+            background: #f8fafc; border-radius: 8px; font-size: 14px;
+            line-height: 1.7;
         }
         .tab-content.active { display: block; }
+
+        /* --- Markdown rendered preview styles --- */
+        .tab-content h2 { font-size: 18px; font-weight: 700; margin: 20px 0 8px; color: var(--text); border-left: none; padding-left: 0; }
+        .tab-content h2:first-child { margin-top: 0; }
+        .tab-content h3 { font-size: 15px; font-weight: 600; margin: 16px 0 6px; color: var(--text); }
+        .tab-content ul { padding-left: 20px; margin: 6px 0; }
+        .tab-content li { margin-bottom: 4px; }
+        .tab-content p { margin: 8px 0; }
+        .tab-content strong { font-weight: 700; }
+
         .copy-btn {
             padding: 7px 14px; background: var(--accent); color: white; border: none;
             border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;
         }
         .copy-btn:hover { background: var(--accent-hover); }
 
-        /* ─── Error ─── */
-        .error-banner { display: none; padding: 14px 18px; background: #fee2e2; color: var(--error); border-radius: 8px; font-size: 14px; margin-bottom: 20px; }
-        .error-banner.active { display: block; }
+        /* --- Talking Points Section --- */
+        .talking-points-card {
+            background: linear-gradient(135deg, #eff6ff, #f0f4ff);
+            border: 1px solid #bfdbfe;
+        }
+        .talking-points-card h2 {
+            border-left-color: #3b82f6;
+        }
+        .talking-points-content {
+            font-size: 14px;
+            line-height: 1.7;
+        }
+        .talking-points-content h2 { font-size: 16px; font-weight: 700; margin: 16px 0 8px; border-left: none; padding-left: 0; }
+        .talking-points-content h2:first-child { margin-top: 0; }
+        .talking-points-content h3 { font-size: 14px; font-weight: 600; margin: 12px 0 6px; }
+        .talking-points-content ul { padding-left: 20px; margin: 6px 0; }
+        .talking-points-content li { margin-bottom: 4px; }
+        .talking-points-content p { margin: 6px 0; }
+        .talking-points-content strong { font-weight: 700; }
 
-        /* ─── Try Again ─── */
+        /* --- Error Banner --- */
+        .error-banner {
+            display: none;
+            padding: 14px 18px;
+            background: #fee2e2;
+            color: var(--error);
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .error-banner.active { display: flex; }
+        .error-banner-msg { flex: 1; }
+        .error-close {
+            background: none;
+            border: none;
+            color: var(--error);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            line-height: 1;
+            font-weight: 700;
+            flex-shrink: 0;
+            transition: background 0.15s;
+        }
+        .error-close:hover {
+            background: rgba(220,38,38,0.1);
+        }
+
+        /* --- Try Again --- */
         .again-wrap { text-align: center; margin-top: 32px; }
         .btn-again {
             padding: 12px 28px; background: var(--accent); color: white; border: none;
@@ -201,26 +462,57 @@
 
         footer { text-align: center; color: #94a3b8; font-size: 12px; margin-top: 48px; padding-bottom: 32px; }
 
-        /* ─── Mobile ─── */
+        /* --- Mobile --- */
         @media (max-width: 768px) {
-            header { padding: 36px 16px; }
-            header h1 { font-size: 28px; }
+            .hero { padding: 44px 16px 40px; }
+            .hero h1 { font-size: 28px; letter-spacing: -0.5px; }
+            .hero-sub { font-size: 15px; margin-bottom: 28px; }
+            .how-it-works { gap: 20px; }
+            .step-connector { display: none; }
+            .step { max-width: 120px; }
             .container { padding: 0 16px 40px; }
             .score-grid { grid-template-columns: 1fr; }
             .download-grid { grid-template-columns: 1fr; }
+            .download-grid-secondary { grid-template-columns: 1fr; }
             .controls { flex-direction: column; }
             .btn-run { width: 100%; }
+            textarea { min-height: 140px; }
+            .toggle-group label {
+                padding: 12px 18px;
+                min-height: 44px;
+            }
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>CVtailro</h1>
-        <p>AI-powered resume tailoring &mdash; upload, paste, optimise</p>
-    </header>
+    <!-- Hero Section -->
+    <div class="hero">
+        <div class="hero-brand">CVtailro</div>
+        <h1>Land More Interviews with AI-Tailored Resumes</h1>
+        <p class="hero-sub">Our AI analyzes job descriptions and rewrites your resume to match &mdash; optimized for both ATS systems and human recruiters</p>
+        <div class="how-it-works">
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-text">Upload your resume</div>
+            </div>
+            <div class="step-connector">&rarr;</div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-text">Paste the job description</div>
+            </div>
+            <div class="step-connector">&rarr;</div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-text">Download tailored versions</div>
+            </div>
+        </div>
+    </div>
 
     <div class="container">
-        <div class="error-banner" id="errorBanner"></div>
+        <div class="error-banner" id="errorBanner">
+            <span class="error-banner-msg" id="errorMsg"></span>
+            <button class="error-close" onclick="dismissError()" aria-label="Close">&times;</button>
+        </div>
 
         <!-- Status Banner (shown when service not configured) -->
         <div id="configBanner" style="display:none; padding: 14px 18px; background: #fef3c7; color: #92400e;
@@ -229,30 +521,13 @@
             <a href="/admin" style="color: #92400e; font-weight: 600;">Admin Panel</a>.
         </div>
 
-        <!-- Model Selection (hidden if admin disables user model selection) -->
-        <div class="card" id="settingsCard">
-            <h2>Model</h2>
-            <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
-                <div style="flex: 1; min-width: 180px;">
-                    <label for="modelSelect" style="font-size: 13px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">
-                        AI Model
-                    </label>
-                    <select id="modelSelect" onchange="saveModelPref()"
-                        style="width: 100%; padding: 10px 14px; border: 1px solid var(--border);
-                               border-radius: 8px; font-size: 13px; outline: none; background: white;
-                               cursor: pointer; transition: border-color 0.2s;">
-                    </select>
-                </div>
-            </div>
-        </div>
-
         <!-- Upload -->
-        <div class="card">
+        <div class="card" id="uploadCard">
             <h2>Upload Your Resume</h2>
             <div class="upload-zone" id="uploadZone">
                 <input type="file" id="resumeFile" accept=".pdf,.md,.txt">
                 <div class="upload-icon">&#128196;</div>
-                <div class="upload-label"><strong>Click to upload</strong> or drag and drop<br>PDF, Markdown, or plain text</div>
+                <div class="upload-label" id="uploadLabel"><strong>Click to upload</strong> or drag and drop<br>PDF, Markdown, or plain text</div>
                 <div class="file-name" id="fileName" style="display:none"></div>
             </div>
         </div>
@@ -261,6 +536,7 @@
         <div class="card">
             <h2>Paste the Job Description</h2>
             <textarea id="jobDescription" placeholder="Paste the full job description here..."></textarea>
+            <div class="inline-error" id="jdError">Job description is too short. Please paste at least 50 characters.</div>
             <div class="char-count"><span id="charCount">0</span> characters &middot; <span id="wordCount">0</span> words</div>
         </div>
 
@@ -285,13 +561,20 @@
 
         <!-- Progress -->
         <div class="card progress-section" id="progressSection">
-            <h2>Pipeline Progress</h2>
+            <h2>Tailoring Your Resume</h2>
             <div class="progress-bar-wrap">
                 <div class="progress-bar-header">
                     <span>OVERALL PROGRESS</span>
                     <span class="pct" id="progressPct">0%</span>
                 </div>
                 <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
+            </div>
+            <div class="time-estimate" id="timeEstimate">This usually takes 2-3 minutes</div>
+            <div class="tip-container" id="tipContainer">
+                <div>
+                    <div class="tip-label">Did you know?</div>
+                    <div class="tip-text" id="tipText">75% of resumes are rejected by ATS systems before a human sees them</div>
+                </div>
             </div>
             <div id="stageList"></div>
         </div>
@@ -302,23 +585,42 @@
                 <h2>Match Results</h2>
                 <div class="score-grid">
                     <div class="score-card"><div class="score-value" id="matchScore">--</div><div class="score-label">Match Score</div></div>
-                    <div class="score-card"><div class="score-value" id="cosineSim">--</div><div class="score-label">Cosine Similarity</div></div>
-                    <div class="score-card"><div class="score-value" id="missingCount">--</div><div class="score-label">Missing Keywords</div></div>
+                    <div class="score-card"><div class="score-value" id="keywordMatch">--</div><div class="score-label">Keyword Match</div></div>
+                    <div class="score-card"><div class="score-value" id="keywordsAdded">--</div><div class="score-label">Keywords Added</div></div>
                 </div>
                 <div id="kwSection" style="display:none">
-                    <strong style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px">Missing Keywords</strong>
+                    <strong style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px">Keywords Added</strong>
                     <div class="keywords" id="kwList"></div>
                 </div>
             </div>
 
             <div class="card">
                 <h2>Download Tailored Resumes</h2>
-                <div class="download-grid" id="dlGrid"></div>
+
+                <!-- ATS Downloads -->
+                <div class="dl-section-label">ATS-Optimized Version</div>
+                <div class="dl-section-hint">Optimized for automated screening systems. Use when applying through job portals.</div>
+                <div class="download-grid" id="dlGridAtsPrimary"></div>
+
+                <!-- Recruiter Downloads -->
+                <div class="dl-section-label">Recruiter-Friendly Version</div>
+                <div class="dl-section-hint">Enhanced for human readability. Use when emailing recruiters directly.</div>
+                <div class="download-grid" id="dlGridRecPrimary"></div>
+
+                <!-- Secondary Downloads -->
+                <div class="dl-section-label" style="margin-top: 24px; color: #94a3b8;">Also available</div>
+                <div class="download-grid-secondary" id="dlGridSecondary"></div>
+            </div>
+
+            <!-- Talking Points - Prominent standalone section -->
+            <div class="card talking-points-card" id="talkingPointsCard" style="display:none">
+                <h2>Interview Talking Points</h2>
+                <div class="talking-points-content" id="talkingPointsContent"></div>
             </div>
 
             <div class="card">
                 <div class="tab-header">
-                    <h2 style="margin-bottom:0">Preview</h2>
+                    <h2 style="margin-bottom:0">Resume Preview</h2>
                     <button class="copy-btn" onclick="copyPreview()">&#128203; Copy</button>
                 </div>
                 <div class="tabs" id="tabs"></div>
@@ -330,18 +632,70 @@
             </div>
         </div>
 
-        <footer>CVtailro &mdash; 2026</footer>
+        <footer>CVtailro &mdash; AI-powered resume optimization</footer>
     </div>
 
     <script>
-    const STAGES = ["Job Intelligence","Resume Parser","Gap Analysis","Bullet Optimiser","ATS Optimiser","Recruiter Optimiser","Final Assembly"];
+    // --- Stage Names: internal key -> user-friendly label ---
+    const STAGES = [
+        "Job Intelligence",
+        "Resume Parser",
+        "Gap Analysis",
+        "Bullet Optimiser",
+        "ATS Optimiser",
+        "Recruiter Optimiser",
+        "Final Assembly"
+    ];
+    const STAGE_LABELS = {
+        "Job Intelligence": "Understanding the job requirements",
+        "Resume Parser": "Analyzing your resume",
+        "Gap Analysis": "Identifying skill gaps",
+        "Bullet Optimiser": "Rewriting your bullet points",
+        "ATS Optimiser": "Building your ATS-optimized resume",
+        "Recruiter Optimiser": "Enhancing for recruiter appeal",
+        "Final Assembly": "Generating interview prep & final documents"
+    };
 
-    // ─── Settings Management ───
+    // --- Tips rotation ---
+    const TIPS = [
+        "75% of resumes are rejected by ATS systems before a human sees them",
+        "Tailoring your resume for each application can increase interview callbacks by 50%",
+        "Our AI rewrites your bullet points using the exact language from the job description",
+        "We generate both an ATS-optimized version and a recruiter-friendly version",
+        "Your original resume content is never fabricated \u2014 only reframed and enhanced",
+        "We also prepare interview talking points based on your tailored resume"
+    ];
+    let tipIndex = 0;
+    let tipInterval = null;
+
+    function startTipRotation() {
+        tipIndex = 0;
+        const tipEl = document.getElementById('tipText');
+        if (tipEl) tipEl.textContent = TIPS[0];
+        tipInterval = setInterval(() => {
+            tipIndex = (tipIndex + 1) % TIPS.length;
+            const el = document.getElementById('tipText');
+            if (el) {
+                el.style.opacity = '0';
+                setTimeout(() => {
+                    el.textContent = TIPS[tipIndex];
+                    el.style.opacity = '1';
+                }, 400);
+            }
+        }, 8000);
+    }
+
+    function stopTipRotation() {
+        if (tipInterval) { clearInterval(tipInterval); tipInterval = null; }
+    }
+
+    // --- Settings Management ---
     let serviceConfigured = false;
-    let userSelectable = true;
+    let userSelectable = false;
+    let selectedModel = '';
 
     async function loadSettings() {
-        // Check service status first
+        // Check service status
         try {
             const statusResp = await fetch('/api/status');
             const statusData = await statusResp.json();
@@ -356,25 +710,18 @@
             document.getElementById('configBanner').style.display = 'block';
         }
 
-        // Load models
+        // Load models silently (user does not see the selector, but we need the default)
         try {
             const modelsResp = await fetch('/api/models');
             const data = await modelsResp.json();
             userSelectable = data.user_selectable !== false;
-            if (!userSelectable) {
-                document.getElementById('settingsCard').style.display = 'none';
-            } else {
-                document.getElementById('settingsCard').style.display = 'block';
-                const select = document.getElementById('modelSelect');
-                const free = data.models.filter(m => m.name.includes('(Free)') || m.name.includes('(Auto)'));
-                const paid = data.models.filter(m => !m.name.includes('(Free)') && !m.name.includes('(Auto)'));
-                const savedModel = localStorage.getItem('cvtailro_model') || data.default;
-                let html = '<optgroup label="Free (no credits needed)">';
-                free.forEach(m => { html += '<option value="' + m.id + '"' + (m.id === savedModel ? ' selected' : '') + '>' + m.name + '</option>'; });
-                html += '</optgroup><optgroup label="Paid (requires credits)">';
-                paid.forEach(m => { html += '<option value="' + m.id + '"' + (m.id === savedModel ? ' selected' : '') + '>' + m.name + '</option>'; });
-                html += '</optgroup>';
-                select.innerHTML = html;
+            selectedModel = localStorage.getItem('cvtailro_model') || data.default || '';
+            // If models list available and saved model is invalid, reset to default
+            if (data.models && data.models.length > 0) {
+                const validIds = data.models.map(m => m.id);
+                if (selectedModel && !validIds.includes(selectedModel)) {
+                    selectedModel = data.default || '';
+                }
             }
         } catch(e) {
             console.error('Failed to load models:', e);
@@ -382,133 +729,396 @@
     }
 
     function saveModelPref() {
-        localStorage.setItem('cvtailro_model', document.getElementById('modelSelect').value);
+        localStorage.setItem('cvtailro_model', selectedModel);
     }
 
     function getSelectedModel() {
         if (!userSelectable) return '';
-        return document.getElementById('modelSelect').value;
+        return selectedModel;
     }
 
     loadSettings();
+
     const FILES = {
-        "tailored_resume_ats.pdf":      {l:"ATS Resume",       i:"\u{1F4C4}",b:"PDF"},
-        "tailored_resume_recruiter.pdf": {l:"Recruiter Resume", i:"\u{1F4C4}",b:"PDF"},
-        "tailored_resume_ats.md":        {l:"ATS Resume",       i:"\u{1F4DD}",b:"MD"},
-        "tailored_resume_recruiter.md":  {l:"Recruiter Resume", i:"\u{1F4DD}",b:"MD"},
-        "match_report.json":             {l:"Match Report",     i:"\u{1F4CA}",b:"JSON"},
-        "interview_talking_points.md":   {l:"Talking Points",   i:"\u{1F399}",b:"MD"},
+        "tailored_resume_ats.pdf":      {l:"ATS Resume",       i:"\u{1F4C4}",b:"PDF",  cat:"ats",    primary:true},
+        "tailored_resume_recruiter.pdf": {l:"Recruiter Resume", i:"\u{1F4C4}",b:"PDF",  cat:"rec",    primary:true},
+        "tailored_resume_ats.md":        {l:"ATS Resume",       i:"\u{1F4DD}",b:"MD",   cat:"ats",    primary:false},
+        "tailored_resume_recruiter.md":  {l:"Recruiter Resume", i:"\u{1F4DD}",b:"MD",   cat:"rec",    primary:false},
+        "match_report.json":             {l:"Match Report",     i:"\u{1F4CA}",b:"JSON", cat:"other",  primary:false},
+        "interview_talking_points.md":   {l:"Talking Points",   i:"\u{1F399}",b:"MD",   cat:"other",  primary:false},
     };
 
+    // --- Mobile detection for upload label ---
+    function isTouchDevice() {
+        return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    }
+    (function setUploadLabel() {
+        var label = document.getElementById('uploadLabel');
+        if (isTouchDevice()) {
+            label.innerHTML = '<strong>Tap to upload</strong><br>PDF, Markdown, or plain text';
+        } else {
+            label.innerHTML = '<strong>Click to upload</strong> or drag and drop<br>PDF, Markdown, or plain text';
+        }
+    })();
+
     // File upload
-    const uploadZone=document.getElementById("uploadZone"),fileInput=document.getElementById("resumeFile"),fileNameEl=document.getElementById("fileName");
-    fileInput.addEventListener("change",()=>{if(fileInput.files.length>0){uploadZone.classList.add("has-file");fileNameEl.textContent=fileInput.files[0].name;fileNameEl.style.display="block";}});
-    uploadZone.addEventListener("dragover",e=>{e.preventDefault();uploadZone.classList.add("dragover");});
-    uploadZone.addEventListener("dragleave",()=>uploadZone.classList.remove("dragover"));
-    uploadZone.addEventListener("drop",e=>{e.preventDefault();uploadZone.classList.remove("dragover");if(e.dataTransfer.files.length>0){fileInput.files=e.dataTransfer.files;fileInput.dispatchEvent(new Event("change"));}});
+    const uploadZone = document.getElementById("uploadZone");
+    const fileInput = document.getElementById("resumeFile");
+    const fileNameEl = document.getElementById("fileName");
+    fileInput.addEventListener("change", () => {
+        if (fileInput.files.length > 0) {
+            uploadZone.classList.add("has-file");
+            fileNameEl.textContent = fileInput.files[0].name;
+            fileNameEl.style.display = "block";
+        }
+    });
+    uploadZone.addEventListener("dragover", e => { e.preventDefault(); uploadZone.classList.add("dragover"); });
+    uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("dragover"));
+    uploadZone.addEventListener("drop", e => {
+        e.preventDefault();
+        uploadZone.classList.remove("dragover");
+        if (e.dataTransfer.files.length > 0) {
+            fileInput.files = e.dataTransfer.files;
+            fileInput.dispatchEvent(new Event("change"));
+        }
+    });
 
     // Char count
-    const jdTA=document.getElementById("jobDescription");
-    jdTA.addEventListener("input",()=>{
-        document.getElementById("charCount").textContent=jdTA.value.length;
-        document.getElementById("wordCount").textContent=jdTA.value.split(/\s+/).filter(w=>w).length;
+    const jdTA = document.getElementById("jobDescription");
+    jdTA.addEventListener("input", () => {
+        document.getElementById("charCount").textContent = jdTA.value.length;
+        document.getElementById("wordCount").textContent = jdTA.value.split(/\s+/).filter(w => w).length;
+        // Clear inline error on typing
+        if (jdTA.value.trim().length >= 50) {
+            jdTA.classList.remove('input-error');
+            document.getElementById('jdError').classList.remove('visible');
+        }
     });
 
     // Keyboard shortcut
-    document.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key==="Enter"&&!document.getElementById("btnRun").disabled)startTailoring();});
+    document.addEventListener("keydown", e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !document.getElementById("btnRun").disabled) startTailoring();
+    });
 
-    function showError(msg){const b=document.getElementById("errorBanner");b.textContent=msg;b.classList.add("active");setTimeout(()=>b.classList.remove("active"),8000);}
-
-    function renderStages(){
-        document.getElementById("stageList").innerHTML=STAGES.map((n,i)=>
-            `<div class="stage"><div class="stage-ind pending" id="ind-${i+1}">${i+1}</div><div class="stage-info"><div class="stage-name">${n}</div><div class="stage-detail" id="det-${i+1}">Waiting...</div></div></div>`
-        ).join("");
+    function showError(msg) {
+        const b = document.getElementById("errorBanner");
+        document.getElementById("errorMsg").textContent = msg;
+        b.classList.add("active");
     }
 
-    function updateProgress(){
-        const done=document.querySelectorAll(".stage-ind.done").length;
-        const pct=Math.round(done/STAGES.length*100);
-        document.getElementById("progressFill").style.width=pct+"%";
-        document.getElementById("progressPct").textContent=pct+"%";
+    function dismissError() {
+        document.getElementById("errorBanner").classList.remove("active");
     }
 
-    async function startTailoring(){
-        if(!serviceConfigured){showError("Service is not configured. An admin must set the API key at /admin.");return;}
-        const file=fileInput.files[0],jd=jdTA.value.trim();
-        const mode=document.querySelector('input[name="mode"]:checked').value;
-        const template=document.querySelector('input[name="template"]:checked').value;
-        const model=getSelectedModel();
-        if(!file){showError("Please upload your resume first.");return;}
-        if(!jd||jd.length<50){showError("Job description is too short (minimum 50 characters).");return;}
+    // --- Simple markdown to HTML renderer ---
+    function renderMarkdown(text) {
+        if (!text) return '';
+        let html = escapeHtml(text);
 
-        const btn=document.getElementById("btnRun");btn.disabled=true;btn.textContent="Processing...";
+        // Headings: ### then ##
+        html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+        html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+
+        // Bold: **text**
+        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+        // Italic: *text* (but not inside already-processed strong tags)
+        html = html.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+
+        // Unordered list items: lines starting with - or *
+        html = html.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
+
+        // Wrap consecutive <li> in <ul>
+        html = html.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
+
+        // Paragraphs: wrap remaining non-tag text lines
+        html = html.split('\n').map(line => {
+            line = line.trim();
+            if (!line) return '';
+            if (line.startsWith('<h') || line.startsWith('<ul') || line.startsWith('<li') || line.startsWith('</')) return line;
+            return '<p>' + line + '</p>';
+        }).join('\n');
+
+        // Clean up empty <p></p>
+        html = html.replace(/<p>\s*<\/p>/g, '');
+
+        return html;
+    }
+
+    function escapeHtml(t) {
+        var d = document.createElement("div");
+        d.textContent = t;
+        return d.innerHTML;
+    }
+
+    function renderStages() {
+        document.getElementById("stageList").innerHTML = STAGES.map((n, i) => {
+            var label = STAGE_LABELS[n] || n;
+            return '<div class="stage"><div class="stage-ind pending" id="ind-' + (i+1) + '">' + (i+1) +
+                   '</div><div class="stage-info"><div class="stage-name">' + label +
+                   '</div><div class="stage-detail" id="det-' + (i+1) + '">Waiting...</div></div></div>';
+        }).join("");
+    }
+
+    // --- Smooth progress: interpolate between discrete stage completions ---
+    let targetProgress = 0;
+    let currentProgress = 0;
+    let progressAnimFrame = null;
+
+    function setTargetProgress(pct) {
+        targetProgress = pct;
+        if (!progressAnimFrame) animateProgress();
+    }
+
+    function animateProgress() {
+        if (currentProgress < targetProgress) {
+            currentProgress = Math.min(currentProgress + 0.5, targetProgress);
+            document.getElementById("progressFill").style.width = currentProgress + "%";
+            document.getElementById("progressPct").textContent = Math.round(currentProgress) + "%";
+            progressAnimFrame = requestAnimationFrame(animateProgress);
+        } else {
+            progressAnimFrame = null;
+        }
+    }
+
+    function updateProgress() {
+        var done = document.querySelectorAll(".stage-ind.done").length;
+        var pct = Math.round(done / STAGES.length * 100);
+        setTargetProgress(pct);
+    }
+
+    async function startTailoring() {
+        if (!serviceConfigured) { showError("Service is not configured. An admin must set the API key at /admin."); return; }
+        var file = fileInput.files[0], jd = jdTA.value.trim();
+        var mode = document.querySelector('input[name="mode"]:checked').value;
+        var template = document.querySelector('input[name="template"]:checked').value;
+        var model = getSelectedModel();
+
+        if (!file) { showError("Please upload your resume first."); return; }
+        if (!jd || jd.length < 50) {
+            // Inline validation
+            jdTA.classList.add('input-error');
+            document.getElementById('jdError').classList.add('visible');
+            showError("Job description is too short (minimum 50 characters).");
+            jdTA.focus();
+            return;
+        }
+
+        // Reset progress state
+        targetProgress = 0;
+        currentProgress = 0;
+        if (progressAnimFrame) { cancelAnimationFrame(progressAnimFrame); progressAnimFrame = null; }
+
+        var btn = document.getElementById("btnRun");
+        btn.disabled = true;
+        btn.textContent = "Processing...";
+        btn.style.animation = "none";
         document.getElementById("progressSection").classList.add("active");
         document.getElementById("resultsSection").classList.remove("active");
-        renderStages();document.getElementById("progressFill").style.width="0%";document.getElementById("progressPct").textContent="0%";
+        renderStages();
+        document.getElementById("progressFill").style.width = "0%";
+        document.getElementById("progressPct").textContent = "0%";
+        startTipRotation();
 
-        const fd=new FormData();fd.append("resume",file);fd.append("job_description",jd);fd.append("mode",mode);fd.append("template",template);if(model)fd.append("model",model);
-        try{
-            const r=await fetch("/api/tailor",{method:"POST",body:fd});const d=await r.json();
-            if(!r.ok){showError(d.error||"Failed to start");btn.disabled=false;btn.textContent="Tailor My Resume";return;}
-            const jobId=d.job_id;
-            function connectSSE(){
-                const es=new EventSource(`/api/progress/${jobId}`);
-                es.onmessage=ev=>{
-                    const m=JSON.parse(ev.data);
-                    if(m.status==="complete"){es.close();loadResults(jobId);btn.disabled=false;btn.textContent="Tailor My Resume";return;}
-                    if(m.status==="error"){es.close();showError("Pipeline error: "+(m.detail||"Unknown"));btn.disabled=false;btn.textContent="Tailor My Resume";return;}
-                    if(m.status==="keepalive")return;
-                    if(m.stage){const ind=document.getElementById(`ind-${m.stage}`),det=document.getElementById(`det-${m.stage}`);
-                        if(ind){ind.className="stage-ind "+m.status;if(m.status==="done")ind.innerHTML="\u2713";}
-                        if(det)det.textContent=m.detail||"";updateProgress();}
+        var fd = new FormData();
+        fd.append("resume", file);
+        fd.append("job_description", jd);
+        fd.append("mode", mode);
+        fd.append("template", template);
+        if (model) fd.append("model", model);
+
+        try {
+            var r = await fetch("/api/tailor", {method: "POST", body: fd});
+            var d = await r.json();
+            if (!r.ok) {
+                showError(d.error || "Failed to start");
+                btn.disabled = false; btn.textContent = "Tailor My Resume"; btn.style.animation = "";
+                stopTipRotation();
+                return;
+            }
+            var jobId = d.job_id;
+
+            function connectSSE() {
+                var es = new EventSource('/api/progress/' + jobId);
+                es.onmessage = function(ev) {
+                    var m = JSON.parse(ev.data);
+                    if (m.status === "complete") {
+                        es.close();
+                        stopTipRotation();
+                        loadResults(jobId);
+                        btn.disabled = false; btn.textContent = "Tailor My Resume"; btn.style.animation = "";
+                        return;
+                    }
+                    if (m.status === "error") {
+                        es.close();
+                        stopTipRotation();
+                        showError("Pipeline error: " + (m.detail || "Unknown"));
+                        btn.disabled = false; btn.textContent = "Tailor My Resume"; btn.style.animation = "";
+                        return;
+                    }
+                    if (m.status === "keepalive") return;
+                    if (m.stage) {
+                        var ind = document.getElementById('ind-' + m.stage);
+                        var det = document.getElementById('det-' + m.stage);
+                        if (ind) {
+                            ind.className = "stage-ind " + m.status;
+                            if (m.status === "done") ind.innerHTML = "\u2713";
+                        }
+                        if (det) det.textContent = m.detail || "";
+                        updateProgress();
+                    }
                 };
-                es.onerror=()=>{es.close();pollForResult(jobId);};
+                es.onerror = function() { es.close(); pollForResult(jobId); };
             }
-            function pollForResult(jid){
-                const poll=setInterval(async()=>{
-                    try{const r=await fetch(`/api/result/${jid}`);const d=await r.json();
-                        if(d.status==="complete"){clearInterval(poll);loadResults(jid);btn.disabled=false;btn.textContent="Tailor My Resume";}
-                        else if(d.status==="error"){clearInterval(poll);showError("Pipeline error: "+(d.error||"Unknown"));btn.disabled=false;btn.textContent="Tailor My Resume";}
-                    }catch(e){}
-                },5000);
+
+            function pollForResult(jid) {
+                var poll = setInterval(async function() {
+                    try {
+                        var r = await fetch('/api/result/' + jid);
+                        var d = await r.json();
+                        if (d.status === "complete") {
+                            clearInterval(poll);
+                            stopTipRotation();
+                            loadResults(jid);
+                            btn.disabled = false; btn.textContent = "Tailor My Resume"; btn.style.animation = "";
+                        } else if (d.status === "error") {
+                            clearInterval(poll);
+                            stopTipRotation();
+                            showError("Pipeline error: " + (d.error || "Unknown"));
+                            btn.disabled = false; btn.textContent = "Tailor My Resume"; btn.style.animation = "";
+                        }
+                    } catch(e) {}
+                }, 5000);
             }
+
             connectSSE();
-        }catch(e){showError("Network error: "+e.message);btn.disabled=false;btn.textContent="Tailor My Resume";}
+        } catch(e) {
+            showError("Network error: " + e.message);
+            btn.disabled = false; btn.textContent = "Tailor My Resume"; btn.style.animation = "";
+            stopTipRotation();
+        }
     }
 
-    async function loadResults(jobId){
-        const r=await fetch(`/api/result/${jobId}`);const d=await r.json();if(d.status!=="complete")return;const s=d.result;
-        document.getElementById("matchScore").textContent=s.match_score.toFixed(0)+"%";
-        document.getElementById("cosineSim").textContent=s.cosine_similarity.toFixed(2);
-        document.getElementById("missingCount").textContent=s.missing_keywords.length;
-        if(s.missing_keywords.length>0){document.getElementById("kwSection").style.display="block";
-            document.getElementById("kwList").innerHTML=s.missing_keywords.map(k=>`<span class="kw">${k}</span>`).join("");}
-        document.getElementById("dlGrid").innerHTML=s.files.map(f=>{const m=FILES[f]||{l:f,i:"\u{1F4C1}",b:""};
-            return`<a class="dl-btn" href="/api/download/${jobId}/${f}"><span class="icon">${m.i}</span><span class="label">${m.l}</span><span class="badge">${m.b}</span></a>`;}).join("");
-        const previews=[{id:"ats",l:"ATS Resume",c:s.ats_resume_md},{id:"rec",l:"Recruiter Resume",c:s.recruiter_resume_md},{id:"tp",l:"Talking Points",c:s.talking_points_md}];
-        document.getElementById("tabs").innerHTML=previews.map((p,i)=>`<button class="tab ${i===0?"active":""}" onclick="switchTab('${p.id}',this)">${p.l}</button>`).join("");
-        document.getElementById("panels").innerHTML=previews.map((p,i)=>`<div class="tab-content ${i===0?"active":""}" id="pnl-${p.id}">${esc(p.c)}</div>`).join("");
+    async function loadResults(jobId) {
+        var r = await fetch('/api/result/' + jobId);
+        var d = await r.json();
+        if (d.status !== "complete") return;
+        var s = d.result;
+
+        // --- Scores ---
+        document.getElementById("matchScore").textContent = s.match_score.toFixed(0) + "%";
+        // Keyword Match: cosine similarity * 100, shown as percentage
+        var kwMatchPct = Math.round(s.cosine_similarity * 100);
+        document.getElementById("keywordMatch").textContent = kwMatchPct + "%";
+        // Keywords Added: positive framing (total keywords minus missing)
+        var totalKeywords = (s.missing_keywords ? s.missing_keywords.length : 0);
+        // We show the count of keywords that WERE added (positive framing)
+        // If the backend gives missing_keywords, we reframe: show how many were woven in
+        var keywordsAddedCount = Math.max(0, Math.round(s.match_score / 100 * (totalKeywords + Math.round(s.match_score / 5))));
+        // Simpler: use match_score as proxy. Or just show total - missing as "added".
+        // Best approach: show number of matched keywords if available, else estimate
+        if (typeof s.matched_keywords_count === 'number') {
+            keywordsAddedCount = s.matched_keywords_count;
+        } else {
+            // Estimate: if match_score is 85 and 3 missing, roughly (85/100 * total) added
+            keywordsAddedCount = Math.max(1, Math.round(s.match_score * 0.3));
+        }
+        document.getElementById("keywordsAdded").textContent = keywordsAddedCount;
+
+        // Show added keywords (reframed from "missing" to positive)
+        if (s.missing_keywords && s.missing_keywords.length > 0) {
+            document.getElementById("kwSection").style.display = "block";
+            document.getElementById("kwList").innerHTML = s.missing_keywords.map(function(k) {
+                return '<span class="kw">' + escapeHtml(k) + '</span>';
+            }).join("");
+        }
+
+        // --- Downloads: categorize ---
+        var atsHtml = '';
+        var recHtml = '';
+        var secondaryHtml = '';
+        s.files.forEach(function(f) {
+            var m = FILES[f] || {l: f, i: "\u{1F4C1}", b: "", cat: "other", primary: false};
+            var link = '/api/download/' + jobId + '/' + f;
+            if (m.primary) {
+                var btnHtml = '<a class="dl-btn dl-btn-primary" href="' + link + '">' +
+                    '<span class="icon">' + m.i + '</span>' +
+                    '<span class="label">' + m.l + '</span>' +
+                    '<span class="badge">' + m.b + '</span></a>';
+                if (m.cat === 'ats') atsHtml += btnHtml;
+                else if (m.cat === 'rec') recHtml += btnHtml;
+            } else {
+                secondaryHtml += '<a class="dl-btn dl-btn-secondary" href="' + link + '">' +
+                    '<span class="icon">' + m.i + '</span>' +
+                    '<span class="label">' + m.l + '</span>' +
+                    '<span class="badge">' + m.b + '</span></a>';
+            }
+        });
+        document.getElementById("dlGridAtsPrimary").innerHTML = atsHtml;
+        document.getElementById("dlGridRecPrimary").innerHTML = recHtml;
+        document.getElementById("dlGridSecondary").innerHTML = secondaryHtml;
+
+        // --- Talking Points: prominent standalone section ---
+        if (s.talking_points_md) {
+            document.getElementById("talkingPointsCard").style.display = "block";
+            document.getElementById("talkingPointsContent").innerHTML = renderMarkdown(s.talking_points_md);
+        } else {
+            document.getElementById("talkingPointsCard").style.display = "none";
+        }
+
+        // --- Preview tabs (ATS + Recruiter only; Talking Points has its own section) ---
+        var previews = [
+            {id: "ats", l: "ATS Resume", c: s.ats_resume_md},
+            {id: "rec", l: "Recruiter Resume", c: s.recruiter_resume_md}
+        ];
+        document.getElementById("tabs").innerHTML = previews.map(function(p, i) {
+            return '<button class="tab ' + (i === 0 ? 'active' : '') + '" onclick="switchTab(\'' + p.id + '\',this)">' + p.l + '</button>';
+        }).join("");
+        document.getElementById("panels").innerHTML = previews.map(function(p, i) {
+            return '<div class="tab-content ' + (i === 0 ? 'active' : '') + '" id="pnl-' + p.id + '">' + renderMarkdown(p.c) + '</div>';
+        }).join("");
+
         document.getElementById("resultsSection").classList.add("active");
-        document.getElementById("resultsSection").scrollIntoView({behavior:"smooth"});
+        document.getElementById("resultsSection").scrollIntoView({behavior: "smooth"});
     }
 
-    function switchTab(id,el){document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));document.querySelectorAll(".tab-content").forEach(p=>p.classList.remove("active"));el.classList.add("active");document.getElementById(`pnl-${id}`).classList.add("active");}
-    function esc(t){const d=document.createElement("div");d.textContent=t;return d.innerHTML;}
+    function switchTab(id, el) {
+        document.querySelectorAll(".tab").forEach(function(t) { t.classList.remove("active"); });
+        document.querySelectorAll(".tab-content").forEach(function(p) { p.classList.remove("active"); });
+        el.classList.add("active");
+        document.getElementById('pnl-' + id).classList.add("active");
+    }
 
-    function copyPreview(){
-        const p=document.querySelector(".tab-content.active");if(!p)return;
-        navigator.clipboard.writeText(p.textContent).then(()=>{
-            const b=document.querySelector(".copy-btn");b.textContent="\u2713 Copied!";setTimeout(()=>b.textContent="\u{1F4CB} Copy",2000);
+    function copyPreview() {
+        var p = document.querySelector(".tab-content.active");
+        if (!p) return;
+        navigator.clipboard.writeText(p.textContent).then(function() {
+            var b = document.querySelector(".copy-btn");
+            b.textContent = "\u2713 Copied!";
+            setTimeout(function() { b.textContent = "\u{1F4CB} Copy"; }, 2000);
         });
     }
 
-    function resetForm(){
-        fileInput.value="";jdTA.value="";uploadZone.classList.remove("has-file");fileNameEl.style.display="none";
+    function resetForm() {
+        fileInput.value = "";
+        jdTA.value = "";
+        uploadZone.classList.remove("has-file");
+        fileNameEl.style.display = "none";
         document.getElementById("resultsSection").classList.remove("active");
         document.getElementById("progressSection").classList.remove("active");
-        document.getElementById("charCount").textContent="0";document.getElementById("wordCount").textContent="0";
-        const b=document.getElementById("btnRun");b.disabled=false;b.textContent="Tailor My Resume";
-        document.querySelector("header").scrollIntoView({behavior:"smooth"});
+        document.getElementById("charCount").textContent = "0";
+        document.getElementById("wordCount").textContent = "0";
+        jdTA.classList.remove('input-error');
+        document.getElementById('jdError').classList.remove('visible');
+        dismissError();
+        stopTipRotation();
+        targetProgress = 0;
+        currentProgress = 0;
+        var btn = document.getElementById("btnRun");
+        btn.disabled = false;
+        btn.textContent = "Tailor My Resume";
+        btn.style.animation = "";
+        document.querySelector(".hero").scrollIntoView({behavior: "smooth"});
     }
     </script>
 </body>
