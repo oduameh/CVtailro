@@ -367,6 +367,10 @@ def run_pipeline_job(
         optimised_bullets = agent4.run(
             {"resume_data": resume_data, "gap_report": gap_report},
             rewrite_mode=config.rewrite_mode.value,
+            job_title=job_analysis.job_title,
+            company=job_analysis.company or "the target company",
+            job_responsibilities="; ".join(job_analysis.responsibilities[:5]),
+            required_skills=", ".join(job_analysis.required_skills[:10]),
         )
         save_json(optimised_bullets.model_dump(), output_dir / "04_optimised_bullets.json")
         fab_count = sum(1 for b in optimised_bullets.bullets if b.fabrication_flag)

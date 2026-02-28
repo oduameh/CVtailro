@@ -32,36 +32,95 @@ logger = logging.getLogger(__name__)
 # ─── EXECUTIVE: serif, conservative ──────────────────────────────────────────────
 
 EXECUTIVE_CSS = """
-@page { size: A4; margin: 20mm 20mm 18mm 20mm; }
+@page { size: A4; margin: 18mm 20mm 16mm 20mm; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: Georgia, "Times New Roman", serif; font-size: 11pt; line-height: 1.45; color: #2c2c2c; }
-.name { font-size: 24pt; font-weight: 400; color: #1a1a1a; text-align: center; margin-bottom: 3pt; letter-spacing: -0.3pt; }
-.contact { text-align: center; font-size: 10pt; color: #555; margin-bottom: 18pt; line-height: 1.4; letter-spacing: 0.2pt; }
-.contact .sep { color: #888; margin: 0 6pt; font-weight: 300; }
-.section-heading { font-size: 13pt; font-weight: 600; color: #1a1a1a; text-transform: uppercase; letter-spacing: 1.8pt; border-bottom: 1pt solid #1a1a1a; padding-bottom: 6pt; margin-top: 16pt; margin-bottom: 10pt; page-break-after: avoid; }
-.role { margin-bottom: 11pt; page-break-inside: avoid; }
-.role-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2pt; page-break-after: avoid; }
-.role-title { font-size: 11.5pt; font-weight: 600; color: #1a1a1a; letter-spacing: 0.3pt; }
-.role-date { font-size: 10pt; color: #555; white-space: nowrap; flex-shrink: 0; margin-left: 18pt; text-align: right; }
-.role-company { font-size: 10.5pt; color: #444; font-weight: 500; margin-bottom: 5pt; letter-spacing: 0.1pt; }
-ul { margin-left: 18pt; margin-bottom: 3pt; padding-left: 0; page-break-inside: avoid; }
-li { font-size: 11pt; margin-bottom: 4pt; line-height: 1.45; color: #2c2c2c; }
-li::marker { color: #888; }
-.summary { font-size: 11pt; line-height: 1.45; color: #333; margin-bottom: 3pt; }
-.skills-text { font-size: 11pt; line-height: 1.45; color: #2c2c2c; margin-bottom: 2pt; }
-.skills-category { font-size: 11pt; line-height: 1.45; margin-bottom: 2pt; }
-.skills-cat-name { font-weight: 600; color: #1a1a1a; }
-.edu { margin-bottom: 9pt; page-break-inside: avoid; }
-.edu-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2pt; }
-.edu-degree { font-size: 11.5pt; font-weight: 600; color: #1a1a1a; }
-.edu-date { font-size: 10pt; color: #555; flex-shrink: 0; margin-left: 18pt; text-align: right; }
-.edu-school { font-size: 10.5pt; color: #444; font-weight: 500; margin-bottom: 3pt; }
-.cert { font-size: 11pt; margin-bottom: 5pt; line-height: 1.4; page-break-inside: avoid; }
-.cert-name { font-weight: 600; color: #1a1a1a; }
-.cert-meta { color: #555; }
-.hr-divider { height: 0.5pt; background: #ccc; margin: 10pt 0; }
-p { font-size: 11pt; margin-bottom: 3pt; line-height: 1.45; color: #2c2c2c; }
-strong { font-weight: 600; color: #1a1a1a; }
+body {
+    font-family: Georgia, "Palatino Linotype", "Book Antiqua", Palatino, serif;
+    font-size: 10.5pt; line-height: 1.35; color: #2a2a2a;
+}
+
+/* --- Name & Contact --- */
+.name {
+    font-family: Georgia, "Palatino Linotype", serif;
+    font-size: 20pt; font-weight: 400; color: #1a1a1a;
+    text-align: center; margin-bottom: 4pt;
+    letter-spacing: 1.5pt; text-transform: uppercase;
+}
+.contact {
+    text-align: center; font-size: 9.5pt; color: #555;
+    margin-bottom: 14pt; line-height: 1.3; letter-spacing: 0.3pt;
+}
+.contact .sep { color: #999; margin: 0 5pt; font-weight: 300; }
+
+/* --- Section Headings --- */
+.section-heading {
+    font-size: 11pt; font-weight: 400; color: #333;
+    text-transform: uppercase; letter-spacing: 2.5pt;
+    border-bottom: 0.75pt solid #888; padding-bottom: 3pt;
+    margin-top: 14pt; margin-bottom: 8pt;
+    page-break-after: avoid;
+}
+
+/* --- Experience Roles --- */
+.role { margin-bottom: 10pt; page-break-inside: avoid; }
+.role-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 1pt; page-break-after: avoid;
+}
+.role-title { font-size: 10.5pt; font-weight: 700; color: #1a1a1a; }
+.role-date {
+    font-size: 9.5pt; color: #555; font-style: italic;
+    white-space: nowrap; flex-shrink: 0; margin-left: 12pt; text-align: right;
+}
+.role-company {
+    font-size: 10pt; color: #444; font-style: italic;
+    margin-bottom: 3pt;
+}
+
+/* --- Bullet Lists --- */
+ul {
+    margin-left: 14pt; margin-bottom: 2pt; padding-left: 0;
+    page-break-inside: avoid;
+}
+li {
+    font-size: 10.5pt; margin-bottom: 2.5pt; line-height: 1.35;
+    color: #2a2a2a; padding-left: 2pt;
+}
+li::marker { color: #888; font-size: 7pt; }
+
+/* --- Summary --- */
+.summary {
+    font-size: 10.5pt; line-height: 1.4; color: #333;
+    margin-bottom: 2pt; text-align: justify;
+}
+
+/* --- Skills --- */
+.skills-text { font-size: 10.5pt; line-height: 1.35; color: #2a2a2a; margin-bottom: 2pt; }
+.skills-category { font-size: 10.5pt; line-height: 1.35; margin-bottom: 2pt; }
+.skills-cat-name { font-weight: 700; color: #1a1a1a; }
+
+/* --- Education --- */
+.edu { margin-bottom: 8pt; page-break-inside: avoid; }
+.edu-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 1pt;
+}
+.edu-degree { font-size: 10.5pt; font-weight: 700; color: #1a1a1a; }
+.edu-date {
+    font-size: 9.5pt; color: #555; font-style: italic;
+    flex-shrink: 0; margin-left: 12pt; text-align: right;
+}
+.edu-school { font-size: 10pt; color: #444; font-style: italic; margin-bottom: 2pt; }
+
+/* --- Certifications --- */
+.cert { font-size: 10.5pt; margin-bottom: 3pt; line-height: 1.35; page-break-inside: avoid; }
+.cert-name { font-weight: 700; color: #1a1a1a; }
+.cert-meta { color: #555; font-style: italic; }
+
+/* --- Dividers & Misc --- */
+.hr-divider { height: 0.5pt; background: #bbb; margin: 8pt 0; }
+p { font-size: 10.5pt; margin-bottom: 2pt; line-height: 1.35; color: #2a2a2a; }
+strong { font-weight: 700; color: #1a1a1a; }
 em { font-style: italic; color: #333; }
 a { color: #1a1a1a; text-decoration: none; }
 """
@@ -69,72 +128,190 @@ a { color: #1a1a1a; text-decoration: none; }
 # ─── MODERN: sans-serif, navy accent ─────────────────────────────────────────────
 
 MODERN_CSS = """
-@page { size: A4; margin: 20mm 22mm 18mm 22mm; }
+@page { size: A4; margin: 18mm 20mm 16mm 20mm; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 11pt; line-height: 1.4; color: #1a1a1a; }
-.name { font-size: 23pt; font-weight: 700; color: #0a2540; text-align: center; margin-bottom: 5pt; letter-spacing: -0.2pt; }
-.contact { text-align: center; font-size: 10.5pt; color: #4a4a4a; margin-bottom: 17pt; line-height: 1.5; letter-spacing: 0.1pt; }
-.contact .sep { color: #a0a0a0; margin: 0 5pt; font-weight: 300; font-size: 10pt; }
-.section-heading { font-size: 13pt; font-weight: 700; color: #0a2540; text-transform: uppercase; letter-spacing: 1.5pt; border-bottom: 2.5pt solid #0a2540; padding-bottom: 5pt; margin-top: 15pt; margin-bottom: 10pt; page-break-after: avoid; }
-.role { margin-bottom: 11pt; page-break-inside: avoid; }
-.role-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2pt; page-break-after: avoid; }
-.role-title { font-size: 11.5pt; font-weight: 700; color: #0a2540; flex-grow: 1; }
-.role-date { font-size: 10pt; color: #555; white-space: nowrap; flex-shrink: 0; margin-left: 16pt; text-align: right; }
-.role-company { font-size: 10.5pt; color: #444; font-weight: 500; margin-bottom: 4pt; letter-spacing: 0.2pt; }
-ul { margin-left: 16pt; margin-bottom: 3pt; padding-left: 0; page-break-inside: avoid; }
-li { font-size: 11pt; margin-bottom: 4pt; line-height: 1.4; color: #1a1a1a; }
-li::marker { color: #0a2540; font-weight: 600; }
-.summary { font-size: 11pt; line-height: 1.4; color: #1a1a1a; margin-bottom: 3pt; }
-.skills-text { font-size: 11pt; line-height: 1.4; color: #1a1a1a; margin-bottom: 2pt; }
-.skills-category { font-size: 11pt; line-height: 1.4; margin-bottom: 2pt; }
-.skills-cat-name { font-weight: 700; color: #0a2540; }
+body {
+    font-family: "Calibri", "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    font-size: 10.5pt; line-height: 1.35; color: #222;
+}
+
+/* --- Name & Contact --- */
+.name {
+    font-size: 21pt; font-weight: 700; color: #1a3a5c;
+    text-align: center; margin-bottom: 3pt; letter-spacing: 0.5pt;
+}
+.contact {
+    text-align: center; font-size: 9.5pt; color: #555;
+    margin-bottom: 14pt; line-height: 1.3; letter-spacing: 0.2pt;
+}
+.contact .sep { color: #1a3a5c; margin: 0 5pt; font-weight: 400; font-size: 9pt; }
+
+/* --- Section Headings --- */
+.section-heading {
+    font-size: 11.5pt; font-weight: 700; color: #1a3a5c;
+    text-transform: uppercase; letter-spacing: 1.8pt;
+    border-bottom: 2pt solid #1a3a5c; padding-bottom: 3pt;
+    margin-top: 14pt; margin-bottom: 8pt;
+    page-break-after: avoid;
+}
+
+/* --- Experience Roles --- */
+.role { margin-bottom: 10pt; page-break-inside: avoid; }
+.role-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 1pt; page-break-after: avoid;
+}
+.role-title { font-size: 10.5pt; font-weight: 700; color: #1a3a5c; flex-grow: 1; }
+.role-date {
+    font-size: 9.5pt; color: #555;
+    white-space: nowrap; flex-shrink: 0; margin-left: 12pt; text-align: right;
+}
+.role-company {
+    font-size: 10pt; color: #444; font-weight: 500;
+    margin-bottom: 3pt; letter-spacing: 0.1pt;
+}
+
+/* --- Bullet Lists --- */
+ul {
+    margin-left: 14pt; margin-bottom: 2pt; padding-left: 0;
+    page-break-inside: avoid;
+}
+li {
+    font-size: 10.5pt; margin-bottom: 2.5pt; line-height: 1.35;
+    color: #222; padding-left: 2pt;
+}
+li::marker { color: #1a3a5c; font-size: 7pt; }
+
+/* --- Summary --- */
+.summary {
+    font-size: 10.5pt; line-height: 1.4; color: #333;
+    margin-bottom: 2pt;
+}
+
+/* --- Skills --- */
+.skills-text { font-size: 10.5pt; line-height: 1.35; color: #222; margin-bottom: 2pt; }
+.skills-category { font-size: 10.5pt; line-height: 1.35; margin-bottom: 2pt; }
+.skills-cat-name { font-weight: 700; color: #1a3a5c; }
+
+/* --- Education --- */
 .edu { margin-bottom: 8pt; page-break-inside: avoid; }
-.edu-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2pt; }
-.edu-degree { font-size: 11.5pt; font-weight: 700; color: #0a2540; }
-.edu-date { font-size: 10pt; color: #555; flex-shrink: 0; margin-left: 16pt; text-align: right; }
-.edu-school { font-size: 10.5pt; color: #444; font-weight: 500; margin-bottom: 3pt; }
-.cert { font-size: 11pt; margin-bottom: 4pt; line-height: 1.4; page-break-inside: avoid; }
-.cert-name { font-weight: 700; color: #0a2540; }
+.edu-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 1pt;
+}
+.edu-degree { font-size: 10.5pt; font-weight: 700; color: #1a3a5c; }
+.edu-date {
+    font-size: 9.5pt; color: #555;
+    flex-shrink: 0; margin-left: 12pt; text-align: right;
+}
+.edu-school { font-size: 10pt; color: #444; font-weight: 500; margin-bottom: 2pt; }
+
+/* --- Certifications --- */
+.cert { font-size: 10.5pt; margin-bottom: 3pt; line-height: 1.35; page-break-inside: avoid; }
+.cert-name { font-weight: 700; color: #1a3a5c; }
 .cert-meta { color: #555; }
-.hr-divider { height: 1pt; background: #0a2540; margin: 12pt 0; opacity: 0.2; }
-p { font-size: 11pt; margin-bottom: 3pt; line-height: 1.4; color: #1a1a1a; }
-strong { font-weight: 700; color: #0a2540; }
+
+/* --- Dividers & Misc --- */
+.hr-divider { height: 1pt; background: #1a3a5c; margin: 8pt 0; opacity: 0.15; }
+p { font-size: 10.5pt; margin-bottom: 2pt; line-height: 1.35; color: #222; }
+strong { font-weight: 700; color: #1a3a5c; }
 em { font-style: italic; color: #444; }
-a { color: #0a2540; text-decoration: none; }
+a { color: #1a3a5c; text-decoration: none; }
 """
 
 # ─── MINIMAL: zero color, typography only ────────────────────────────────────────
 
 MINIMAL_CSS = """
-@page { size: A4; margin: 22mm 24mm 20mm 24mm; }
+@page { size: A4; margin: 18mm 20mm 16mm 20mm; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: "Inter", "Segoe UI", Roboto, "Helvetica Neue", sans-serif; font-size: 11pt; line-height: 1.5; color: #222; }
-.name { font-size: 22pt; font-weight: 700; color: #000; text-align: center; margin-bottom: 4pt; letter-spacing: -0.4pt; }
-.contact { text-align: center; font-size: 10pt; color: #666; margin-bottom: 20pt; line-height: 1.6; letter-spacing: 0.3pt; }
-.contact .sep { color: #ccc; margin: 0 8pt; font-weight: 400; font-size: 9pt; }
-.section-heading { font-size: 12pt; font-weight: 600; color: #000; text-transform: uppercase; letter-spacing: 2.2pt; border-bottom: none; padding-bottom: 8pt; margin-top: 18pt; margin-bottom: 11pt; page-break-after: avoid; }
-.role { margin-bottom: 12pt; page-break-inside: avoid; }
-.role-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3pt; page-break-after: avoid; }
-.role-title { font-size: 11pt; font-weight: 700; color: #000; flex-grow: 1; letter-spacing: 0.2pt; }
-.role-date { font-size: 10pt; color: #666; white-space: nowrap; flex-shrink: 0; margin-left: 20pt; text-align: right; }
-.role-company { font-size: 10pt; color: #555; font-weight: 400; margin-bottom: 5pt; }
-ul { margin-left: 18pt; margin-bottom: 4pt; padding-left: 0; page-break-inside: avoid; }
-li { font-size: 11pt; margin-bottom: 5pt; line-height: 1.5; color: #222; }
-li::marker { color: #ddd; }
-.summary { font-size: 11pt; line-height: 1.5; color: #333; margin-bottom: 4pt; }
-.skills-text { font-size: 11pt; line-height: 1.5; color: #222; margin-bottom: 3pt; }
-.skills-category { font-size: 11pt; line-height: 1.5; margin-bottom: 3pt; }
+body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 10.5pt; line-height: 1.35; color: #222;
+}
+
+/* --- Name & Contact --- */
+.name {
+    font-size: 20pt; font-weight: 300; color: #000;
+    text-align: center; margin-bottom: 4pt;
+    letter-spacing: 2pt; text-transform: uppercase;
+}
+.contact {
+    text-align: center; font-size: 9.5pt; color: #666;
+    margin-bottom: 14pt; line-height: 1.3; letter-spacing: 0.3pt;
+}
+.contact .sep { color: #ccc; margin: 0 6pt; font-weight: 300; font-size: 8pt; }
+
+/* --- Section Headings --- */
+.section-heading {
+    font-size: 10pt; font-weight: 400; color: #333;
+    text-transform: uppercase; letter-spacing: 3pt;
+    border-bottom: 0.5pt solid #ccc; padding-bottom: 3pt;
+    margin-top: 14pt; margin-bottom: 8pt;
+    page-break-after: avoid;
+}
+
+/* --- Experience Roles --- */
+.role { margin-bottom: 10pt; page-break-inside: avoid; }
+.role-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 1pt; page-break-after: avoid;
+}
+.role-title {
+    font-size: 10.5pt; font-weight: 700; color: #000;
+    flex-grow: 1; letter-spacing: 0.2pt;
+}
+.role-date {
+    font-size: 9.5pt; color: #666;
+    white-space: nowrap; flex-shrink: 0; margin-left: 12pt; text-align: right;
+}
+.role-company {
+    font-size: 10pt; color: #555; font-weight: 400;
+    margin-bottom: 3pt;
+}
+
+/* --- Bullet Lists --- */
+ul {
+    margin-left: 14pt; margin-bottom: 2pt; padding-left: 0;
+    page-break-inside: avoid;
+}
+li {
+    font-size: 10.5pt; margin-bottom: 2.5pt; line-height: 1.35;
+    color: #222; padding-left: 2pt;
+}
+li::marker { color: #bbb; font-size: 7pt; }
+
+/* --- Summary --- */
+.summary {
+    font-size: 10.5pt; line-height: 1.4; color: #333;
+    margin-bottom: 2pt;
+}
+
+/* --- Skills --- */
+.skills-text { font-size: 10.5pt; line-height: 1.35; color: #222; margin-bottom: 2pt; }
+.skills-category { font-size: 10.5pt; line-height: 1.35; margin-bottom: 2pt; }
 .skills-cat-name { font-weight: 700; color: #000; }
-.edu { margin-bottom: 10pt; page-break-inside: avoid; }
-.edu-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3pt; }
-.edu-degree { font-size: 11pt; font-weight: 700; color: #000; }
-.edu-date { font-size: 10pt; color: #666; flex-shrink: 0; margin-left: 20pt; text-align: right; }
-.edu-school { font-size: 10pt; color: #555; font-weight: 400; margin-bottom: 3pt; }
-.cert { font-size: 11pt; margin-bottom: 5pt; line-height: 1.5; page-break-inside: avoid; }
+
+/* --- Education --- */
+.edu { margin-bottom: 8pt; page-break-inside: avoid; }
+.edu-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 1pt;
+}
+.edu-degree { font-size: 10.5pt; font-weight: 700; color: #000; }
+.edu-date {
+    font-size: 9.5pt; color: #666;
+    flex-shrink: 0; margin-left: 12pt; text-align: right;
+}
+.edu-school { font-size: 10pt; color: #555; font-weight: 400; margin-bottom: 2pt; }
+
+/* --- Certifications --- */
+.cert { font-size: 10.5pt; margin-bottom: 3pt; line-height: 1.35; page-break-inside: avoid; }
 .cert-name { font-weight: 700; color: #000; }
 .cert-meta { color: #666; }
-.hr-divider { height: 0.5pt; background: #e0e0e0; margin: 12pt 0; }
-p { font-size: 11pt; margin-bottom: 4pt; line-height: 1.5; color: #222; }
+
+/* --- Dividers & Misc --- */
+.hr-divider { height: 0.5pt; background: #ddd; margin: 8pt 0; }
+p { font-size: 10.5pt; margin-bottom: 2pt; line-height: 1.35; color: #222; }
 strong { font-weight: 700; color: #000; }
 em { font-style: italic; color: #555; }
 a { color: #000; text-decoration: none; }
@@ -206,7 +383,7 @@ def _render_contact(name: str, contact_lines: list[str]) -> str:
 
     Handles both separate-line contact info and pipe-separated single lines.
     """
-    html = f'<div class="name">{_escape(name)}</div>\n'
+    html = f'<h1 class="name">{_escape(name)}</h1>\n'
     if contact_lines:
         # Flatten: if a contact line contains pipes, split it into items
         items = []
@@ -320,13 +497,14 @@ def markdown_to_html(md_content: str) -> str:
             flush_list()
             heading_text = section_match.group(1).strip()
             current_section = heading_text.lower()
-            html_parts.append(f'<div class="section-heading">{_escape(heading_text)}</div>')
+            html_parts.append(f'<h2 class="section-heading">{_escape(heading_text)}</h2>')
             i += 1
             continue
 
         # Role header: ### Title | Company | Location | Date  (recruiter format)
         role_h3 = re.match(r"^###\s+(.+?)(?:\s*\|\s*(.+?))?(?:\s*\|\s*(.+?))?(?:\s*\|\s*(.+?))?\s*$", line)
-        if role_h3 and "experience" in current_section:
+        if role_h3 and ("experience" in current_section or "employment" in current_section
+                        or "work history" in current_section):
             close_role()
             flush_list()
             parts = [p.strip() for p in re.split(r"\s*\|\s*", re.sub(r"^###\s*", "", line)) if p.strip()]
@@ -347,7 +525,8 @@ def markdown_to_html(md_content: str) -> str:
 
         # Role header: **Title** | Company | Location  (ATS format)
         role3 = re.match(r"^\*\*(.+?)\*\*\s*\|\s*(.+?)\s*\|\s*(.+)", line)
-        if role3 and "experience" in current_section:
+        if role3 and ("experience" in current_section or "employment" in current_section
+                      or "work history" in current_section):
             close_role()
             flush_list()
             title, company, location = role3.group(1), role3.group(2), role3.group(3)
@@ -364,7 +543,8 @@ def markdown_to_html(md_content: str) -> str:
 
         # Role header: **Title** | Company
         role2 = re.match(r"^\*\*(.+?)\*\*\s*\|\s*(.+)", line)
-        if role2 and "experience" in current_section:
+        if role2 and ("experience" in current_section or "employment" in current_section
+                      or "work history" in current_section):
             close_role()
             flush_list()
             title, company = role2.group(1), role2.group(2)
@@ -465,10 +645,18 @@ def markdown_to_html(md_content: str) -> str:
             i += 1
             continue
 
-        # Summary
-        if stripped and ("summary" in current_section or "profile" in current_section):
+        # Summary — consolidate consecutive lines into a single paragraph
+        if stripped and ("summary" in current_section or "profile" in current_section
+                         or "objective" in current_section):
             flush_list()
-            html_parts.append(f'<p class="summary">{_escape(stripped)}</p>')
+            summary_text = stripped
+            while i + 1 < len(lines):
+                nl = lines[i + 1].strip()
+                if not nl or nl.startswith(("#", "---", "***", "___")):
+                    break
+                i += 1
+                summary_text += " " + nl
+            html_parts.append(f'<p class="summary">{_inline_md(summary_text)}</p>')
             i += 1
             continue
 

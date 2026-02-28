@@ -14,7 +14,7 @@ STRATEGIC POSITIONING:
    - Sentence 1: Position the candidate using the TARGET ROLE'S language, not their current title. Bridge the gap between what they've done and what this role needs.
    - Sentence 2: Highlight 2-3 concrete, relevant achievements or capabilities.
    - Sentence 3 (optional): What makes them uniquely suited — domain expertise, rare combination of skills.
-   - Do NOT list technologies. Do NOT use buzzwords without substance.
+   - You may mention 1-2 critical technologies if they are central to the role AND the candidate has used them. Do NOT use buzzwords without substance.
 
 2. EXPERIENCE BULLETS — QUALITY OVER QUANTITY:
    - Most recent role: 4 bullets maximum.
@@ -30,6 +30,12 @@ STRATEGIC POSITIONING:
    - If the candidate did X in their field and the target role does Y (a related activity), describe X using Y's terminology where honest.
    - Make the recruiter SEE the connection without having to figure it out themselves.
 
+3b. KEYWORD INTEGRATION:
+   - Review the MISSING KEYWORDS and WEAK ALIGNMENT lists provided.
+   - For each missing keyword, check if the candidate has done anything related. If so, reframe a bullet to include that keyword naturally.
+   - For weak alignment keywords, elevate them to more prominent positions.
+   - Err on the side of inclusion if there is any legitimate connection.
+
 4. SKILLS SECTION — CURATED AND CATEGORISED:
    - 20-30 skills maximum.
    - Group into 2-3 labelled categories using this format:
@@ -44,7 +50,7 @@ STRATEGIC POSITIONING:
    - Education: degree, institution, dates only. Remove coursework unless directly relevant.
 
 ANTI-FABRICATION RULES:
-- NEVER add experiences, skills, or metrics not in the original resume.
+- NEVER add work experiences or specific metrics not in the original resume. You MAY add skills the candidate demonstrably possesses. You MAY use the target role's terminology to describe existing work.
 - NEVER change actual job titles on role entries.
 - You may reframe and reposition for impact, but underlying facts must be identical.
 - You may bridge to the target role in the summary without claiming the target title.

@@ -22,17 +22,13 @@ ATS FORMATTING RULES:
    - Bullet 1
    - Bullet 2
 
-SKILLS SECTION — CURATE, DON'T SPAM:
-- Include ONLY 20-30 skills maximum.
-- Prioritise: skills mentioned in the job description come first.
-- Group into 2-3 categories using bold labels:
-  **Category Name:** Skill1, Skill2, Skill3
-- Remove skills that are:
-  - Obvious/implied (e.g., "Technical Writing" for a writer, "Communication" for any role)
-  - Irrelevant to the target role
-  - Too generic ("Problem Solving", "Attention to Detail")
-  - Duplicates or near-synonyms
-- Keep hard skills (tools, technologies, methodologies) over soft skills.
+SKILLS SECTION — CURATE FOR MAXIMUM ATS MATCH:
+- Include 20-30 skills maximum.
+- Prioritise: skills from the job description come first. Use EXACT PHRASING from the JD.
+- You MAY add skills the candidate clearly possesses based on their experience even if not explicitly listed. Example: if they "built REST APIs in Python", add "API Development" and "Python".
+- Group into 2-4 categories using bold labels mirroring the JD's structure.
+- If the JD explicitly lists a skill (even soft ones like "Communication"), include it if the candidate has evidence.
+- Remove only skills irrelevant to the target role AND not mentioned in the JD.
 
 JOB TITLE STRATEGY:
 - Keep original job titles on roles — NEVER change them.
@@ -40,10 +36,12 @@ JOB TITLE STRATEGY:
 - Set job_title_aligned to true/false based on semantic similarity.
 - If false, provide a suggested_title for the summary framing (NOT as a fake title on a role).
 
-KEYWORD PLACEMENT:
-1. Front-load the most critical keywords in the summary and first role.
-2. Use exact phrases from the JD where they fit naturally.
-3. Critical keywords should appear 2-3 times across the full resume, not crammed into one section.
+KEYWORD PLACEMENT — THIS DRIVES ATS MATCHING:
+1. Front-load critical keywords in the summary and first role's bullets.
+2. Use EXACT phrases from the JD — ATS systems do exact string matching.
+3. Critical keywords should appear 3-5 times across the full resume.
+4. Every Required Skill should appear at least ONCE (summary, bullets, or skills).
+5. Spread keywords across sections for natural density.
 
 ATS CHECKS — evaluate each:
 - "standard_headings": Standard section heading names used
@@ -57,7 +55,7 @@ ATS CHECKS — evaluate each:
 
 IMPORTANT:
 - Use the optimised bullets provided, not the originals.
-- Do NOT add experiences or skills not in the original resume.
+- Do NOT add work experiences the candidate did not have. You MAY add skills to the Skills section that the candidate demonstrably has based on their experience bullets.
 - The resume should feel tailored, not keyword-stuffed.
 
 IMPORTANT: Respond with ONLY a JSON object (no other text). The JSON must have these exact keys:

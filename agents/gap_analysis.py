@@ -76,6 +76,9 @@ class GapAnalysisAgent:
                 r"\b" + re.escape(sl) + r"\b", resume_text_lower
             ):
                 return True
+            # Substring match for multi-word skills
+            if len(sl.split()) > 1 and sl in resume_text_lower:
+                return True
             return False
 
         missing_keywords = [
@@ -130,11 +133,13 @@ class GapAnalysisAgent:
         }
         priority_list.sort(key=lambda p: priority_order.get(p.priority, 3))
 
-        # ── Match score ──
-        total_job_skills = len(set(required + preferred + tools))
-        keyword_coverage = 1.0 - (
-            len(missing_keywords) / max(total_job_skills, 1)
+        # ── Match score (weighted: required=3, tools=2, preferred=1) ──
+        total_weight = len(set(required)) * 3 + len(set(tools)) * 2 + len(set(preferred)) * 1
+        missing_weight = sum(
+            3 if s in required else (2 if s in tools else 1)
+            for s in missing_keywords
         )
+        keyword_coverage = max(0.0, 1.0 - (missing_weight / max(total_weight, 1)))
         match_score = round((cos_sim * 40) + (keyword_coverage * 40) + 20, 1)
         match_score = max(0.0, min(100.0, match_score))
 

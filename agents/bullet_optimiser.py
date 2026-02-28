@@ -68,11 +68,11 @@ class BulletOptimiserAgent(BaseAgent["OptimisedBullets"]):
             resume_bullets.append(f"ROLE {role_idx}: {role.title} @ {role.company}\n{bullets_text}")
 
         # Compact gap — just the keywords to target
-        missing = ", ".join(gap_report.missing_keywords[:15])
-        weak = ", ".join(gap_report.weak_alignment[:10])
+        missing = ", ".join(gap_report.missing_keywords[:25])
+        weak = ", ".join(gap_report.weak_alignment[:15])
         priority = ", ".join(
             f"{p.skill} ({p.priority.value})"
-            for p in gap_report.optimisation_priority[:10]
+            for p in gap_report.optimisation_priority[:20]
         )
 
         return (
@@ -109,11 +109,11 @@ class BulletOptimiserAgent(BaseAgent["OptimisedBullets"]):
             for bi, b in enumerate(role.bullets)
         )
 
-        missing = ", ".join(gap_report.missing_keywords[:15])
-        weak = ", ".join(gap_report.weak_alignment[:10])
+        missing = ", ".join(gap_report.missing_keywords[:25])
+        weak = ", ".join(gap_report.weak_alignment[:15])
         priority = ", ".join(
             f"{p.skill} ({p.priority.value})"
-            for p in gap_report.optimisation_priority[:10]
+            for p in gap_report.optimisation_priority[:20]
         )
 
         msg = (
@@ -318,23 +318,15 @@ class BulletOptimiserAgent(BaseAgent["OptimisedBullets"]):
         parsed.original_summary = resume_data.summary
 
         if parsed.mode_used == RewriteMode.CONSERVATIVE:
-            reverted_count = 0
+            flagged_count = 0
             for bullet in parsed.bullets:
                 if bullet.fabrication_flag:
+                    flagged_count += 1
                     logger.warning(
-                        f"Reverting fabrication-flagged bullet "
-                        f"(role {bullet.role_index}, bullet {bullet.bullet_index}): "
-                        f"'{bullet.optimised_text}' -> '{bullet.original_text}'"
+                        f"Fabrication-flagged bullet (role {bullet.role_index}, "
+                        f"bullet {bullet.bullet_index}): keeping for review"
                     )
-                    bullet.optimised_text = bullet.original_text
-                    bullet.keywords_injected = []
-                    bullet.change_rationale = "Reverted: flagged as potential fabrication in conservative mode"
-                    reverted_count += 1
-
-            if reverted_count > 0:
-                logger.info(
-                    f"Reverted {reverted_count} fabrication-flagged bullets "
-                    f"in conservative mode."
-                )
+            if flagged_count > 0:
+                logger.info(f"{flagged_count} bullets flagged for review (not reverted)")
 
         return parsed
