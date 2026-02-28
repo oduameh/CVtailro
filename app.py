@@ -1114,22 +1114,62 @@ def download_file(job_id: str, filename: str):
                 logger.error(f"R2 presigned URL failed: {e}")
                 return jsonify({"error": "File temporarily unavailable"}), 500
 
-    # 3. Last resort: serve markdown content from DB as a downloadable file
+    # 3. Last resort: serve from DB (markdown or regenerate PDF)
     if current_user.is_authenticated:
         db_job = TailoringJob.query.filter_by(id=job_id, user_id=current_user.id).first()
         if db_job:
-            content = None
-            ct = "text/markdown"
+            from flask import Response as FlaskResponse
+
+            # Markdown files — serve directly from DB
+            md_content = None
             if "ats" in safe_name and safe_name.endswith(".md") and db_job.ats_resume_md:
-                content = db_job.ats_resume_md
+                md_content = db_job.ats_resume_md
             elif "recruiter" in safe_name and safe_name.endswith(".md") and db_job.recruiter_resume_md:
-                content = db_job.recruiter_resume_md
+                md_content = db_job.recruiter_resume_md
             elif "talking" in safe_name and db_job.talking_points_md:
-                content = db_job.talking_points_md
-            if content:
-                from flask import Response as FlaskResponse
+                md_content = db_job.talking_points_md
+            if md_content:
                 return FlaskResponse(
-                    content, mimetype=ct,
+                    md_content, mimetype="text/markdown",
+                    headers={"Content-Disposition": f"attachment; filename={safe_name}"}
+                )
+
+            # PDF files — regenerate from stored markdown
+            if safe_name.endswith(".pdf"):
+                source_md = None
+                if "ats" in safe_name and db_job.ats_resume_md:
+                    source_md = db_job.ats_resume_md
+                elif "recruiter" in safe_name and db_job.recruiter_resume_md:
+                    source_md = db_job.recruiter_resume_md
+                if source_md:
+                    try:
+                        import tempfile
+                        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+                            tmp_path = tmp.name
+                        template = db_job.template or "modern"
+                        generate_resume_pdf(source_md, tmp_path, template=template)
+                        pdf_data = open(tmp_path, "rb").read()
+                        os.unlink(tmp_path)
+                        return FlaskResponse(
+                            pdf_data, mimetype="application/pdf",
+                            headers={"Content-Disposition": f"attachment; filename={safe_name}"}
+                        )
+                    except Exception as e:
+                        logger.error(f"PDF regeneration failed: {e}")
+                        return jsonify({"error": "Could not generate PDF. Try downloading the markdown version."}), 500
+
+            # Match report JSON
+            if "match_report" in safe_name and safe_name.endswith(".json"):
+                import json as json_mod
+                report = {
+                    "job_title": db_job.job_title,
+                    "company": db_job.company,
+                    "match_score": db_job.match_score,
+                    "cosine_similarity": db_job.cosine_similarity,
+                    "missing_keywords": db_job.missing_keywords,
+                }
+                return FlaskResponse(
+                    json_mod.dumps(report, indent=2), mimetype="application/json",
                     headers={"Content-Disposition": f"attachment; filename={safe_name}"}
                 )
 
