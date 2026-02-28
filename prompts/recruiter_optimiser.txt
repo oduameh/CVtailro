@@ -49,11 +49,16 @@ ANTI-FABRICATION RULES:
 - You may reframe and reposition for impact, but underlying facts must be identical.
 - You may bridge to the target role in the summary without claiming the target title.
 
-Respond with a single JSON object matching this schema:
+IMPORTANT: Respond with ONLY a JSON object (no other text). The JSON must have these exact keys:
 
-{output_schema}
+```json
+{{
+  "markdown_content": "# Candidate Name\n\n## Professional Summary\n...(the complete recruiter-optimised resume in markdown)...",
+  "narrative_improvements": ["improvement 1", "improvement 2"],
+  "leadership_signals_added": ["signal 1", "signal 2"],
+  "impact_enhancements": ["enhancement 1", "enhancement 2"]
+}}
+```
 
-The markdown_content field should contain the complete recruiter-optimised resume.
-List the specific narrative improvements, leadership signals, and impact enhancements you applied.
-
-Do not include any text outside the JSON object.
+The "markdown_content" field MUST contain the full resume text in markdown format. Do NOT return the schema definition — return actual resume content.
+Do NOT include any text before or after the JSON object.

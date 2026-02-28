@@ -60,11 +60,20 @@ IMPORTANT:
 - Do NOT add experiences or skills not in the original resume.
 - The resume should feel tailored, not keyword-stuffed.
 
-Respond with a single JSON object matching this schema:
+IMPORTANT: Respond with ONLY a JSON object (no other text). The JSON must have these exact keys:
 
-{output_schema}
+```json
+{{
+  "markdown_content": "# Candidate Name\n\n## Professional Summary\n...(the complete ATS-optimised resume in markdown)...",
+  "ats_checks": [
+    {{"check_name": "standard_headings", "passed": true, "detail": "..."}},
+    {{"check_name": "no_tables", "passed": true, "detail": "..."}}
+  ],
+  "keyword_density": {{"keyword1": 3, "keyword2": 2}},
+  "job_title_aligned": true,
+  "suggested_title": "..."
+}}
+```
 
-The markdown_content field should contain the complete resume.
-The keyword_density field should map each critical keyword to its occurrence count.
-
-Do not include any text outside the JSON object.
+The "markdown_content" field MUST contain the full resume text in markdown format. Do NOT return the schema definition — return actual resume content.
+Do NOT include any text before or after the JSON object.
