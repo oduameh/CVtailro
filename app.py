@@ -65,6 +65,12 @@ app = Flask(__name__)
 logger = logging.getLogger("cvtailro.app")
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "cvtailro-dev-secret-change-in-production")
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10 MB upload limit
+app.config["PREFERRED_URL_SCHEME"] = "https"
+
+# Tell Flask it's behind a reverse proxy (Railway/Cloudflare) so url_for
+# generates https:// URLs for OAuth callbacks
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 # ── CSRF / Session Cookie Hardening ─────────────────────────────────────────
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
