@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>CVtailro -- AI Resume Tailoring</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%231B2559' width='100' height='100' rx='20'/><text x='50' y='68' font-size='60' font-weight='bold' text-anchor='middle' fill='%2300B37E' font-family='system-ui'>CV</text></svg>">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CVtailro">
+    <meta name="theme-color" content="#1B2559">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%231B2559' width='100' height='100' rx='20'/><text x='50' y='68' font-size='60' font-weight='bold' text-anchor='middle' fill='%2300B37E' font-family='system-ui'>CV</text></svg>">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
@@ -26,7 +31,12 @@
             --radius: 10px;
         }
 
+        html { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* Prevent iOS zoom on input focus — inputs < 16px trigger auto-zoom */
+        input, textarea, select { font-size: 16px !important; }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -994,12 +1004,13 @@
                 padding: 0 16px;
             }
 
+            /* Hero: tighter padding on mobile */
             .hero {
-                padding: 56px 16px 48px;
+                padding: 40px 16px 32px;
             }
 
             .hero h1 {
-                font-size: 32px;
+                font-size: 26px;
                 letter-spacing: -0.5px;
             }
 
@@ -1007,18 +1018,42 @@
                 font-size: 15px;
             }
 
+            /* Container: less padding on mobile */
             .container {
-                padding: 20px 16px 40px;
+                padding: 16px 12px 32px;
             }
 
+            /* Cards: tighter padding */
+            .card {
+                padding: 16px;
+                margin-bottom: 16px;
+            }
+
+            /* Form layout: stack vertically */
             .form-columns {
                 grid-template-columns: 1fr;
+                gap: 16px;
             }
 
+            /* Upload zone: bigger touch target */
+            .upload-zone {
+                padding: 32px 20px;
+                min-height: 120px;
+            }
+
+            /* Textarea: shorter on mobile */
+            textarea { min-height: 140px; }
+
+            /* Download cards: stack */
             .dl-cards {
                 grid-template-columns: 1fr;
             }
 
+            .dl-card {
+                width: 100%;
+            }
+
+            /* Controls: stack vertically */
             .controls-row {
                 flex-direction: column;
                 align-items: stretch;
@@ -1028,22 +1063,79 @@
                 justify-content: center;
             }
 
+            /* Toggle buttons: bigger touch targets */
             .toggle-group label {
-                padding: 12px 18px;
+                padding: 12px 16px;
+                font-size: 14px;
                 min-height: 44px;
                 flex: 1;
+                display: flex;
+                align-items: center;
                 justify-content: center;
             }
 
+            /* CTA button: full width, bigger tap target */
             .btn-run {
+                width: 100%;
                 max-width: 100%;
+                padding: 16px;
+                font-size: 16px;
+                min-height: 52px;
             }
 
-            textarea { min-height: 140px; }
-
+            /* Score stats: stack */
             .score-stats {
                 flex-direction: column;
                 gap: 8px;
+            }
+
+            /* Progress section: tighter */
+            .progress-wrap {
+                padding: 0 4px;
+            }
+
+            .stage {
+                padding: 8px 0;
+            }
+
+            /* Sticky progress bar while processing */
+            .progress-section.active .progress-bar-track {
+                position: sticky;
+                top: 64px;
+                z-index: 50;
+                background: var(--card);
+                padding: 8px 0;
+                margin-left: -16px;
+                margin-right: -16px;
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+
+            /* Results preview: readable on small screens */
+            .tab-content {
+                font-size: 13px;
+                padding: 12px;
+            }
+
+            /* User menu: compact on mobile */
+            .user-menu-trigger {
+                padding: 6px 8px;
+            }
+
+            .user-name-text {
+                display: none;
+            }
+
+            /* Footer: tighter */
+            .site-footer {
+                padding: 24px 16px;
+                font-size: 12px;
+            }
+
+            /* Trust bar: smaller text */
+            .trust-bar {
+                font-size: 12px;
+                padding: 10px 16px;
             }
         }
 
@@ -1471,6 +1563,23 @@
         @keyframes pulse-dot {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.3; }
+        }
+
+        /* --- Small phones (iPhone SE, older Androids) --- */
+        @media (max-width: 375px) {
+            .hero h1 { font-size: 22px; }
+            .hero-sub { font-size: 14px; }
+            .toggle-group { flex-wrap: wrap; }
+            .toggle-group label { flex: 1 1 auto; min-width: 80px; }
+            .card { padding: 12px; }
+            .container { padding: 12px 8px 24px; }
+            .dl-card { padding: 14px; }
+            .tab-content { font-size: 12px; padding: 10px; }
+        }
+
+        /* --- dvh viewport fix for mobile browsers (URL bar) --- */
+        @supports (height: 100dvh) {
+            .history-panel { height: 100dvh; }
         }
 
         /* --- Mobile: Auth & History --- */
