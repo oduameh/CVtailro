@@ -1435,10 +1435,30 @@ def get_history_job(job_id):
     })
 
 
+def _run_migrations():
+    """Create tables and add any missing columns."""
+    db.create_all()
+    # Add columns that might be missing from older table schemas
+    from sqlalchemy import text, inspect
+    insp = inspect(db.engine)
+    if insp.has_table("tailoring_jobs"):
+        columns = [c["name"] for c in insp.get_columns("tailoring_jobs")]
+        if "original_match_score" not in columns:
+            db.session.execute(text("ALTER TABLE tailoring_jobs ADD COLUMN original_match_score FLOAT"))
+            db.session.commit()
+            logger.info("Added original_match_score column to tailoring_jobs")
+
+
+# Run migrations on import (not just __main__)
+with app.app_context():
+    try:
+        _run_migrations()
+    except Exception as e:
+        logger.warning(f"Migration failed (may be first boot): {e}")
+
+
 if __name__ == "__main__":
     setup_logging(verbose=False)
-    with app.app_context():
-        db.create_all()
     port = int(os.environ.get("PORT", 5050))
     print(f"\n  CVtailro Web UI\n  ───────────────\n  Open http://localhost:{port} in your browser\n")
     app.run(host="0.0.0.0", port=port, debug=False, threaded=True)
