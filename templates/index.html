@@ -1592,7 +1592,7 @@
 
     <!-- Demo Banner -->
     <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:14px 18px;max-width:920px;margin:16px auto;text-align:center;font-size:14px;color:#1E40AF;">
-        <strong>Live Demo</strong> — Each student gets 1 tailoring. Have your resume (PDF) and a job description ready.
+        <strong>Live Demo</strong> — Tailor as many resumes as you want. Have your resume (PDF) and a job description ready.
     </div>
 
     <div class="container">
@@ -2328,7 +2328,7 @@
 
         // Rate limiting
         if (msg.match(/rate.?limit/i) || msg.match(/429/i) || msg.match(/too many requests/i)) {
-            return "You've reached your limit. Each student gets 1 tailoring during the demo.";
+            return "The system is handling a lot of requests. Please wait a moment and try again.";
         }
 
         // System at capacity
