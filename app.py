@@ -797,6 +797,25 @@ def admin_analytics():
     return jsonify(pipeline_analytics.get_global_stats())
 
 
+@app.route("/admin/api/users")
+def admin_users():
+    """Return all registered users."""
+    if not session.get("admin_authenticated") and not (current_user.is_authenticated and current_user.is_admin):
+        return jsonify({"error": "Not authenticated"}), 401
+    from database import User
+    users = User.query.order_by(User.created_at.desc()).all()
+    return jsonify({
+        "total": len(users),
+        "users": [{
+            "id": u.id, "email": u.email, "name": u.name,
+            "picture": u.picture_url, "is_admin": u.is_admin,
+            "created_at": u.created_at.isoformat() if u.created_at else None,
+            "last_login": u.last_login_at.isoformat() if u.last_login_at else None,
+            "jobs_count": u.jobs.count(),
+        } for u in users],
+    })
+
+
 @app.route("/admin/api/live-stats")
 def admin_live_stats():
     """Return live operational stats for monitoring under load."""
