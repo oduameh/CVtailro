@@ -1690,12 +1690,34 @@
         }
     }
 
-    async function loadResults(jobId) {
-        var r = await fetch('/api/result/' + jobId);
-        var d = await r.json();
-        if (d.status !== "complete") return;
+    async function loadResults(jobId, retryCount) {
+        retryCount = retryCount || 0;
+        try {
+            var r = await fetch('/api/result/' + jobId);
+            var d = await r.json();
+            if (d.status !== "complete") {
+                // Job not complete yet — retry a few times
+                if (retryCount < 5) {
+                    setTimeout(function() { loadResults(jobId, retryCount + 1); }, 2000);
+                } else {
+                    showError("Results could not be loaded. Please try again.");
+                }
+                return;
+            }
+            if (!d.result) {
+                showError("Pipeline completed but produced no results. Check the admin error log.");
+                return;
+            }
+        } catch(e) {
+            if (retryCount < 3) {
+                setTimeout(function() { loadResults(jobId, retryCount + 1); }, 2000);
+            } else {
+                showError("Failed to load results: " + e.message);
+            }
+            return;
+        }
         var s = d.result;
-
+        try {
         // --- Circular Score ---
         var scoreVal = s.match_score.toFixed(0);
         var scoreNum = parseFloat(scoreVal);
@@ -1801,6 +1823,11 @@
 
         document.getElementById("resultsSection").classList.add("active");
         document.getElementById("resultsSection").scrollIntoView({behavior: "smooth"});
+        } catch(renderErr) {
+            console.error("Failed to render results:", renderErr);
+            showError("Results loaded but failed to display. Try downloading the files directly.");
+            document.getElementById("resultsSection").classList.add("active");
+        }
     }
 
     function switchTab(id, el) {
