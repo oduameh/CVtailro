@@ -3,169 +3,310 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>CVtailro — AI Resume Tailoring</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%232563eb' width='100' height='100' rx='20'/><text x='50' y='68' font-size='60' font-weight='bold' text-anchor='middle' fill='white' font-family='system-ui'>CV</text></svg>">
+    <title>CVtailro -- AI Resume Tailoring</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%231B2559' width='100' height='100' rx='20'/><text x='50' y='68' font-size='60' font-weight='bold' text-anchor='middle' fill='%2300B37E' font-family='system-ui'>CV</text></svg>">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
         :root {
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --border: #e2e8f0;
-            --text: #0f172a;
-            --text-secondary: #64748b;
-            --accent: #2563eb;
-            --accent-hover: #1d4ed8;
-            --accent-light: #eff6ff;
-            --success: #16a34a;
-            --error: #dc2626;
-            --radius: 12px;
+            --primary: #1B2559;
+            --primary-light: #2D3A8C;
+            --accent: #00B37E;
+            --accent-hover: #00995A;
+            --accent-light: #E6F9F1;
+            --score-high: #00B37E;
+            --score-mid: #F59E0B;
+            --score-low: #EF4444;
+            --bg: #F7F8FC;
+            --card: #FFFFFF;
+            --border: #E2E8F0;
+            --text: #1A1D2E;
+            --text-secondary: #6B7280;
+            --error: #EF4444;
+            --radius: 10px;
         }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: var(--bg);
             color: var(--text);
             line-height: 1.6;
+            font-size: 15px;
             padding-left: env(safe-area-inset-left);
             padding-right: env(safe-area-inset-right);
             padding-bottom: env(safe-area-inset-bottom);
         }
-        .container { max-width: 920px; margin: 0 auto; padding: 0 24px 60px; }
+
+        /* --- Sticky Header --- */
+        .site-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            height: 64px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+        }
+
+        .site-logo {
+            font-size: 20px;
+            font-weight: 800;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0;
+        }
+
+        .site-logo .cv { color: var(--accent); }
+        .site-logo .tailro { color: var(--primary); }
+
+        .header-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 18px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .header-cta:hover { background: var(--accent-hover); }
 
         /* --- Hero Section --- */
         .hero {
+            background: linear-gradient(135deg, #0F1629 0%, #1B2559 50%, #2D3A8C 100%);
+            color: #fff;
             text-align: center;
-            padding: 60px 24px 52px;
-            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%);
-            color: white;
+            padding: 80px 24px 72px;
             position: relative;
             overflow: hidden;
         }
+
         .hero::before {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at 30% 50%, rgba(255,255,255,0.08) 0%, transparent 50%),
-                        radial-gradient(circle at 70% 80%, rgba(255,255,255,0.05) 0%, transparent 40%);
+            top: 30%;
+            left: 50%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 179, 126, 0.08) 0%, transparent 70%);
+            transform: translate(-50%, -50%);
             pointer-events: none;
         }
-        .hero-brand {
-            font-size: 14px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            opacity: 0.8;
-            margin-bottom: 16px;
+
+        .hero-inner {
+            position: relative;
+            z-index: 1;
+            max-width: 640px;
+            margin: 0 auto;
         }
+
         .hero h1 {
-            font-size: 40px;
+            font-size: 44px;
             font-weight: 800;
             letter-spacing: -1.5px;
-            line-height: 1.15;
-            max-width: 600px;
-            margin: 0 auto 16px;
+            line-height: 1.1;
+            margin-bottom: 20px;
         }
+
         .hero-sub {
-            font-size: 17px;
-            opacity: 0.85;
-            max-width: 540px;
-            margin: 0 auto 40px;
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.7);
             line-height: 1.6;
             font-weight: 400;
+            max-width: 540px;
+            margin: 0 auto;
         }
-        .how-it-works {
-            display: flex;
-            justify-content: center;
-            gap: 40px;
-            flex-wrap: wrap;
-        }
-        .step {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            max-width: 160px;
-        }
-        .step-number {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            font-weight: 800;
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(255,255,255,0.3);
-        }
-        .step-text {
-            font-size: 14px;
+
+        /* --- Trust Bar --- */
+        .trust-bar {
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+            padding: 14px 24px;
+            font-size: 13px;
             font-weight: 500;
-            opacity: 0.9;
-            line-height: 1.4;
+            color: var(--text-secondary);
         }
-        .step-connector {
-            display: flex;
-            align-items: center;
-            color: rgba(255,255,255,0.4);
-            font-size: 20px;
-            margin-top: -8px;
+
+        .trust-bar span {
+            margin: 0 6px;
+            color: #D1D5DB;
+        }
+
+        /* --- Container --- */
+        .container {
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 32px 24px 60px;
         }
 
         /* --- Cards --- */
         .card {
-            background: var(--card); border: 1px solid var(--border);
-            border-radius: var(--radius); padding: 28px; margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
         }
+
         .card h2 {
-            font-size: 15px; font-weight: 700; color: var(--text);
-            margin-bottom: 20px; border-left: 4px solid var(--accent); padding-left: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 20px;
         }
 
-        /* --- Fade-in animation for cards --- */
-        .card, .results-section .card {
-            opacity: 0;
-            transform: translateY(16px);
-            animation: cardFadeIn 0.5s ease forwards;
-        }
-        .card:nth-child(1) { animation-delay: 0.05s; }
-        .card:nth-child(2) { animation-delay: 0.1s; }
-        .card:nth-child(3) { animation-delay: 0.15s; }
-        @keyframes cardFadeIn {
-            to { opacity: 1; transform: translateY(0); }
+        /* --- Form Layout: side by side --- */
+        .form-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 0;
         }
 
-        /* --- Upload --- */
+        .form-columns .card {
+            margin-bottom: 0;
+        }
+
+        /* --- Upload Zone --- */
         .upload-zone {
-            border: 2px dashed #cbd5e1; border-radius: var(--radius);
-            padding: 48px 36px; text-align: center; cursor: pointer;
-            transition: all 0.3s; position: relative;
-            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border: 2px dashed #CBD5E1;
+            border-radius: var(--radius);
+            padding: 48px 28px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            position: relative;
+            background: #FAFBFE;
         }
-        .upload-zone:hover { border-color: var(--accent); background: var(--accent-light); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37,99,235,0.08); }
-        .upload-zone.dragover { border-color: var(--accent); background: var(--accent-light); box-shadow: 0 8px 20px rgba(37,99,235,0.12); transform: translateY(-3px); }
-        .upload-zone.has-file { border-color: var(--success); background: #f0fdf4; }
-        .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-        .upload-icon { font-size: 40px; margin-bottom: 10px; }
-        .upload-label { font-size: 15px; color: var(--text-secondary); }
-        .upload-label strong { color: var(--accent); }
-        .file-name { font-size: 14px; font-weight: 600; color: var(--success); margin-top: 10px; }
+
+        .upload-zone:hover {
+            border-color: var(--accent);
+            background: var(--accent-light);
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--accent);
+            background: var(--accent-light);
+        }
+
+        .upload-zone.has-file {
+            border-color: var(--accent);
+            background: var(--accent-light);
+        }
+
+        .upload-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .upload-icon svg {
+            width: 40px;
+            height: 40px;
+            color: var(--text-secondary);
+        }
+
+        .upload-zone.has-file .upload-icon svg {
+            color: var(--accent);
+        }
+
+        .upload-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .upload-label strong {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .upload-privacy {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .upload-privacy svg {
+            width: 12px;
+            height: 12px;
+            flex-shrink: 0;
+        }
+
+        .file-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent);
+            margin-top: 10px;
+        }
 
         /* --- Textarea --- */
         textarea {
-            width: 100%; min-height: 200px; border: 1px solid var(--border);
-            border-radius: 8px; padding: 14px; font-family: inherit;
-            font-size: 14px; line-height: 1.6; resize: vertical; outline: none;
+            width: 100%;
+            min-height: 200px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
+            color: var(--text);
+            background: #fff;
         }
-        textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-        textarea::placeholder { color: #94a3b8; }
-        textarea.input-error { border-color: var(--error); box-shadow: 0 0 0 3px rgba(220,38,38,0.1); }
-        .char-count { margin-top: 8px; font-size: 12px; color: var(--text-secondary); }
+
+        textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0, 179, 126, 0.1);
+        }
+
+        textarea::placeholder { color: #94A3B8; }
+
+        textarea.input-error {
+            border-color: var(--error);
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+
+        .char-count {
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
         .inline-error {
             color: var(--error);
             font-size: 12px;
@@ -173,257 +314,99 @@
             margin-top: 6px;
             display: none;
         }
+
         .inline-error.visible { display: block; }
 
-        /* --- Controls --- */
-        .controls { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
-        .toggle-group {
-            display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
-        }
-        .toggle-group label {
-            padding: 10px 18px; font-size: 13px; font-weight: 500;
-            cursor: pointer; transition: all 0.2s; user-select: none; white-space: nowrap;
-            min-height: 44px; display: flex; align-items: center;
-        }
-        .toggle-group input { display: none; }
-        .toggle-group input:checked + label { background: var(--accent); color: white; }
-        .toggle-group label:hover { background: var(--accent-light); }
-        .toggle-group input:checked + label:hover { background: var(--accent-hover); }
-
-        /* --- Tailor button with pulsing glow --- */
-        .btn-run {
-            flex: 1; min-width: 200px; padding: 14px 24px; background: var(--accent); color: white;
-            border: none; border-radius: 8px; font-size: 16px; font-weight: 700;
-            cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(37,99,235,0.2);
-            position: relative;
-            animation: btnGlow 2.5s ease-in-out infinite;
-        }
-        .btn-run:hover:not(:disabled) { background: var(--accent-hover); box-shadow: 0 4px 20px rgba(37,99,235,0.4); transform: translateY(-1px); }
-        .btn-run:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; animation: none; }
-        @keyframes btnGlow {
-            0%, 100% { box-shadow: 0 2px 8px rgba(37,99,235,0.2); }
-            50% { box-shadow: 0 4px 24px rgba(37,99,235,0.45), 0 0 40px rgba(37,99,235,0.15); }
-        }
-
-        /* --- Progress --- */
-        .progress-section { display: none; }
-        .progress-section.active { display: block; }
-        .progress-bar-wrap { margin-bottom: 24px; }
-        .progress-bar-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
-        .progress-bar-header span { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
-        .progress-bar-header .pct { color: var(--accent); }
-        .progress-bar-track { width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
-        .progress-bar-fill {
-            width: 0%; height: 100%;
-            background: linear-gradient(90deg, var(--accent), #3b82f6, var(--accent-hover));
-            background-size: 200% 100%;
-            animation: progressShimmer 2s linear infinite;
-            transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
-            border-radius: 4px;
-        }
-        @keyframes progressShimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-        .time-estimate {
-            text-align: center;
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-bottom: 20px;
-            font-weight: 500;
-        }
-        .tip-container {
-            text-align: center;
-            padding: 14px 20px;
-            background: linear-gradient(135deg, #eff6ff, #f0f4ff);
-            border-radius: 8px;
-            margin-bottom: 24px;
-            min-height: 56px;
+        /* --- Controls Row --- */
+        .controls-row {
             display: flex;
             align-items: center;
-            justify-content: center;
-        }
-        .tip-text {
-            font-size: 13px;
-            color: var(--accent-hover);
-            font-weight: 500;
-            line-height: 1.5;
-            transition: opacity 0.5s ease;
-        }
-        .tip-label {
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--accent);
-            margin-bottom: 4px;
-        }
-        .stage {
-            display: flex; align-items: flex-start; gap: 14px; padding: 11px 0;
-            border-bottom: 1px solid #f1f5f9;
-            opacity: 0;
-            transform: translateX(-12px);
-            animation: stageSlideIn 0.4s ease forwards;
-        }
-        .stage:nth-child(1) { animation-delay: 0s; }
-        .stage:nth-child(2) { animation-delay: 0.05s; }
-        .stage:nth-child(3) { animation-delay: 0.1s; }
-        .stage:nth-child(4) { animation-delay: 0.15s; }
-        .stage:nth-child(5) { animation-delay: 0.2s; }
-        .stage:nth-child(6) { animation-delay: 0.25s; }
-        .stage:nth-child(7) { animation-delay: 0.3s; }
-        @keyframes stageSlideIn {
-            to { opacity: 1; transform: translateX(0); }
-        }
-        .stage:last-child { border-bottom: none; }
-        .stage-ind {
-            width: 30px; height: 30px; border-radius: 50%; display: flex;
-            align-items: center; justify-content: center; font-size: 12px;
-            font-weight: 700; flex-shrink: 0; margin-top: 1px; transition: all 0.3s;
-        }
-        .stage-ind.pending { background: #f1f5f9; color: #94a3b8; }
-        .stage-ind.running { background: #dbeafe; color: var(--accent); animation: pulse 1.5s infinite; }
-        .stage-ind.done { background: #dcfce7; color: var(--success); font-weight: 900; }
-        .stage-ind.error { background: #fee2e2; color: var(--error); }
-        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
-        .stage-info { flex: 1; }
-        .stage-name { font-size: 14px; font-weight: 600; }
-        .stage-detail { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
-
-        /* --- Results --- */
-        .results-section { display: none; }
-        .results-section.active { display: block; }
-        .score-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 24px; }
-        .score-card {
-            text-align: center; padding: 24px 16px;
-            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-            border-radius: 10px; border: 1px solid var(--border); transition: all 0.2s;
-        }
-        .score-card:hover { border-color: var(--accent); box-shadow: 0 4px 12px rgba(37,99,235,0.08); transform: translateY(-2px); }
-        .score-value {
-            font-size: 36px; font-weight: 800;
-            background: linear-gradient(135deg, var(--accent), var(--accent-hover));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-        }
-        .score-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-secondary); margin-top: 6px; font-weight: 600; }
-
-        /* --- Downloads --- */
-        .dl-section-label {
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            color: var(--text-secondary);
-            margin-bottom: 10px;
+            gap: 12px;
             margin-top: 20px;
+            margin-bottom: 0;
+            flex-wrap: wrap;
         }
-        .dl-section-label:first-child { margin-top: 0; }
-        .dl-section-hint {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 12px;
-            line-height: 1.5;
-            padding-left: 2px;
-        }
-        .download-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
-        .download-grid-secondary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 20px; }
-        .dl-btn {
-            display: flex; align-items: center; gap: 10px; padding: 14px 16px;
-            background: var(--accent); border: none; border-radius: 8px;
-            text-decoration: none; color: white; font-size: 13px; font-weight: 600;
-            transition: all 0.2s; box-shadow: 0 2px 6px rgba(37,99,235,0.15);
-        }
-        .dl-btn:hover { background: var(--accent-hover); box-shadow: 0 4px 12px rgba(37,99,235,0.25); transform: translateY(-1px); }
-        .dl-btn .icon { font-size: 18px; }
-        .dl-btn .label { flex: 1; }
-        .dl-btn .badge { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; padding: 3px 8px; border-radius: 4px; font-weight: 700; background: rgba(255,255,255,0.2); }
-        .dl-btn-primary {
-            padding: 18px 20px;
-            font-size: 15px;
-        }
-        .dl-btn-primary .icon { font-size: 22px; }
-        .dl-btn-secondary {
-            background: #f1f5f9;
-            color: var(--text);
-            box-shadow: none;
+
+        .toggle-group {
+            display: flex;
             border: 1px solid var(--border);
-            padding: 10px 12px;
-            font-size: 12px;
+            border-radius: 8px;
+            overflow: hidden;
         }
-        .dl-btn-secondary:hover {
-            background: #e2e8f0;
-            box-shadow: none;
-            transform: translateY(-1px);
-        }
-        .dl-btn-secondary .badge {
-            background: rgba(0,0,0,0.06);
+
+        .toggle-group label {
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+            white-space: nowrap;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
             color: var(--text-secondary);
+            background: #fff;
         }
 
-        .keywords { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-        .kw {
-            font-size: 12px; padding: 5px 11px; background: linear-gradient(135deg,#dcfce7,#bbf7d0);
-            color: #166534; border-radius: 5px; font-weight: 600; border: 1px solid #86efac;
+        .toggle-group input { display: none; }
+
+        .toggle-group input:checked + label {
+            background: var(--primary);
+            color: #fff;
         }
 
-        /* --- Tabs --- */
-        .tab-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .tabs { display: flex; border-bottom: 2px solid var(--border); }
-        .tab {
-            padding: 10px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
-            border-bottom: 2px solid transparent; margin-bottom: -2px;
-            color: var(--text-secondary); transition: all 0.2s; background: none;
-            border-top: none; border-left: none; border-right: none;
+        .toggle-group label:hover {
+            background: #F1F5F9;
         }
-        .tab:hover { color: var(--text); }
-        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-        .tab-content {
-            display: none; max-height: 500px; overflow-y: auto; padding: 20px 24px;
-            background: #f8fafc; border-radius: 8px; font-size: 14px;
-            line-height: 1.7;
-        }
-        .tab-content.active { display: block; }
 
-        /* --- Markdown rendered preview styles --- */
-        .tab-content h2 { font-size: 18px; font-weight: 700; margin: 20px 0 8px; color: var(--text); border-left: none; padding-left: 0; }
-        .tab-content h2:first-child { margin-top: 0; }
-        .tab-content h3 { font-size: 15px; font-weight: 600; margin: 16px 0 6px; color: var(--text); }
-        .tab-content ul { padding-left: 20px; margin: 6px 0; }
-        .tab-content li { margin-bottom: 4px; }
-        .tab-content p { margin: 8px 0; }
-        .tab-content strong { font-weight: 700; }
+        .toggle-group input:checked + label:hover {
+            background: var(--primary-light);
+        }
 
-        .copy-btn {
-            padding: 7px 14px; background: var(--accent); color: white; border: none;
-            border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+        /* --- CTA Row --- */
+        .cta-row {
+            margin-top: 20px;
+            text-align: center;
         }
-        .copy-btn:hover { background: var(--accent-hover); }
 
-        /* --- Talking Points Section --- */
-        .talking-points-card {
-            background: linear-gradient(135deg, #eff6ff, #f0f4ff);
-            border: 1px solid #bfdbfe;
+        .btn-run {
+            width: 100%;
+            max-width: 420px;
+            padding: 14px 24px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+            min-height: 44px;
         }
-        .talking-points-card h2 {
-            border-left-color: #3b82f6;
+
+        .btn-run:hover:not(:disabled) {
+            background: var(--accent-hover);
+            box-shadow: 0 4px 16px rgba(0, 179, 126, 0.25);
         }
-        .talking-points-content {
-            font-size: 14px;
-            line-height: 1.7;
+
+        .btn-run:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
-        .talking-points-content h2 { font-size: 16px; font-weight: 700; margin: 16px 0 8px; border-left: none; padding-left: 0; }
-        .talking-points-content h2:first-child { margin-top: 0; }
-        .talking-points-content h3 { font-size: 14px; font-weight: 600; margin: 12px 0 6px; }
-        .talking-points-content ul { padding-left: 20px; margin: 6px 0; }
-        .talking-points-content li { margin-bottom: 4px; }
-        .talking-points-content p { margin: 6px 0; }
-        .talking-points-content strong { font-weight: 700; }
+
+        .cta-hint {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 10px;
+        }
 
         /* --- Error Banner --- */
         .error-banner {
             display: none;
             padding: 14px 18px;
-            background: #fee2e2;
+            background: #FEE2E2;
             color: var(--error);
             border-radius: 8px;
             font-size: 14px;
@@ -432,8 +415,11 @@
             justify-content: space-between;
             gap: 12px;
         }
+
         .error-banner.active { display: flex; }
+
         .error-banner-msg { flex: 1; }
+
         .error-close {
             background: none;
             border: none;
@@ -447,197 +433,826 @@
             flex-shrink: 0;
             transition: background 0.15s;
         }
+
         .error-close:hover {
-            background: rgba(220,38,38,0.1);
+            background: rgba(239, 68, 68, 0.1);
         }
+
+        /* --- Progress Section --- */
+        .progress-section { display: none; }
+        .progress-section.active { display: block; }
+
+        .progress-wrap {
+            max-width: 520px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .progress-current-stage {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 16px;
+        }
+
+        .progress-bar-track {
+            width: 100%;
+            height: 6px;
+            background: #E2E8F0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar-fill {
+            width: 0%;
+            height: 100%;
+            background: var(--accent);
+            border-radius: 3px;
+            transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .progress-pct {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+
+        .time-estimate {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .tip-container {
+            text-align: center;
+            margin-bottom: 28px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tip-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-style: italic;
+            line-height: 1.5;
+            transition: opacity 0.5s ease;
+        }
+
+        .stage-list {
+            text-align: left;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .stage {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .stage-check {
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 12px;
+        }
+
+        .stage-check.pending {
+            color: #D1D5DB;
+        }
+
+        .stage-check.running {
+            color: var(--accent);
+        }
+
+        .stage-check.done {
+            color: var(--accent);
+        }
+
+        .stage-check.error {
+            color: var(--error);
+        }
+
+        .stage-name {
+            font-weight: 500;
+        }
+
+        .stage.is-done .stage-name {
+            color: var(--text-secondary);
+        }
+
+        .stage.is-running .stage-name {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        /* --- Results Section --- */
+        .results-section { display: none; }
+        .results-section.active { display: block; }
+
+        /* --- Circular Score --- */
+        .score-section {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .score-ring-wrap {
+            display: inline-block;
+            position: relative;
+            width: 140px;
+            height: 140px;
+            margin-bottom: 8px;
+        }
+
+        .score-ring-wrap svg {
+            width: 140px;
+            height: 140px;
+            transform: rotate(-90deg);
+        }
+
+        .score-ring-bg {
+            fill: none;
+            stroke: #E2E8F0;
+            stroke-width: 10;
+        }
+
+        .score-ring-fill {
+            fill: none;
+            stroke-width: 10;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s;
+        }
+
+        .score-ring-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--text);
+        }
+
+        .score-ring-label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+
+        .score-stats {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            margin-top: 16px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .score-stats strong {
+            color: var(--text);
+            font-weight: 700;
+        }
+
+        /* --- Keywords --- */
+        .keywords-section {
+            margin-top: 20px;
+        }
+
+        .keywords-section-label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .keywords {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .kw {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .kw-matched {
+            background: var(--accent-light);
+            color: #047857;
+            border: 1px solid #A7F3D0;
+        }
+
+        .kw-missing {
+            background: #FEF2F2;
+            color: #B91C1C;
+            border: 1px solid #FECACA;
+        }
+
+        /* --- Downloads --- */
+        .downloads-heading {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 20px;
+        }
+
+        .dl-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .dl-card {
+            display: block;
+            text-decoration: none;
+            background: #FAFBFE;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .dl-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 2px 8px rgba(0, 179, 126, 0.1);
+        }
+
+        .dl-card-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+
+        .dl-card-icon.ats {
+            background: var(--accent-light);
+            color: var(--accent);
+        }
+
+        .dl-card-icon.rec {
+            background: #EDE9FE;
+            color: #7C3AED;
+        }
+
+        .dl-card-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .dl-card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .dl-card-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .dl-card-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: var(--accent);
+            color: #fff;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .dl-card.rec-card .dl-card-btn {
+            background: #7C3AED;
+        }
+
+        .dl-usage-hint {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        /* --- Additional Files (collapsible) --- */
+        .additional-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: none;
+            border: none;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px 0;
+            font-family: inherit;
+        }
+
+        .additional-toggle:hover { color: var(--text); }
+
+        .additional-toggle svg {
+            width: 14px;
+            height: 14px;
+            transition: transform 0.2s;
+        }
+
+        .additional-toggle.open svg {
+            transform: rotate(90deg);
+        }
+
+        .additional-files {
+            display: none;
+            padding-top: 8px;
+        }
+
+        .additional-files.open {
+            display: block;
+        }
+
+        .additional-files-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .dl-btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            background: #F1F5F9;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .dl-btn-secondary:hover {
+            background: #E2E8F0;
+        }
+
+        .dl-btn-secondary .badge {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            background: rgba(0, 0, 0, 0.06);
+            color: var(--text-secondary);
+        }
+
+        /* --- Talking Points --- */
+        .talking-points-card {
+            background: #FAFBFE;
+            border: 1px solid var(--border);
+        }
+
+        .talking-points-content {
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .talking-points-content h2 {
+            font-size: 16px;
+            font-weight: 700;
+            margin: 16px 0 8px;
+        }
+
+        .talking-points-content h2:first-child { margin-top: 0; }
+        .talking-points-content h3 { font-size: 14px; font-weight: 600; margin: 12px 0 6px; }
+        .talking-points-content ul { padding-left: 20px; margin: 6px 0; }
+        .talking-points-content li { margin-bottom: 4px; }
+        .talking-points-content p { margin: 6px 0; }
+        .talking-points-content strong { font-weight: 700; }
+
+        /* --- Tabs / Preview --- */
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .preview-header h2 { margin-bottom: 0; }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .tab {
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            color: var(--text-secondary);
+            transition: color 0.2s, border-color 0.2s;
+            background: none;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            font-family: inherit;
+        }
+
+        .tab:hover { color: var(--text); }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 20px 24px;
+            background: #fff;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .tab-content.active { display: block; }
+
+        .tab-content h2 {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 20px 0 8px;
+            color: var(--text);
+        }
+
+        .tab-content h2:first-child { margin-top: 0; }
+        .tab-content h3 { font-size: 15px; font-weight: 600; margin: 16px 0 6px; color: var(--text); }
+        .tab-content ul { padding-left: 20px; margin: 6px 0; }
+        .tab-content li { margin-bottom: 4px; }
+        .tab-content p { margin: 8px 0; }
+        .tab-content strong { font-weight: 700; }
+
+        .copy-btn {
+            padding: 7px 14px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: inherit;
+        }
+
+        .copy-btn:hover { background: var(--primary-light); }
 
         /* --- Try Again --- */
-        .again-wrap { text-align: center; margin-top: 32px; }
-        .btn-again {
-            padding: 12px 28px; background: var(--accent); color: white; border: none;
-            border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;
-            transition: all 0.2s; box-shadow: 0 2px 8px rgba(37,99,235,0.15);
+        .again-wrap {
+            text-align: center;
+            margin-top: 32px;
         }
-        .btn-again:hover { background: var(--accent-hover); box-shadow: 0 4px 12px rgba(37,99,235,0.25); }
 
-        footer { text-align: center; color: #94a3b8; font-size: 12px; margin-top: 48px; padding-bottom: 32px; }
+        .btn-again {
+            padding: 12px 28px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: inherit;
+        }
+
+        .btn-again:hover { background: var(--primary-light); }
+
+        /* --- Footer --- */
+        .site-footer {
+            background: linear-gradient(135deg, #0F1629, #1B2559);
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            padding: 40px 24px;
+            font-size: 13px;
+        }
+
+        .footer-brand {
+            font-size: 14px;
+            color: #fff;
+            margin-bottom: 12px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 12px;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            font-size: 13px;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover { color: rgba(255, 255, 255, 0.8); }
+
+        .footer-copy {
+            color: rgba(255, 255, 255, 0.35);
+            font-size: 12px;
+        }
 
         /* --- Mobile --- */
         @media (max-width: 768px) {
-            .hero { padding: 44px 16px 40px; }
-            .hero h1 { font-size: 28px; letter-spacing: -0.5px; }
-            .hero-sub { font-size: 15px; margin-bottom: 28px; }
-            .how-it-works { gap: 20px; }
-            .step-connector { display: none; }
-            .step { max-width: 120px; }
-            .container { padding: 0 16px 40px; }
-            .score-grid { grid-template-columns: 1fr; }
-            .download-grid { grid-template-columns: 1fr; }
-            .download-grid-secondary { grid-template-columns: 1fr; }
-            .controls { flex-direction: column; }
-            .btn-run { width: 100%; }
-            textarea { min-height: 140px; }
+            .site-header {
+                padding: 0 16px;
+            }
+
+            .hero {
+                padding: 56px 16px 48px;
+            }
+
+            .hero h1 {
+                font-size: 32px;
+                letter-spacing: -0.5px;
+            }
+
+            .hero-sub {
+                font-size: 15px;
+            }
+
+            .container {
+                padding: 20px 16px 40px;
+            }
+
+            .form-columns {
+                grid-template-columns: 1fr;
+            }
+
+            .dl-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .controls-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .toggle-group {
+                justify-content: center;
+            }
+
             .toggle-group label {
                 padding: 12px 18px;
                 min-height: 44px;
+                flex: 1;
+                justify-content: center;
+            }
+
+            .btn-run {
+                max-width: 100%;
+            }
+
+            textarea { min-height: 140px; }
+
+            .score-stats {
+                flex-direction: column;
+                gap: 8px;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Hero Section -->
-    <div class="hero">
-        <div class="hero-brand">CVtailro</div>
-        <h1>Land More Interviews with AI-Tailored Resumes</h1>
-        <p class="hero-sub">Our AI analyzes job descriptions and rewrites your resume to match &mdash; optimized for both ATS systems and human recruiters</p>
-        <div class="how-it-works">
-            <div class="step">
-                <div class="step-number">1</div>
-                <div class="step-text">Upload your resume</div>
-            </div>
-            <div class="step-connector">&rarr;</div>
-            <div class="step">
-                <div class="step-number">2</div>
-                <div class="step-text">Paste the job description</div>
-            </div>
-            <div class="step-connector">&rarr;</div>
-            <div class="step">
-                <div class="step-number">3</div>
-                <div class="step-text">Download tailored versions</div>
-            </div>
+    <!-- Header -->
+    <header class="site-header">
+        <a href="/" class="site-logo"><span class="cv">CV</span><span class="tailro">tailro</span></a>
+        <a href="#formSection" class="header-cta">Try Free</a>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-inner">
+            <h1>Tailor your resume to any job in minutes</h1>
+            <p class="hero-sub">Upload your resume, paste the job description. Get an ATS-optimized version -- scored, rewritten, and ready to submit.</p>
         </div>
+    </section>
+
+    <!-- Trust Bar -->
+    <div class="trust-bar">
+        Free to use <span>&middot;</span> No sign-up required <span>&middot;</span> Your data stays private
     </div>
 
     <div class="container">
+        <!-- Error Banner -->
         <div class="error-banner" id="errorBanner">
             <span class="error-banner-msg" id="errorMsg"></span>
             <button class="error-close" onclick="dismissError()" aria-label="Close">&times;</button>
         </div>
 
-        <!-- Status Banner (shown when service not configured) -->
-        <div id="configBanner" style="display:none; padding: 14px 18px; background: #fef3c7; color: #92400e;
-             border: 1px solid #fcd34d; border-radius: 8px; font-size: 14px; margin-bottom: 20px;">
+        <!-- Config Banner -->
+        <div id="configBanner" style="display:none; padding: 14px 18px; background: #FEF3C7; color: #92400E;
+             border: 1px solid #FCD34D; border-radius: 8px; font-size: 14px; margin-bottom: 20px;">
             Service is not configured. An admin needs to set the API key in the
-            <a href="/admin" style="color: #92400e; font-weight: 600;">Admin Panel</a>.
+            <a href="/admin" style="color: #92400E; font-weight: 600;">Admin Panel</a>.
         </div>
 
-        <!-- Upload -->
-        <div class="card" id="uploadCard">
-            <h2>Upload Your Resume</h2>
-            <div class="upload-zone" id="uploadZone">
-                <input type="file" id="resumeFile" accept=".pdf,.md,.txt">
-                <div class="upload-icon">&#128196;</div>
-                <div class="upload-label" id="uploadLabel"><strong>Click to upload</strong> or drag and drop<br>PDF, Markdown, or plain text</div>
-                <div class="file-name" id="fileName" style="display:none"></div>
-            </div>
-        </div>
-
-        <!-- Job Description -->
-        <div class="card">
-            <h2>Paste the Job Description</h2>
-            <textarea id="jobDescription" placeholder="Paste the full job description here..."></textarea>
-            <div class="inline-error" id="jdError">Job description is too short. Please paste at least 50 characters.</div>
-            <div class="char-count"><span id="charCount">0</span> characters &middot; <span id="wordCount">0</span> words</div>
-        </div>
-
-        <!-- Controls -->
-        <div class="controls">
-            <div class="toggle-group">
-                <input type="radio" name="mode" id="modeC" value="conservative" checked>
-                <label for="modeC">Conservative</label>
-                <input type="radio" name="mode" id="modeA" value="aggressive">
-                <label for="modeA">Aggressive</label>
-            </div>
-            <div class="toggle-group">
-                <input type="radio" name="template" id="tplExec" value="executive">
-                <label for="tplExec">Executive</label>
-                <input type="radio" name="template" id="tplModern" value="modern" checked>
-                <label for="tplModern">Modern</label>
-                <input type="radio" name="template" id="tplMin" value="minimal">
-                <label for="tplMin">Minimal</label>
-            </div>
-            <button class="btn-run" id="btnRun" onclick="startTailoring()">Tailor My Resume</button>
-        </div>
-
-        <!-- Progress -->
-        <div class="card progress-section" id="progressSection">
-            <h2>Tailoring Your Resume</h2>
-            <div class="progress-bar-wrap">
-                <div class="progress-bar-header">
-                    <span>OVERALL PROGRESS</span>
-                    <span class="pct" id="progressPct">0%</span>
+        <!-- Form Section -->
+        <div id="formSection">
+            <div class="form-columns">
+                <!-- Upload Card -->
+                <div class="card" id="uploadCard">
+                    <h2>Upload Your Resume</h2>
+                    <div class="upload-zone" id="uploadZone">
+                        <input type="file" id="resumeFile" accept=".pdf,.md,.txt">
+                        <div class="upload-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <line x1="12" y1="18" x2="12" y2="12"/>
+                                <polyline points="9 15 12 12 15 15"/>
+                            </svg>
+                        </div>
+                        <div class="upload-label" id="uploadLabel"><strong>Click to upload</strong> or drag and drop<br>PDF, Markdown, or plain text</div>
+                        <div class="file-name" id="fileName" style="display:none"></div>
+                    </div>
+                    <div class="upload-privacy">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        Privacy guaranteed
+                    </div>
                 </div>
-                <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
-            </div>
-            <div class="time-estimate" id="timeEstimate">This usually takes 2-3 minutes</div>
-            <div class="tip-container" id="tipContainer">
-                <div>
-                    <div class="tip-label">Did you know?</div>
-                    <div class="tip-text" id="tipText">75% of resumes are rejected by ATS systems before a human sees them</div>
+
+                <!-- Job Description Card -->
+                <div class="card">
+                    <h2>Paste the Job Description</h2>
+                    <textarea id="jobDescription" placeholder="Paste the full job description here..."></textarea>
+                    <div class="inline-error" id="jdError">Job description is too short. Please paste at least 50 characters.</div>
+                    <div class="char-count"><span id="charCount">0</span> characters &middot; <span id="wordCount">0</span> words</div>
                 </div>
             </div>
-            <div id="stageList"></div>
+
+            <!-- Controls Row -->
+            <div class="controls-row">
+                <div class="toggle-group">
+                    <input type="radio" name="mode" id="modeC" value="conservative" checked>
+                    <label for="modeC">Conservative</label>
+                    <input type="radio" name="mode" id="modeA" value="aggressive">
+                    <label for="modeA">Aggressive</label>
+                </div>
+                <div class="toggle-group">
+                    <input type="radio" name="template" id="tplExec" value="executive">
+                    <label for="tplExec">Executive</label>
+                    <input type="radio" name="template" id="tplModern" value="modern" checked>
+                    <label for="tplModern">Modern</label>
+                    <input type="radio" name="template" id="tplMin" value="minimal">
+                    <label for="tplMin">Minimal</label>
+                </div>
+            </div>
+
+            <!-- CTA -->
+            <div class="cta-row">
+                <button class="btn-run" id="btnRun" onclick="startTailoring()">Tailor My Resume</button>
+                <div class="cta-hint">No sign-up required &middot; Takes about 2 minutes</div>
+            </div>
         </div>
 
-        <!-- Results -->
-        <div class="results-section" id="resultsSection">
+        <!-- Progress Section -->
+        <div class="progress-section" id="progressSection">
             <div class="card">
-                <h2>Match Results</h2>
-                <div class="score-grid">
-                    <div class="score-card"><div class="score-value" id="matchScore">--</div><div class="score-label">Match Score</div></div>
-                    <div class="score-card"><div class="score-value" id="keywordMatch">--</div><div class="score-label">Keyword Match</div></div>
-                    <div class="score-card"><div class="score-value" id="keywordsAdded">--</div><div class="score-label">Keywords Added</div></div>
+                <div class="progress-wrap">
+                    <div class="progress-current-stage" id="progressStageText">Analyzing your resume...</div>
+                    <div class="progress-bar-track">
+                        <div class="progress-bar-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-pct" id="progressPct">0%</div>
+                    <div class="time-estimate" id="timeEstimate">Usually takes 2-3 minutes</div>
+                    <div class="tip-container" id="tipContainer">
+                        <div class="tip-text" id="tipText">75% of resumes are rejected by ATS systems before a human sees them</div>
+                    </div>
+                    <div class="stage-list" id="stageList"></div>
                 </div>
-                <div id="kwSection" style="display:none">
-                    <strong style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px">Keywords Added</strong>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section" id="resultsSection">
+            <!-- Score -->
+            <div class="card">
+                <div class="score-section">
+                    <div class="score-ring-wrap">
+                        <svg viewBox="0 0 140 140">
+                            <circle class="score-ring-bg" cx="70" cy="70" r="60"/>
+                            <circle class="score-ring-fill" id="scoreRing" cx="70" cy="70" r="60" stroke-dasharray="376.99" stroke-dashoffset="376.99"/>
+                        </svg>
+                        <div class="score-ring-value" id="matchScore">--</div>
+                    </div>
+                    <div class="score-ring-label">Match Score</div>
+                    <div class="score-stats">
+                        <span>Keyword Match: <strong id="keywordMatch">--</strong></span>
+                        <span><strong id="keywordsAdded">--</strong> keywords added</span>
+                    </div>
+                </div>
+                <div class="keywords-section" id="kwSection" style="display:none">
+                    <div class="keywords-section-label">Keywords</div>
                     <div class="keywords" id="kwList"></div>
                 </div>
             </div>
 
+            <!-- Downloads -->
             <div class="card">
-                <h2>Download Tailored Resumes</h2>
+                <div class="downloads-heading">Your Tailored Resumes</div>
 
-                <!-- ATS Downloads -->
-                <div class="dl-section-label">ATS-Optimized Version</div>
-                <div class="dl-section-hint">Optimized for automated screening systems. Use when applying through job portals.</div>
-                <div class="download-grid" id="dlGridAtsPrimary"></div>
+                <div class="dl-cards" id="dlCards">
+                    <div class="dl-card" id="dlCardAts">
+                        <div class="dl-card-icon ats">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        </div>
+                        <div class="dl-card-title">ATS Resume</div>
+                        <div class="dl-card-desc">Optimized for automated screening systems</div>
+                        <span class="dl-card-btn" id="dlBtnAts">Download PDF</span>
+                    </div>
+                    <div class="dl-card rec-card" id="dlCardRec">
+                        <div class="dl-card-icon rec">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                        </div>
+                        <div class="dl-card-title">Recruiter Resume</div>
+                        <div class="dl-card-desc">Enhanced for human readability</div>
+                        <span class="dl-card-btn" id="dlBtnRec">Download PDF</span>
+                    </div>
+                </div>
 
-                <!-- Recruiter Downloads -->
-                <div class="dl-section-label">Recruiter-Friendly Version</div>
-                <div class="dl-section-hint">Enhanced for human readability. Use when emailing recruiters directly.</div>
-                <div class="download-grid" id="dlGridRecPrimary"></div>
+                <div class="dl-usage-hint">Use the ATS version for online applications. Use the Recruiter version when emailing directly.</div>
 
-                <!-- Secondary Downloads -->
-                <div class="dl-section-label" style="margin-top: 24px; color: #94a3b8;">Also available</div>
-                <div class="download-grid-secondary" id="dlGridSecondary"></div>
+                <button class="additional-toggle" id="additionalToggle" onclick="toggleAdditional()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    Additional files
+                </button>
+                <div class="additional-files" id="additionalFiles">
+                    <div class="additional-files-grid" id="dlGridSecondary"></div>
+                </div>
             </div>
 
-            <!-- Talking Points - Prominent standalone section -->
+            <!-- Talking Points -->
             <div class="card talking-points-card" id="talkingPointsCard" style="display:none">
                 <h2>Interview Talking Points</h2>
                 <div class="talking-points-content" id="talkingPointsContent"></div>
             </div>
 
+            <!-- Preview -->
             <div class="card">
-                <div class="tab-header">
+                <div class="preview-header">
                     <h2 style="margin-bottom:0">Resume Preview</h2>
-                    <button class="copy-btn" onclick="copyPreview()">&#128203; Copy</button>
+                    <button class="copy-btn" onclick="copyPreview()">Copy</button>
                 </div>
                 <div class="tabs" id="tabs"></div>
                 <div id="panels"></div>
             </div>
 
             <div class="again-wrap">
-                <button class="btn-again" onclick="resetForm()">&#8635; Tailor Another Resume</button>
+                <button class="btn-again" onclick="resetForm()">Tailor Another Resume</button>
             </div>
         </div>
-
-        <footer>CVtailro &mdash; AI-powered resume optimization</footer>
     </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-brand">CVtailro &middot; AI-powered resume optimization</div>
+        <div class="footer-links">
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+            <a href="#">Contact</a>
+        </div>
+        <div class="footer-copy">&copy; 2026 CVtailro. All rights reserved.</div>
+    </footer>
 
     <script>
     // --- Stage Names: internal key -> user-friendly label ---
-    const STAGES = [
+    var STAGES = [
         "Job Intelligence",
         "Resume Parser",
         "Gap Analysis",
@@ -646,7 +1261,7 @@
         "Recruiter Optimiser",
         "Final Assembly"
     ];
-    const STAGE_LABELS = {
+    var STAGE_LABELS = {
         "Job Intelligence": "Understanding the job requirements",
         "Resume Parser": "Analyzing your resume",
         "Gap Analysis": "Identifying skill gaps",
@@ -657,27 +1272,27 @@
     };
 
     // --- Tips rotation ---
-    const TIPS = [
+    var TIPS = [
         "75% of resumes are rejected by ATS systems before a human sees them",
         "Tailoring your resume for each application can increase interview callbacks by 50%",
         "Our AI rewrites your bullet points using the exact language from the job description",
         "We generate both an ATS-optimized version and a recruiter-friendly version",
-        "Your original resume content is never fabricated \u2014 only reframed and enhanced",
+        "Your original resume content is never fabricated -- only reframed and enhanced",
         "We also prepare interview talking points based on your tailored resume"
     ];
-    let tipIndex = 0;
-    let tipInterval = null;
+    var tipIndex = 0;
+    var tipInterval = null;
 
     function startTipRotation() {
         tipIndex = 0;
-        const tipEl = document.getElementById('tipText');
+        var tipEl = document.getElementById('tipText');
         if (tipEl) tipEl.textContent = TIPS[0];
-        tipInterval = setInterval(() => {
+        tipInterval = setInterval(function() {
             tipIndex = (tipIndex + 1) % TIPS.length;
-            const el = document.getElementById('tipText');
+            var el = document.getElementById('tipText');
             if (el) {
                 el.style.opacity = '0';
-                setTimeout(() => {
+                setTimeout(function() {
                     el.textContent = TIPS[tipIndex];
                     el.style.opacity = '1';
                 }, 400);
@@ -690,15 +1305,14 @@
     }
 
     // --- Settings Management ---
-    let serviceConfigured = false;
-    let userSelectable = false;
-    let selectedModel = '';
+    var serviceConfigured = false;
+    var userSelectable = false;
+    var selectedModel = '';
 
     async function loadSettings() {
-        // Check service status
         try {
-            const statusResp = await fetch('/api/status');
-            const statusData = await statusResp.json();
+            var statusResp = await fetch('/api/status');
+            var statusData = await statusResp.json();
             serviceConfigured = statusData.configured;
             if (!serviceConfigured) {
                 document.getElementById('configBanner').style.display = 'block';
@@ -710,16 +1324,14 @@
             document.getElementById('configBanner').style.display = 'block';
         }
 
-        // Load models silently (user does not see the selector, but we need the default)
         try {
-            const modelsResp = await fetch('/api/models');
-            const data = await modelsResp.json();
+            var modelsResp = await fetch('/api/models');
+            var data = await modelsResp.json();
             userSelectable = data.user_selectable !== false;
             selectedModel = localStorage.getItem('cvtailro_model') || data.default || '';
-            // If models list available and saved model is invalid, reset to default
             if (data.models && data.models.length > 0) {
-                const validIds = data.models.map(m => m.id);
-                if (selectedModel && !validIds.includes(selectedModel)) {
+                var validIds = data.models.map(function(m) { return m.id; });
+                if (selectedModel && validIds.indexOf(selectedModel) === -1) {
                     selectedModel = data.default || '';
                 }
             }
@@ -739,13 +1351,13 @@
 
     loadSettings();
 
-    const FILES = {
-        "tailored_resume_ats.pdf":      {l:"ATS Resume",       i:"\u{1F4C4}",b:"PDF",  cat:"ats",    primary:true},
-        "tailored_resume_recruiter.pdf": {l:"Recruiter Resume", i:"\u{1F4C4}",b:"PDF",  cat:"rec",    primary:true},
-        "tailored_resume_ats.md":        {l:"ATS Resume",       i:"\u{1F4DD}",b:"MD",   cat:"ats",    primary:false},
-        "tailored_resume_recruiter.md":  {l:"Recruiter Resume", i:"\u{1F4DD}",b:"MD",   cat:"rec",    primary:false},
-        "match_report.json":             {l:"Match Report",     i:"\u{1F4CA}",b:"JSON", cat:"other",  primary:false},
-        "interview_talking_points.md":   {l:"Talking Points",   i:"\u{1F399}",b:"MD",   cat:"other",  primary:false},
+    var FILES = {
+        "tailored_resume_ats.pdf":      {l:"ATS Resume",       b:"PDF",  cat:"ats",    primary:true},
+        "tailored_resume_recruiter.pdf": {l:"Recruiter Resume", b:"PDF",  cat:"rec",    primary:true},
+        "tailored_resume_ats.md":        {l:"ATS Resume",       b:"MD",   cat:"ats",    primary:false},
+        "tailored_resume_recruiter.md":  {l:"Recruiter Resume", b:"MD",   cat:"rec",    primary:false},
+        "match_report.json":             {l:"Match Report",     b:"JSON", cat:"other",  primary:false},
+        "interview_talking_points.md":   {l:"Talking Points",   b:"MD",   cat:"other",  primary:false}
     };
 
     // --- Mobile detection for upload label ---
@@ -762,19 +1374,19 @@
     })();
 
     // File upload
-    const uploadZone = document.getElementById("uploadZone");
-    const fileInput = document.getElementById("resumeFile");
-    const fileNameEl = document.getElementById("fileName");
-    fileInput.addEventListener("change", () => {
+    var uploadZone = document.getElementById("uploadZone");
+    var fileInput = document.getElementById("resumeFile");
+    var fileNameEl = document.getElementById("fileName");
+    fileInput.addEventListener("change", function() {
         if (fileInput.files.length > 0) {
             uploadZone.classList.add("has-file");
             fileNameEl.textContent = fileInput.files[0].name;
             fileNameEl.style.display = "block";
         }
     });
-    uploadZone.addEventListener("dragover", e => { e.preventDefault(); uploadZone.classList.add("dragover"); });
-    uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("dragover"));
-    uploadZone.addEventListener("drop", e => {
+    uploadZone.addEventListener("dragover", function(e) { e.preventDefault(); uploadZone.classList.add("dragover"); });
+    uploadZone.addEventListener("dragleave", function() { uploadZone.classList.remove("dragover"); });
+    uploadZone.addEventListener("drop", function(e) {
         e.preventDefault();
         uploadZone.classList.remove("dragover");
         if (e.dataTransfer.files.length > 0) {
@@ -784,11 +1396,10 @@
     });
 
     // Char count
-    const jdTA = document.getElementById("jobDescription");
-    jdTA.addEventListener("input", () => {
+    var jdTA = document.getElementById("jobDescription");
+    jdTA.addEventListener("input", function() {
         document.getElementById("charCount").textContent = jdTA.value.length;
-        document.getElementById("wordCount").textContent = jdTA.value.split(/\s+/).filter(w => w).length;
-        // Clear inline error on typing
+        document.getElementById("wordCount").textContent = jdTA.value.split(/\s+/).filter(function(w) { return w; }).length;
         if (jdTA.value.trim().length >= 50) {
             jdTA.classList.remove('input-error');
             document.getElementById('jdError').classList.remove('visible');
@@ -796,12 +1407,12 @@
     });
 
     // Keyboard shortcut
-    document.addEventListener("keydown", e => {
+    document.addEventListener("keydown", function(e) {
         if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !document.getElementById("btnRun").disabled) startTailoring();
     });
 
     function showError(msg) {
-        const b = document.getElementById("errorBanner");
+        var b = document.getElementById("errorBanner");
         document.getElementById("errorMsg").textContent = msg;
         b.classList.add("active");
     }
@@ -813,7 +1424,7 @@
     // --- Simple markdown to HTML renderer ---
     function renderMarkdown(text) {
         if (!text) return '';
-        let html = escapeHtml(text);
+        var html = escapeHtml(text);
 
         // Headings: ### then ##
         html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
@@ -822,7 +1433,7 @@
         // Bold: **text**
         html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 
-        // Italic: *text* (but not inside already-processed strong tags)
+        // Italic: *text*
         html = html.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
 
         // Unordered list items: lines starting with - or *
@@ -832,7 +1443,7 @@
         html = html.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
 
         // Paragraphs: wrap remaining non-tag text lines
-        html = html.split('\n').map(line => {
+        html = html.split('\n').map(function(line) {
             line = line.trim();
             if (!line) return '';
             if (line.startsWith('<h') || line.startsWith('<ul') || line.startsWith('<li') || line.startsWith('</')) return line;
@@ -852,18 +1463,22 @@
     }
 
     function renderStages() {
-        document.getElementById("stageList").innerHTML = STAGES.map((n, i) => {
+        document.getElementById("stageList").innerHTML = STAGES.map(function(n, i) {
             var label = STAGE_LABELS[n] || n;
-            return '<div class="stage"><div class="stage-ind pending" id="ind-' + (i+1) + '">' + (i+1) +
-                   '</div><div class="stage-info"><div class="stage-name">' + label +
-                   '</div><div class="stage-detail" id="det-' + (i+1) + '">Waiting...</div></div></div>';
+            return '<div class="stage" id="stage-row-' + (i+1) + '">' +
+                '<div class="stage-check pending" id="ind-' + (i+1) + '">' +
+                    '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>' +
+                '</div>' +
+                '<div class="stage-name">' + label + '</div>' +
+                '<div class="stage-detail" id="det-' + (i+1) + '" style="display:none"></div>' +
+            '</div>';
         }).join("");
     }
 
-    // --- Smooth progress: interpolate between discrete stage completions ---
-    let targetProgress = 0;
-    let currentProgress = 0;
-    let progressAnimFrame = null;
+    // --- Smooth progress ---
+    var targetProgress = 0;
+    var currentProgress = 0;
+    var progressAnimFrame = null;
 
     function setTargetProgress(pct) {
         targetProgress = pct;
@@ -882,9 +1497,25 @@
     }
 
     function updateProgress() {
-        var done = document.querySelectorAll(".stage-ind.done").length;
+        var done = document.querySelectorAll(".stage-check.done").length;
+        var running = document.querySelectorAll(".stage-check.running").length;
         var pct = Math.round(done / STAGES.length * 100);
         setTargetProgress(pct);
+
+        // Update current stage text
+        var stageText = document.getElementById("progressStageText");
+        if (done === STAGES.length) {
+            stageText.textContent = "Finishing up...";
+        } else {
+            // Find the running stage
+            for (var i = 0; i < STAGES.length; i++) {
+                var ind = document.getElementById('ind-' + (i+1));
+                if (ind && ind.classList.contains('running')) {
+                    stageText.textContent = (STAGE_LABELS[STAGES[i]] || STAGES[i]) + '...';
+                    break;
+                }
+            }
+        }
     }
 
     async function startTailoring() {
@@ -896,7 +1527,6 @@
 
         if (!file) { showError("Please upload your resume first."); return; }
         if (!jd || jd.length < 50) {
-            // Inline validation
             jdTA.classList.add('input-error');
             document.getElementById('jdError').classList.add('visible');
             showError("Job description is too short (minimum 50 characters).");
@@ -912,9 +1542,9 @@
         var btn = document.getElementById("btnRun");
         btn.disabled = true;
         btn.textContent = "Processing...";
-        btn.style.animation = "none";
         document.getElementById("progressSection").classList.add("active");
         document.getElementById("resultsSection").classList.remove("active");
+        document.getElementById("progressStageText").textContent = "Analyzing your resume...";
         renderStages();
         document.getElementById("progressFill").style.width = "0%";
         document.getElementById("progressPct").textContent = "0%";
@@ -932,7 +1562,7 @@
             var d = await r.json();
             if (!r.ok) {
                 showError(d.error || "Failed to start");
-                btn.disabled = false; btn.textContent = "Tailor My Resume"; btn.style.animation = "";
+                btn.disabled = false; btn.textContent = "Tailor My Resume";
                 stopTipRotation();
                 return;
             }
@@ -946,23 +1576,35 @@
                         es.close();
                         stopTipRotation();
                         loadResults(jobId);
-                        btn.disabled = false; btn.textContent = "Tailor My Resume"; btn.style.animation = "";
+                        btn.disabled = false; btn.textContent = "Tailor My Resume";
                         return;
                     }
                     if (m.status === "error") {
                         es.close();
                         stopTipRotation();
                         showError("Pipeline error: " + (m.detail || "Unknown"));
-                        btn.disabled = false; btn.textContent = "Tailor My Resume"; btn.style.animation = "";
+                        btn.disabled = false; btn.textContent = "Tailor My Resume";
                         return;
                     }
                     if (m.status === "keepalive") return;
                     if (m.stage) {
                         var ind = document.getElementById('ind-' + m.stage);
                         var det = document.getElementById('det-' + m.stage);
+                        var row = document.getElementById('stage-row-' + m.stage);
                         if (ind) {
-                            ind.className = "stage-ind " + m.status;
-                            if (m.status === "done") ind.innerHTML = "\u2713";
+                            ind.className = "stage-check " + m.status;
+                            if (m.status === "done") {
+                                ind.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" fill="currentColor" opacity="0.15"/><path d="M6 9.5l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+                            } else if (m.status === "running") {
+                                ind.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="10 5"><animateTransform attributeName="transform" type="rotate" from="0 9 9" to="360 9 9" dur="1s" repeatCount="indefinite"/></circle></svg>';
+                            } else if (m.status === "error") {
+                                ind.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" fill="currentColor" opacity="0.15"/><path d="M6.5 6.5l5 5M11.5 6.5l-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+                            }
+                        }
+                        if (row) {
+                            row.className = 'stage';
+                            if (m.status === 'done') row.classList.add('is-done');
+                            else if (m.status === 'running') row.classList.add('is-running');
                         }
                         if (det) det.textContent = m.detail || "";
                         updateProgress();
@@ -980,12 +1622,12 @@
                             clearInterval(poll);
                             stopTipRotation();
                             loadResults(jid);
-                            btn.disabled = false; btn.textContent = "Tailor My Resume"; btn.style.animation = "";
+                            btn.disabled = false; btn.textContent = "Tailor My Resume";
                         } else if (d.status === "error") {
                             clearInterval(poll);
                             stopTipRotation();
                             showError("Pipeline error: " + (d.error || "Unknown"));
-                            btn.disabled = false; btn.textContent = "Tailor My Resume"; btn.style.animation = "";
+                            btn.disabled = false; btn.textContent = "Tailor My Resume";
                         }
                     } catch(e) {}
                 }, 5000);
@@ -994,7 +1636,7 @@
             connectSSE();
         } catch(e) {
             showError("Network error: " + e.message);
-            btn.disabled = false; btn.textContent = "Tailor My Resume"; btn.style.animation = "";
+            btn.disabled = false; btn.textContent = "Tailor My Resume";
             stopTipRotation();
         }
     }
@@ -1005,60 +1647,90 @@
         if (d.status !== "complete") return;
         var s = d.result;
 
-        // --- Scores ---
-        document.getElementById("matchScore").textContent = s.match_score.toFixed(0) + "%";
-        // Keyword Match: cosine similarity * 100, shown as percentage
+        // --- Circular Score ---
+        var scoreVal = s.match_score.toFixed(0);
+        var scoreNum = parseFloat(scoreVal);
+        document.getElementById("matchScore").textContent = scoreVal + "%";
+
+        // Animate the ring
+        var circumference = 2 * Math.PI * 60; // r=60
+        var offset = circumference - (scoreNum / 100) * circumference;
+        var ring = document.getElementById("scoreRing");
+        ring.style.strokeDasharray = circumference;
+        // Determine color
+        var scoreColor = scoreNum >= 80 ? 'var(--score-high)' : scoreNum >= 50 ? 'var(--score-mid)' : 'var(--score-low)';
+        ring.style.stroke = scoreColor;
+        // Trigger animation after a short delay
+        setTimeout(function() {
+            ring.style.strokeDashoffset = offset;
+        }, 100);
+
+        // Keyword Match
         var kwMatchPct = Math.round(s.cosine_similarity * 100);
         document.getElementById("keywordMatch").textContent = kwMatchPct + "%";
-        // Keywords Added: positive framing (total keywords minus missing)
+
+        // Keywords Added
         var totalKeywords = (s.missing_keywords ? s.missing_keywords.length : 0);
-        // We show the count of keywords that WERE added (positive framing)
-        // If the backend gives missing_keywords, we reframe: show how many were woven in
-        var keywordsAddedCount = Math.max(0, Math.round(s.match_score / 100 * (totalKeywords + Math.round(s.match_score / 5))));
-        // Simpler: use match_score as proxy. Or just show total - missing as "added".
-        // Best approach: show number of matched keywords if available, else estimate
+        var keywordsAddedCount;
         if (typeof s.matched_keywords_count === 'number') {
             keywordsAddedCount = s.matched_keywords_count;
         } else {
-            // Estimate: if match_score is 85 and 3 missing, roughly (85/100 * total) added
             keywordsAddedCount = Math.max(1, Math.round(s.match_score * 0.3));
         }
         document.getElementById("keywordsAdded").textContent = keywordsAddedCount;
 
-        // Show added keywords (reframed from "missing" to positive)
+        // Keywords chips
         if (s.missing_keywords && s.missing_keywords.length > 0) {
             document.getElementById("kwSection").style.display = "block";
             document.getElementById("kwList").innerHTML = s.missing_keywords.map(function(k) {
-                return '<span class="kw">' + escapeHtml(k) + '</span>';
+                return '<span class="kw kw-missing">' + escapeHtml(k) + '</span>';
             }).join("");
         }
 
-        // --- Downloads: categorize ---
-        var atsHtml = '';
-        var recHtml = '';
+        // --- Downloads ---
+        var atsLink = '';
+        var recLink = '';
         var secondaryHtml = '';
+
         s.files.forEach(function(f) {
-            var m = FILES[f] || {l: f, i: "\u{1F4C1}", b: "", cat: "other", primary: false};
+            var m = FILES[f] || {l: f, b: "", cat: "other", primary: false};
             var link = '/api/download/' + jobId + '/' + f;
             if (m.primary) {
-                var btnHtml = '<a class="dl-btn dl-btn-primary" href="' + link + '">' +
-                    '<span class="icon">' + m.i + '</span>' +
-                    '<span class="label">' + m.l + '</span>' +
-                    '<span class="badge">' + m.b + '</span></a>';
-                if (m.cat === 'ats') atsHtml += btnHtml;
-                else if (m.cat === 'rec') recHtml += btnHtml;
+                if (m.cat === 'ats') atsLink = link;
+                else if (m.cat === 'rec') recLink = link;
             } else {
-                secondaryHtml += '<a class="dl-btn dl-btn-secondary" href="' + link + '">' +
-                    '<span class="icon">' + m.i + '</span>' +
-                    '<span class="label">' + m.l + '</span>' +
+                secondaryHtml += '<a class="dl-btn-secondary" href="' + link + '">' +
+                    '<span class="label">' + escapeHtml(m.l) + '</span>' +
                     '<span class="badge">' + m.b + '</span></a>';
             }
         });
-        document.getElementById("dlGridAtsPrimary").innerHTML = atsHtml;
-        document.getElementById("dlGridRecPrimary").innerHTML = recHtml;
+
+        // Wire up download cards
+        var atsCard = document.getElementById("dlCardAts");
+        var recCard = document.getElementById("dlCardRec");
+        if (atsLink) {
+            atsCard.href = atsLink;
+            atsCard.setAttribute('href', atsLink);
+            // Make it a link
+            var atsParent = atsCard.parentNode;
+            var atsA = document.createElement('a');
+            atsA.className = atsCard.className;
+            atsA.href = atsLink;
+            atsA.innerHTML = atsCard.innerHTML;
+            atsParent.replaceChild(atsA, atsCard);
+        }
+        if (recLink) {
+            var recParent = recCard.parentNode;
+            var recA = document.createElement('a');
+            recA.className = recCard.className;
+            recA.href = recLink;
+            recA.innerHTML = recCard.innerHTML;
+            recParent.replaceChild(recA, recCard);
+        }
+
         document.getElementById("dlGridSecondary").innerHTML = secondaryHtml;
 
-        // --- Talking Points: prominent standalone section ---
+        // --- Talking Points ---
         if (s.talking_points_md) {
             document.getElementById("talkingPointsCard").style.display = "block";
             document.getElementById("talkingPointsContent").innerHTML = renderMarkdown(s.talking_points_md);
@@ -1066,7 +1738,7 @@
             document.getElementById("talkingPointsCard").style.display = "none";
         }
 
-        // --- Preview tabs (ATS + Recruiter only; Talking Points has its own section) ---
+        // --- Preview tabs ---
         var previews = [
             {id: "ats", l: "ATS Resume", c: s.ats_resume_md},
             {id: "rec", l: "Recruiter Resume", c: s.recruiter_resume_md}
@@ -1094,9 +1766,16 @@
         if (!p) return;
         navigator.clipboard.writeText(p.textContent).then(function() {
             var b = document.querySelector(".copy-btn");
-            b.textContent = "\u2713 Copied!";
-            setTimeout(function() { b.textContent = "\u{1F4CB} Copy"; }, 2000);
+            b.textContent = "Copied!";
+            setTimeout(function() { b.textContent = "Copy"; }, 2000);
         });
+    }
+
+    function toggleAdditional() {
+        var btn = document.getElementById("additionalToggle");
+        var files = document.getElementById("additionalFiles");
+        btn.classList.toggle("open");
+        files.classList.toggle("open");
     }
 
     function resetForm() {
@@ -1114,11 +1793,39 @@
         stopTipRotation();
         targetProgress = 0;
         currentProgress = 0;
+
+        // Reset score ring
+        var ring = document.getElementById("scoreRing");
+        if (ring) {
+            ring.style.strokeDashoffset = 376.99;
+        }
+
+        // Reset download cards to divs (in case they became <a> tags)
+        var dlCards = document.getElementById("dlCards");
+        if (dlCards) {
+            dlCards.innerHTML =
+                '<div class="dl-card" id="dlCardAts">' +
+                    '<div class="dl-card-icon ats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>' +
+                    '<div class="dl-card-title">ATS Resume</div>' +
+                    '<div class="dl-card-desc">Optimized for automated screening systems</div>' +
+                    '<span class="dl-card-btn" id="dlBtnAts">Download PDF</span>' +
+                '</div>' +
+                '<div class="dl-card rec-card" id="dlCardRec">' +
+                    '<div class="dl-card-icon rec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div>' +
+                    '<div class="dl-card-title">Recruiter Resume</div>' +
+                    '<div class="dl-card-desc">Enhanced for human readability</div>' +
+                    '<span class="dl-card-btn" id="dlBtnRec">Download PDF</span>' +
+                '</div>';
+        }
+
+        // Close additional files
+        document.getElementById("additionalToggle").classList.remove("open");
+        document.getElementById("additionalFiles").classList.remove("open");
+
         var btn = document.getElementById("btnRun");
         btn.disabled = false;
         btn.textContent = "Tailor My Resume";
-        btn.style.animation = "";
-        document.querySelector(".hero").scrollIntoView({behavior: "smooth"});
+        document.querySelector(".site-header").scrollIntoView({behavior: "smooth"});
     }
     </script>
 </body>
