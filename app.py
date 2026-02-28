@@ -54,6 +54,7 @@ from utils import (
 )
 
 app = Flask(__name__)
+logger = logging.getLogger("cvtailro.app")
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "cvtailro-dev-secret-change-in-production")
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10 MB upload limit
 
@@ -161,6 +162,8 @@ def run_pipeline_job(
 
         setup_logging(log_file=output_dir / "pipeline.log")
 
+        pipeline_start = time.time()
+
         resume_text = load_resume(resume_path)
 
         # ── Stages 1 + 2 in PARALLEL (independent) ──
@@ -208,6 +211,8 @@ def run_pipeline_job(
         if stage_errors:
             raise stage_errors[0]
 
+        logger.info(f"[Pipeline] Stages 1+2 completed in {time.time() - pipeline_start:.1f}s")
+
         # ── Stage 3 (needs both 1 + 2) ──
         emit(3, 7, "Gap Analysis", "running", "Comparing resume against job...")
         agent3 = GapAnalysisAgent(config)
@@ -217,6 +222,8 @@ def run_pipeline_job(
              f"Match: {gap_report.match_score:.0f}% | "
              f"Cosine: {gap_report.cosine_similarity:.2f} | "
              f"{len(gap_report.missing_keywords)} missing keywords")
+
+        logger.info(f"[Pipeline] Stage 3 completed at {time.time() - pipeline_start:.1f}s elapsed")
 
         # ── Stage 4 (needs 2 + 3) ──
         emit(4, 7, "Bullet Optimiser", "running", f"Rewriting bullets ({mode} mode)...")
@@ -231,6 +238,8 @@ def run_pipeline_job(
         if fab_count:
             detail += f" ({fab_count} flagged)"
         emit(4, 7, "Bullet Optimiser", "done", detail)
+
+        logger.info(f"[Pipeline] Stage 4 completed at {time.time() - pipeline_start:.1f}s elapsed")
 
         # ── Stages 5 + 6 + 7 in PARALLEL ──
         # ATS, Recruiter, and Talking Points all run concurrently.
@@ -306,6 +315,8 @@ def run_pipeline_job(
         if stage_errors:
             raise stage_errors[0]
 
+        logger.info(f"[Pipeline] Stages 5+6+7 completed at {time.time() - pipeline_start:.1f}s elapsed")
+
         # ── Assemble final output (deterministic, instant) ──
         from models import MatchReport
         match_report = MatchReport(
@@ -336,6 +347,9 @@ def run_pipeline_job(
 
         emit(7, 7, "Final Assembly", "done",
              f"{len(talking_points)} talking points generated")
+
+        total_elapsed = time.time() - pipeline_start
+        logger.info(f"[Pipeline] Total pipeline completed in {total_elapsed:.1f}s")
 
         with jobs_lock:
             jobs[job_id]["status"] = "complete"
@@ -594,6 +608,13 @@ def start_tailoring():
     elif resume_ext not in (".md", ".txt"):
         return jsonify({"error": "Unsupported file type. Use PDF, MD, or TXT."}), 400
 
+    # Log incoming request metadata
+    logger.info(
+        f"[/api/tailor] New request: client_ip={client_ip}, model={model}, "
+        f"mode={mode}, template={template}, jd_length={len(job_text)}, "
+        f"resume_file={resume_file.filename}"
+    )
+
     # Create job
     job_id = uuid.uuid4().hex[:16]
     output_dir = create_output_dir()
@@ -634,7 +655,12 @@ def progress_stream(job_id: str):
             return jsonify({"error": "Job not found"}), 404
 
     def generate():
-        q = jobs[job_id]["queue"]
+        with jobs_lock:
+            job = jobs.get(job_id)
+            if job is None:
+                yield f"data: {json.dumps({'status': 'error', 'detail': 'Job has been cleaned up'})}\n\n"
+                return
+            q = job["queue"]
         while True:
             try:
                 event = q.get(timeout=10)
@@ -642,6 +668,11 @@ def progress_stream(job_id: str):
                 if event.get("status") in ("complete", "error"):
                     break
             except queue.Empty:
+                # Check if the job still exists (may have been cleaned up)
+                with jobs_lock:
+                    if job_id not in jobs:
+                        yield f"data: {json.dumps({'status': 'error', 'detail': 'Job expired'})}\n\n"
+                        return
                 # Send keepalive every 10s to prevent Railway/proxy timeout
                 yield f"data: {json.dumps({'status': 'keepalive'})}\n\n"
 

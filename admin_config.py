@@ -58,7 +58,12 @@ class AdminConfigManager:
     def save(cls, config: AdminConfig) -> None:
         with cls._lock:
             config.updated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-            CONFIG_FILE.write_text(json.dumps(asdict(config), indent=2) + "\n", encoding="utf-8")
+            try:
+                CONFIG_FILE.write_text(json.dumps(asdict(config), indent=2) + "\n", encoding="utf-8")
+            except OSError as e:
+                logger.error(f"Failed to write admin config to disk: {e}")
+                raise
+            # Only update cache AFTER successful disk write
             cls._cache = config
             cls._cache_time = time.time()
 

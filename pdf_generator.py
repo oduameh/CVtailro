@@ -15,6 +15,7 @@ import logging
 import os
 import platform
 import re
+import time
 from pathlib import Path
 
 import markdown as md_lib
@@ -518,10 +519,19 @@ def generate_resume_pdf(
 </body>
 </html>"""
 
-    HTML(string=full_html).write_pdf(str(out))
+    pdf_start = time.time()
+    try:
+        HTML(string=full_html).write_pdf(str(out))
+    except Exception as e:
+        logger.error(f"WeasyPrint failed for {out}: {e}")
+        raise RuntimeError(f"PDF generation failed: {e}") from e
+    pdf_elapsed = time.time() - pdf_start
 
     if not out.exists() or out.stat().st_size < 500:
-        raise RuntimeError(f"PDF generation failed or produced empty file: {out}")
+        raise RuntimeError(f"PDF generation produced empty or missing file: {out}")
 
-    logger.info(f"PDF generated: {out} ({out.stat().st_size} bytes, template: {template})")
+    logger.info(
+        f"PDF generated: {out} ({out.stat().st_size} bytes, "
+        f"template: {template}, took {pdf_elapsed:.1f}s)"
+    )
     return out

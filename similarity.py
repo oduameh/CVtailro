@@ -7,9 +7,12 @@ similarity scoring and keyword frequency analysis.
 
 from __future__ import annotations
 
+import logging
 import math
 import re
 from collections import Counter
+
+logger = logging.getLogger(__name__)
 
 
 STOP_WORDS = frozenset(
@@ -129,14 +132,18 @@ def keyword_frequency_analysis(
 
     results = []
     for kw in keywords:
-        kw_lower = kw.lower()
+        kw_stripped = kw.strip()
+        if not kw_stripped:
+            logger.debug("Skipping empty keyword in frequency analysis")
+            continue
+        kw_lower = kw_stripped.lower()
         job_count = len(re.findall(r"\b" + re.escape(kw_lower) + r"\b", job_lower))
         resume_count = len(
             re.findall(r"\b" + re.escape(kw_lower) + r"\b", resume_lower)
         )
         results.append(
             {
-                "keyword": kw,
+                "keyword": kw_stripped,
                 "job_count": job_count,
                 "resume_count": resume_count,
                 "gap": job_count - resume_count,

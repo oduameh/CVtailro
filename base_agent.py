@@ -172,13 +172,38 @@ class BaseAgent(ABC, Generic[T]):
                 error_detail = ""
                 try:
                     error_detail = response.json().get("error", {}).get("message", "")
-                except Exception:
+                except (ValueError, json.JSONDecodeError):
                     error_detail = response.text[:200]
                 raise AgentError(
                     f"OpenRouter API error {response.status_code}: {error_detail}"
                 )
 
-            data = response.json()
+            try:
+                data = response.json()
+            except (ValueError, json.JSONDecodeError) as e:
+                raise AgentError(
+                    f"OpenRouter returned non-JSON response: "
+                    f"{response.text[:300]}"
+                ) from e
+
+            # Log token usage at DEBUG level
+            usage = data.get("usage", {})
+            if usage:
+                logger.debug(
+                    f"[{self.AGENT_NAME}] Token usage: "
+                    f"prompt={usage.get('prompt_tokens', '?')}, "
+                    f"completion={usage.get('completion_tokens', '?')}, "
+                    f"total={usage.get('total_tokens', '?')}"
+                )
+
+            # Check if actual model differs from requested model
+            actual_model = data.get("model", "")
+            if actual_model and actual_model != self.config.model:
+                logger.debug(
+                    f"[{self.AGENT_NAME}] Model mismatch: "
+                    f"requested={self.config.model}, actual={actual_model}"
+                )
+
             choices = data.get("choices", [])
             if not choices:
                 raise AgentError("OpenRouter returned no choices in response")
@@ -218,7 +243,12 @@ class BaseAgent(ABC, Generic[T]):
 
         for attempt in range(1, self.MAX_RETRIES + 1):
             try:
+                call_start = time.time()
                 raw_text = self._call_llm_api(system, user_message)
+                call_elapsed = time.time() - call_start
+                logger.info(
+                    f"[{self.AGENT_NAME}] LLM API call took {call_elapsed:.1f}s"
+                )
                 logger.debug(
                     f"[{self.AGENT_NAME}] Response length: {len(raw_text)} chars"
                 )

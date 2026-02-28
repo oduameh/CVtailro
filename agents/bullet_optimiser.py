@@ -242,6 +242,8 @@ class BulletOptimiserAgent(BaseAgent["OptimisedBullets"]):
         summary_rewrite: str = ""
         mode_used: RewriteMode | None = None
 
+        fanout_start = time.time()
+
         with ThreadPoolExecutor(max_workers=_MAX_WORKERS) as executor:
             future_to_idx = {
                 executor.submit(
@@ -257,6 +259,11 @@ class BulletOptimiserAgent(BaseAgent["OptimisedBullets"]):
                 idx = future_to_idx[future]
                 result = future.result()  # raises on failure
 
+                logger.info(
+                    f"[{self.AGENT_NAME}] Role {idx} completed at "
+                    f"{time.time() - fanout_start:.1f}s"
+                )
+
                 merged_bullets.extend(result.bullets)
 
                 # Take the summary_rewrite from the first role's response
@@ -266,6 +273,12 @@ class BulletOptimiserAgent(BaseAgent["OptimisedBullets"]):
                 # All calls should agree on mode; take the first non-None
                 if mode_used is None:
                     mode_used = result.mode_used
+
+        fanout_elapsed = time.time() - fanout_start
+        logger.info(
+            f"[{self.AGENT_NAME}] Parallel fan-out completed in "
+            f"{fanout_elapsed:.1f}s for {num_roles} roles"
+        )
 
         # Sort bullets by (role_index, bullet_index) for deterministic order
         merged_bullets.sort(

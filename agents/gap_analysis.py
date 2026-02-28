@@ -67,7 +67,9 @@ class GapAnalysisAgent:
         tools = job_analysis.tools
 
         def skill_in_resume(skill: str) -> bool:
-            sl = skill.lower()
+            sl = skill.strip().lower()
+            if not sl:
+                return True  # treat empty strings as "present" to skip them
             if sl in resume_skills_lower:
                 return True
             if resume_text_lower and re.search(
@@ -81,9 +83,10 @@ class GapAnalysisAgent:
         ]
 
         # Skills present but underrepresented
-        all_job_keywords = list(
-            set(required + preferred + tools + job_analysis.domain_keywords)
-        )
+        all_job_keywords = [
+            kw for kw in set(required + preferred + tools + job_analysis.domain_keywords)
+            if kw.strip()
+        ]
         weak_alignment: list[str] = []
         overrepresented: list[str] = []
         keyword_frequency: list[KeywordFrequency] = []
