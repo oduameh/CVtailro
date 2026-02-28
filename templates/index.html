@@ -450,16 +450,29 @@
         try{
             const r=await fetch("/api/tailor",{method:"POST",body:fd});const d=await r.json();
             if(!r.ok){showError(d.error||"Failed to start");btn.disabled=false;btn.textContent="Tailor My Resume";return;}
-            const jobId=d.job_id,es=new EventSource(`/api/progress/${jobId}`);
-            es.onmessage=ev=>{
-                const m=JSON.parse(ev.data);
-                if(m.status==="complete"){es.close();loadResults(jobId);btn.disabled=false;btn.textContent="Tailor My Resume";return;}
-                if(m.status==="error"){es.close();showError("Pipeline error: "+(m.detail||"Unknown"));btn.disabled=false;btn.textContent="Tailor My Resume";return;}
-                if(m.stage){const ind=document.getElementById(`ind-${m.stage}`),det=document.getElementById(`det-${m.stage}`);
-                    if(ind){ind.className="stage-ind "+m.status;if(m.status==="done")ind.innerHTML="\u2713";}
-                    if(det)det.textContent=m.detail||"";updateProgress();}
-            };
-            es.onerror=()=>{es.close();showError("Connection lost. Your job may still be running.");btn.disabled=false;btn.textContent="Tailor My Resume";};
+            const jobId=d.job_id;
+            function connectSSE(){
+                const es=new EventSource(`/api/progress/${jobId}`);
+                es.onmessage=ev=>{
+                    const m=JSON.parse(ev.data);
+                    if(m.status==="complete"){es.close();loadResults(jobId);btn.disabled=false;btn.textContent="Tailor My Resume";return;}
+                    if(m.status==="error"){es.close();showError("Pipeline error: "+(m.detail||"Unknown"));btn.disabled=false;btn.textContent="Tailor My Resume";return;}
+                    if(m.status==="keepalive")return;
+                    if(m.stage){const ind=document.getElementById(`ind-${m.stage}`),det=document.getElementById(`det-${m.stage}`);
+                        if(ind){ind.className="stage-ind "+m.status;if(m.status==="done")ind.innerHTML="\u2713";}
+                        if(det)det.textContent=m.detail||"";updateProgress();}
+                };
+                es.onerror=()=>{es.close();pollForResult(jobId);};
+            }
+            function pollForResult(jid){
+                const poll=setInterval(async()=>{
+                    try{const r=await fetch(`/api/result/${jid}`);const d=await r.json();
+                        if(d.status==="complete"){clearInterval(poll);loadResults(jid);btn.disabled=false;btn.textContent="Tailor My Resume";}
+                        else if(d.status==="error"){clearInterval(poll);showError("Pipeline error: "+(d.error||"Unknown"));btn.disabled=false;btn.textContent="Tailor My Resume";}
+                    }catch(e){}
+                },5000);
+            }
+            connectSSE();
         }catch(e){showError("Network error: "+e.message);btn.disabled=false;btn.textContent="Tailor My Resume";}
     }
 

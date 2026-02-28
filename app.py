@@ -612,11 +612,12 @@ def progress_stream(job_id: str):
         q = jobs[job_id]["queue"]
         while True:
             try:
-                event = q.get(timeout=30)
+                event = q.get(timeout=10)
                 yield f"data: {json.dumps(event)}\n\n"
                 if event.get("status") in ("complete", "error"):
                     break
             except queue.Empty:
+                # Send keepalive every 10s to prevent Railway/proxy timeout
                 yield f"data: {json.dumps({'status': 'keepalive'})}\n\n"
 
     return Response(
