@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CVtailro Admin</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%232563eb' width='100' height='100' rx='20'/><text x='50' y='68' font-size='60' font-weight='bold' text-anchor='middle' fill='white' font-family='system-ui'>CV</text></svg>">
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --text-secondary: #64748b;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --accent-light: #eff6ff;
+            --success: #16a34a;
+            --error: #dc2626;
+            --radius: 12px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .container { max-width: 720px; margin: 0 auto; padding: 0 24px 60px; }
+
+        header {
+            text-align: center;
+            padding: 52px 24px 44px;
+            background: linear-gradient(135deg, #eff6ff 0%, #f0f4ff 50%, #f5f7ff 100%);
+            border-bottom: 1px solid rgba(37,99,235,0.08);
+            margin-bottom: 40px;
+        }
+        header h1 {
+            font-size: 38px; font-weight: 800; letter-spacing: -1px;
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        header p { color: var(--text-secondary); font-size: 16px; margin-top: 8px; font-weight: 500; }
+        .back-link {
+            display: inline-block; margin-top: 12px; font-size: 13px;
+            color: var(--accent); text-decoration: none; font-weight: 600;
+        }
+        .back-link:hover { text-decoration: underline; }
+
+        .card {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 28px; margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .card h2 {
+            font-size: 15px; font-weight: 700; color: var(--text);
+            margin-bottom: 20px; border-left: 4px solid var(--accent); padding-left: 12px;
+        }
+
+        .form-group { margin-bottom: 18px; }
+        .form-group label {
+            font-size: 13px; font-weight: 600; color: var(--text-secondary);
+            display: block; margin-bottom: 6px;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="password"],
+        .form-group input[type="number"],
+        .form-group select {
+            width: 100%; padding: 10px 14px; border: 1px solid var(--border);
+            border-radius: 8px; font-size: 13px; outline: none;
+            transition: border-color 0.2s; font-family: inherit;
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+        .form-group .hint {
+            font-size: 11px; color: var(--text-secondary); margin-top: 4px;
+        }
+
+        .input-with-btn {
+            display: flex; gap: 8px; align-items: center;
+        }
+        .input-with-btn input { flex: 1; }
+
+        .checkbox-group {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer;
+        }
+        .checkbox-group label {
+            font-size: 14px; font-weight: 500; cursor: pointer; margin-bottom: 0;
+        }
+
+        .btn {
+            padding: 10px 20px; border: none; border-radius: 8px;
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-primary {
+            background: var(--accent); color: white;
+            box-shadow: 0 2px 8px rgba(37,99,235,0.2);
+        }
+        .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 4px 16px rgba(37,99,235,0.3); }
+        .btn-secondary {
+            background: #f1f5f9; color: var(--text); border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { background: #e2e8f0; }
+        .btn-danger {
+            background: #fee2e2; color: var(--error); border: 1px solid #fecaca;
+        }
+        .btn-danger:hover { background: #fecaca; }
+        .btn-sm { padding: 7px 14px; font-size: 12px; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .status-grid {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 20px;
+        }
+        .status-item {
+            text-align: center; padding: 18px 12px;
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-radius: 10px; border: 1px solid var(--border);
+        }
+        .status-value {
+            font-size: 24px; font-weight: 800; color: var(--accent);
+        }
+        .status-value.yes { color: var(--success); }
+        .status-value.no { color: var(--error); }
+        .status-label {
+            font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px;
+            color: var(--text-secondary); margin-top: 4px; font-weight: 600;
+        }
+
+        .alert {
+            padding: 12px 16px; border-radius: 8px; font-size: 13px;
+            margin-bottom: 16px; display: none;
+        }
+        .alert.success { background: #f0fdf4; color: var(--success); border: 1px solid #bbf7d0; display: block; }
+        .alert.error { background: #fee2e2; color: var(--error); border: 1px solid #fecaca; display: block; }
+
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        footer { text-align: center; color: #94a3b8; font-size: 12px; margin-top: 48px; padding-bottom: 32px; }
+
+        @media (max-width: 768px) {
+            header { padding: 36px 16px; }
+            header h1 { font-size: 28px; }
+            .container { padding: 0 16px 40px; }
+            .status-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>CVtailro Admin</h1>
+        <p>Service configuration &amp; API key management</p>
+        <a href="/" class="back-link">&larr; Back to CVtailro</a>
+    </header>
+
+    <div class="container">
+        <!-- Login / Set Password Section -->
+        <div id="authSection">
+            <div class="card" id="setPasswordCard" style="display:none">
+                <h2>Set Admin Password</h2>
+                <p style="font-size:14px;color:var(--text-secondary);margin-bottom:18px;">
+                    No admin password has been set yet. Create one to secure this panel.
+                </p>
+                <div class="form-group">
+                    <label for="newPassword">New Password</label>
+                    <input type="password" id="newPassword" placeholder="Enter a strong password">
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" placeholder="Re-enter password">
+                </div>
+                <button class="btn btn-primary" onclick="setPassword()">Set Password &amp; Login</button>
+                <div id="setPasswordAlert" class="alert" style="margin-top:12px"></div>
+            </div>
+
+            <div class="card" id="loginCard" style="display:none">
+                <h2>Admin Login</h2>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" placeholder="Enter admin password"
+                           onkeydown="if(event.key==='Enter')login()">
+                </div>
+                <button class="btn btn-primary" onclick="login()">Login</button>
+                <div id="loginAlert" class="alert" style="margin-top:12px"></div>
+            </div>
+        </div>
+
+        <!-- Config Panel (hidden until authenticated) -->
+        <div id="configSection" style="display:none">
+
+            <!-- Status Overview -->
+            <div class="card">
+                <h2>Service Status</h2>
+                <div class="status-grid">
+                    <div class="status-item">
+                        <div class="status-value" id="statusConfigured">--</div>
+                        <div class="status-label">API Key Set</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="statusRequests">--</div>
+                        <div class="status-label">Requests (1h)</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="statusSessions">--</div>
+                        <div class="status-label">Active Sessions</div>
+                    </div>
+                </div>
+                <div style="font-size:12px;color:var(--text-secondary);text-align:center;">
+                    Last updated: <span id="lastUpdated">--</span>
+                    &nbsp;|&nbsp; Total requests: <span id="totalRequests">--</span>
+                </div>
+            </div>
+
+            <!-- API Key Configuration -->
+            <div class="card">
+                <h2>API Key</h2>
+                <div class="form-group">
+                    <label for="apiKeyInput">OpenRouter API Key</label>
+                    <div class="input-with-btn">
+                        <input type="password" id="apiKeyInput" placeholder="sk-or-v1-..."
+                               style="font-family: monospace;">
+                        <button class="btn btn-sm btn-secondary" onclick="toggleApiKeyVisibility()" id="eyeBtn">Show</button>
+                    </div>
+                    <div class="hint">
+                        Get your key at <a href="https://openrouter.ai/keys" target="_blank"
+                        style="color:var(--accent);text-decoration:none;">openrouter.ai/keys</a>
+                    </div>
+                </div>
+                <button class="btn btn-sm btn-secondary" onclick="testApiKey()">Test Key</button>
+                <span id="testResult" style="font-size:13px;margin-left:10px;font-weight:600;"></span>
+            </div>
+
+            <!-- Model & Settings -->
+            <div class="card">
+                <h2>Model &amp; Rate Limiting</h2>
+                <div class="form-group">
+                    <label for="defaultModel">Default Model</label>
+                    <select id="defaultModel"></select>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="allowUserModel" checked>
+                    <label for="allowUserModel">Allow users to select their own model</label>
+                </div>
+                <div class="form-group">
+                    <label for="rateLimit">Rate Limit (requests per hour)</label>
+                    <input type="number" id="rateLimit" value="0" min="0" step="1">
+                    <div class="hint">Set to 0 for unlimited requests.</div>
+                </div>
+            </div>
+
+            <!-- Save / Logout -->
+            <div class="card">
+                <div id="saveAlert" class="alert"></div>
+                <div class="btn-row">
+                    <button class="btn btn-primary" onclick="saveConfig()">Save Configuration</button>
+                    <button class="btn btn-danger" onclick="logout()">Logout</button>
+                </div>
+            </div>
+
+        </div>
+
+        <footer>CVtailro Admin &mdash; 2026</footer>
+    </div>
+
+    <script>
+    // ─── Auth ───
+
+    async function checkAuth() {
+        try {
+            const r = await fetch('/admin/api/config');
+            if (r.ok) {
+                showConfigPanel(await r.json());
+                return;
+            }
+        } catch(e) {}
+        // Not authenticated - show login or set password
+        try {
+            const r = await fetch('/api/status');
+            const d = await r.json();
+            if (d.has_admin_password) {
+                document.getElementById('loginCard').style.display = 'block';
+                document.getElementById('setPasswordCard').style.display = 'none';
+            } else {
+                document.getElementById('setPasswordCard').style.display = 'block';
+                document.getElementById('loginCard').style.display = 'none';
+            }
+        } catch(e) {
+            document.getElementById('setPasswordCard').style.display = 'block';
+        }
+        document.getElementById('authSection').style.display = 'block';
+        document.getElementById('configSection').style.display = 'none';
+    }
+
+    async function setPassword() {
+        const pw = document.getElementById('newPassword').value;
+        const pw2 = document.getElementById('confirmPassword').value;
+        const alert = document.getElementById('setPasswordAlert');
+        if (!pw || pw.length < 4) {
+            alert.className = 'alert error'; alert.textContent = 'Password must be at least 4 characters.';
+            return;
+        }
+        if (pw !== pw2) {
+            alert.className = 'alert error'; alert.textContent = 'Passwords do not match.';
+            return;
+        }
+        try {
+            const r = await fetch('/admin/api/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({password: pw})
+            });
+            const d = await r.json();
+            if (r.ok) {
+                checkAuth();
+            } else {
+                alert.className = 'alert error'; alert.textContent = d.error || 'Failed to set password.';
+            }
+        } catch(e) {
+            alert.className = 'alert error'; alert.textContent = 'Network error.';
+        }
+    }
+
+    async function login() {
+        const pw = document.getElementById('loginPassword').value;
+        const alert = document.getElementById('loginAlert');
+        if (!pw) {
+            alert.className = 'alert error'; alert.textContent = 'Please enter a password.';
+            return;
+        }
+        try {
+            const r = await fetch('/admin/api/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({password: pw})
+            });
+            const d = await r.json();
+            if (r.ok) {
+                checkAuth();
+            } else {
+                alert.className = 'alert error'; alert.textContent = d.error || 'Invalid password.';
+            }
+        } catch(e) {
+            alert.className = 'alert error'; alert.textContent = 'Network error.';
+        }
+    }
+
+    async function logout() {
+        await fetch('/admin/api/logout', {method: 'POST'});
+        document.getElementById('configSection').style.display = 'none';
+        document.getElementById('loginPassword') && (document.getElementById('loginPassword').value = '');
+        checkAuth();
+    }
+
+    // ─── Config Panel ───
+
+    function showConfigPanel(config) {
+        document.getElementById('authSection').style.display = 'none';
+        document.getElementById('configSection').style.display = 'block';
+
+        // Populate fields
+        document.getElementById('apiKeyInput').value = config.api_key || '';
+        document.getElementById('allowUserModel').checked = config.allow_user_model_selection !== false;
+        document.getElementById('rateLimit').value = config.rate_limit_per_hour || 0;
+        document.getElementById('lastUpdated').textContent = config.updated_at || 'Never';
+
+        // Update status
+        const hasKey = config.api_key && config.api_key.length > 3;
+        const statusEl = document.getElementById('statusConfigured');
+        statusEl.textContent = hasKey ? 'Yes' : 'No';
+        statusEl.className = 'status-value ' + (hasKey ? 'yes' : 'no');
+
+        loadModels(config.default_model);
+        loadUsage();
+    }
+
+    async function loadModels(selectedModel) {
+        try {
+            const r = await fetch('/api/models');
+            const d = await r.json();
+            const select = document.getElementById('defaultModel');
+            const free = d.models.filter(m => m.name.includes('(Free)') || m.name.includes('(Auto)'));
+            const paid = d.models.filter(m => !m.name.includes('(Free)') && !m.name.includes('(Auto)'));
+            const chosen = selectedModel || d.default;
+            let html = '<optgroup label="Free (no credits needed)">';
+            free.forEach(m => {
+                html += '<option value="' + m.id + '"' + (m.id === chosen ? ' selected' : '') + '>' + m.name + '</option>';
+            });
+            html += '</optgroup><optgroup label="Paid (requires credits)">';
+            paid.forEach(m => {
+                html += '<option value="' + m.id + '"' + (m.id === chosen ? ' selected' : '') + '>' + m.name + '</option>';
+            });
+            html += '</optgroup>';
+            select.innerHTML = html;
+        } catch(e) {
+            console.error('Failed to load models:', e);
+        }
+    }
+
+    async function loadUsage() {
+        try {
+            const r = await fetch('/admin/api/usage');
+            if (!r.ok) return;
+            const d = await r.json();
+            document.getElementById('statusRequests').textContent = d.requests_last_hour || 0;
+            document.getElementById('statusSessions').textContent = d.active_sessions || 0;
+            document.getElementById('totalRequests').textContent = d.total_requests || 0;
+        } catch(e) {}
+    }
+
+    // ─── Actions ───
+
+    function toggleApiKeyVisibility() {
+        const input = document.getElementById('apiKeyInput');
+        const btn = document.getElementById('eyeBtn');
+        if (input.type === 'password') {
+            input.type = 'text'; btn.textContent = 'Hide';
+        } else {
+            input.type = 'password'; btn.textContent = 'Show';
+        }
+    }
+
+    async function testApiKey() {
+        const key = document.getElementById('apiKeyInput').value.trim();
+        const result = document.getElementById('testResult');
+        if (!key) {
+            result.style.color = 'var(--error)'; result.textContent = 'Enter a key first.';
+            return;
+        }
+        result.style.color = 'var(--text-secondary)'; result.textContent = 'Testing...';
+        try {
+            const r = await fetch('/admin/api/test-key', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({api_key: key})
+            });
+            const d = await r.json();
+            if (d.valid) {
+                result.style.color = 'var(--success)'; result.textContent = 'Valid key!';
+            } else {
+                result.style.color = 'var(--error)'; result.textContent = d.error || 'Invalid key.';
+            }
+        } catch(e) {
+            result.style.color = 'var(--error)'; result.textContent = 'Test failed.';
+        }
+    }
+
+    async function saveConfig() {
+        const alert = document.getElementById('saveAlert');
+        const payload = {
+            api_key: document.getElementById('apiKeyInput').value.trim(),
+            default_model: document.getElementById('defaultModel').value,
+            allow_user_model_selection: document.getElementById('allowUserModel').checked,
+            rate_limit_per_hour: parseInt(document.getElementById('rateLimit').value) || 0
+        };
+        try {
+            const r = await fetch('/admin/api/config', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const d = await r.json();
+            if (r.ok) {
+                alert.className = 'alert success'; alert.textContent = 'Configuration saved successfully.';
+                // Refresh status
+                const hasKey = payload.api_key.length > 0;
+                const statusEl = document.getElementById('statusConfigured');
+                statusEl.textContent = hasKey ? 'Yes' : 'No';
+                statusEl.className = 'status-value ' + (hasKey ? 'yes' : 'no');
+                document.getElementById('lastUpdated').textContent = d.updated_at || 'Just now';
+            } else {
+                alert.className = 'alert error'; alert.textContent = d.error || 'Save failed.';
+            }
+        } catch(e) {
+            alert.className = 'alert error'; alert.textContent = 'Network error.';
+        }
+        setTimeout(() => { alert.className = 'alert'; }, 5000);
+    }
+
+    // ─── Init ───
+    checkAuth();
+    </script>
+</body>
+</html>

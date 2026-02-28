@@ -1,0 +1,11 @@
+output/
+.env
+admin_config.json
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.claude/

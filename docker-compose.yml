@@ -1,0 +1,13 @@
+services:
+  cvtailro:
+    build: .
+    ports:
+      - "5050:5050"
+    volumes:
+      - ./output:/app/output
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-}
+    restart: unless-stopped

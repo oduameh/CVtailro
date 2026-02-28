@@ -1,0 +1,102 @@
+"""Agent 6: Recruiter Optimisation Agent.
+
+Produces a recruiter-facing resume optimised for human readability,
+narrative flow, leadership framing, and impact-driven language.
+"""
+
+from __future__ import annotations
+
+import json
+from typing import Any
+
+from base_agent import BaseAgent
+from models import (
+    GapReport,
+    JobAnalysis,
+    OptimisedBullets,
+    RecruiterResume,
+    ResumeData,
+)
+
+
+class RecruiterOptimiserAgent(BaseAgent["RecruiterResume"]):
+    """Assembles a recruiter-optimised resume with strong narrative."""
+
+    PROMPT_FILE = "recruiter_optimiser.txt"
+    OUTPUT_MODEL = RecruiterResume
+    AGENT_NAME = "Recruiter Optimiser Agent"
+    AGENT_MAX_TOKENS = 8192
+
+    def prepare_user_message(self, input_data: Any) -> str:
+        """Format all relevant context for recruiter optimisation.
+
+        Args:
+            input_data: Dict with 'optimised_bullets' (OptimisedBullets),
+                       'job_analysis' (JobAnalysis),
+                       'gap_report' (GapReport), and
+                       'resume_data' (ResumeData) keys.
+        """
+        optimised: OptimisedBullets = input_data["optimised_bullets"]
+        job: JobAnalysis = input_data["job_analysis"]
+        gap: GapReport = input_data["gap_report"]
+        resume: ResumeData = input_data["resume_data"]
+
+        # Build roles with optimised bullets
+        bullets_by_role: dict[int, list[dict[str, str]]] = {}
+        for b in optimised.bullets:
+            if b.role_index not in bullets_by_role:
+                bullets_by_role[b.role_index] = []
+            bullets_by_role[b.role_index].append(
+                {
+                    "bullet_index": b.bullet_index,
+                    "text": b.optimised_text,
+                }
+            )
+
+        roles_data = []
+        for idx, role in enumerate(resume.roles):
+            role_bullets = bullets_by_role.get(idx, [])
+            if not role_bullets:
+                role_bullets = [
+                    {"bullet_index": bi, "text": b.original_text}
+                    for bi, b in enumerate(role.bullets)
+                ]
+
+            roles_data.append(
+                {
+                    "title": role.title,
+                    "company": role.company,
+                    "location": role.location,
+                    "start_date": role.start_date,
+                    "end_date": role.end_date,
+                    "duration_months": role.duration_months,
+                    "bullets": role_bullets,
+                }
+            )
+
+        return (
+            "CANDIDATE INFORMATION:\n"
+            f"Name: {resume.name}\n"
+            f"Contact: {json.dumps(resume.contact_info)}\n"
+            f"Total Experience: {resume.total_years_estimate} years\n\n"
+            "PROFESSIONAL SUMMARY (optimised):\n"
+            f"{optimised.summary_rewrite or resume.summary}\n\n"
+            "EXPERIENCE (with optimised bullets):\n"
+            f"{json.dumps(roles_data, indent=2)}\n\n"
+            "EDUCATION:\n"
+            f"{json.dumps([e.model_dump() for e in resume.education], indent=2)}\n\n"
+            "CERTIFICATIONS:\n"
+            f"{json.dumps([c.model_dump() for c in resume.certifications], indent=2)}\n\n"
+            "SKILLS:\n"
+            f"{json.dumps(resume.global_skills)}\n\n"
+            "TARGET JOB CONTEXT:\n"
+            f"Title: {job.job_title}\n"
+            f"Company: {job.company}\n"
+            f"Seniority: {job.inferred_seniority.value}\n"
+            f"Key Requirements: {json.dumps(job.required_skills[:10])}\n\n"
+            "GAP ANALYSIS HIGHLIGHTS:\n"
+            f"Match Score: {gap.match_score}%\n"
+            f"Seniority Calibration: {gap.seniority_calibration}\n"
+            f"Missing Keywords: {json.dumps(gap.missing_keywords[:10])}\n"
+            f"Weak Alignment: {json.dumps(gap.weak_alignment[:10])}\n"
+        )
