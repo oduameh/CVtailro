@@ -60,7 +60,7 @@ class BaseAgent(ABC, Generic[T]):
     AGENT_NAME: str = ""
     AGENT_MAX_TOKENS: int = 8192  # Subclasses can override for smaller outputs
 
-    MAX_RETRIES: int = 3
+    MAX_RETRIES: int = 5
     RETRY_DELAY_BASE: float = 2.0
     API_TIMEOUT: int = 600  # 10 minutes per agent call
 
@@ -158,8 +158,15 @@ class BaseAgent(ABC, Generic[T]):
                     "Insufficient OpenRouter credits. Add credits at openrouter.ai."
                 )
             if response.status_code == 429:
+                # Wait for rate limit to clear, then retry
+                retry_after = int(response.headers.get("Retry-After", "10"))
+                retry_after = min(retry_after, 30)  # Cap at 30s
+                logger.warning(
+                    f"Rate limited (429). Waiting {retry_after}s before retry..."
+                )
+                time.sleep(retry_after)
                 raise AgentError(
-                    "Rate limited by OpenRouter. Please wait and try again."
+                    f"Rate limited by OpenRouter. Retrying after {retry_after}s wait."
                 )
             if response.status_code >= 400:
                 error_detail = ""
