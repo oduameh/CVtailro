@@ -1133,6 +1133,16 @@
                 </div>
             </div>
 
+            <!-- Model Selector (shown only when admin enables it) -->
+            <div id="modelSection" style="display:none; margin-bottom: 20px;">
+                <label style="font-size:13px; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:6px;">AI Model</label>
+                <select id="modelSelect" onchange="selectedModel=this.value; saveModelPref();"
+                    style="width:100%; max-width:360px; padding:10px 14px; border:1px solid var(--border);
+                           border-radius:8px; font-size:14px; font-family:inherit; outline:none; background:white;
+                           cursor:pointer; color:var(--text);">
+                </select>
+            </div>
+
             <!-- CTA -->
             <div class="cta-row">
                 <button class="btn-run" id="btnRun" onclick="startTailoring()">Tailor My Resume</button>
@@ -1333,6 +1343,29 @@
                 if (selectedModel && validIds.indexOf(selectedModel) === -1) {
                     selectedModel = data.default || '';
                 }
+            }
+            // Show model selector if admin allows it
+            if (userSelectable && data.models && data.models.length > 0) {
+                var select = document.getElementById('modelSelect');
+                var free = data.models.filter(function(m) { return m.name.indexOf('(Free)') !== -1; });
+                var paid = data.models.filter(function(m) { return m.name.indexOf('(Free)') === -1; });
+                var html = '';
+                if (free.length > 0) {
+                    html += '<optgroup label="Free">';
+                    free.forEach(function(m) {
+                        html += '<option value="' + m.id + '"' + (m.id === selectedModel ? ' selected' : '') + '>' + m.name.replace(' (Free)', '') + '</option>';
+                    });
+                    html += '</optgroup>';
+                }
+                if (paid.length > 0) {
+                    html += '<optgroup label="Premium">';
+                    paid.forEach(function(m) {
+                        html += '<option value="' + m.id + '"' + (m.id === selectedModel ? ' selected' : '') + '>' + m.name + '</option>';
+                    });
+                    html += '</optgroup>';
+                }
+                select.innerHTML = html;
+                document.getElementById('modelSection').style.display = 'block';
             }
         } catch(e) {
             console.error('Failed to load models:', e);
