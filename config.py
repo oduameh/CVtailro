@@ -27,7 +27,7 @@ RECOMMENDED_MODELS: dict[str, str] = {
     "Llama 4 Maverick": "meta-llama/llama-4-maverick",
 }
 
-DEFAULT_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
+DEFAULT_MODEL = "openai/gpt-4o-mini"
 
 
 @dataclass(frozen=True)

@@ -13,12 +13,15 @@ Usage:
 
 from __future__ import annotations
 
+import gc
 import json
 import logging
 import mimetypes
 import os
 import queue
 import re
+import resource
+import shutil
 import threading
 import time
 import uuid
@@ -103,7 +106,9 @@ if db_url.startswith("sqlite"):
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {}
 else:
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_size": 5,
+        "pool_size": 20,
+        "max_overflow": 30,
+        "pool_timeout": 10,
         "pool_recycle": 300,
         "pool_pre_ping": True,
     }
@@ -119,12 +124,19 @@ r2_storage.init_app(app)
 jobs: dict[str, dict] = {}
 jobs_lock = threading.Lock()
 
-# Clean up jobs older than 2 hours
-JOB_TTL = 7200
+# Clean up jobs older than 15 minutes
+JOB_TTL = 900
 
 # Pipeline error log (in-memory, last 50 errors)
 pipeline_errors: list[dict] = []
 pipeline_errors_lock = threading.Lock()
+
+# Pipeline concurrency control
+MAX_CONCURRENT_PIPELINES = 5
+pipeline_semaphore = threading.Semaphore(MAX_CONCURRENT_PIPELINES)
+pipeline_queue_depth = 0
+pipeline_queue_lock = threading.Lock()
+MAX_QUEUE_DEPTH = 50
 
 
 class UsageTracker:
@@ -237,6 +249,7 @@ def run_pipeline_job(
     user_id: str | None = None,
 ) -> None:
     """Run the full pipeline in a background thread, pushing progress events."""
+    global pipeline_queue_depth
     progress_queue = jobs[job_id]["queue"]
 
     def emit(stage: int, total: int, name: str, status: str, detail: str = "") -> None:
@@ -249,6 +262,14 @@ def run_pipeline_job(
                 "detail": detail,
             }
         )
+
+    # Queue management: increment depth, emit queued status, acquire semaphore
+    with pipeline_queue_lock:
+        pipeline_queue_depth += 1
+    emit(0, 7, "Pipeline", "queued", "Waiting for available slot...")
+    pipeline_semaphore.acquire()
+    with pipeline_queue_lock:
+        pipeline_queue_depth -= 1
 
     try:
         config = AppConfig(
@@ -525,6 +546,11 @@ def run_pipeline_job(
                 db.session.commit()
                 logger.info(f"[Pipeline] Job {job_id} persisted to database")
 
+        # Clean up local output files after R2 upload to reclaim disk space
+        if r2_storage.is_configured:
+            shutil.rmtree(str(output_dir), ignore_errors=True)
+            logger.info(f"[Pipeline] Cleaned up local output dir for job {job_id}")
+
         with jobs_lock:
             jobs[job_id]["status"] = "complete"
             jobs[job_id]["result"] = {
@@ -546,6 +572,21 @@ def run_pipeline_job(
                 ],
             }
         progress_queue.put({"status": "complete"})
+
+        # Reclaim memory from large agent objects
+        gc.collect()
+
+        # Schedule delayed cleanup of in-memory result after 2 minutes
+        def _delayed_result_cleanup(jid: str, delay: int = 120) -> None:
+            time.sleep(delay)
+            with jobs_lock:
+                if jid in jobs and jobs[jid].get("status") == "complete":
+                    jobs[jid].pop("result", None)
+                    logger.info(f"[Pipeline] Purged in-memory result for job {jid}")
+
+        threading.Thread(
+            target=_delayed_result_cleanup, args=(job_id,), daemon=True
+        ).start()
 
     except Exception as e:
         logging.getLogger("pipeline").exception("Pipeline failed")
@@ -580,6 +621,9 @@ def run_pipeline_job(
             jobs[job_id]["status"] = "error"
             jobs[job_id]["error"] = error_msg
         progress_queue.put({"status": "error", "detail": f"[{model}] {error_msg}"})
+
+    finally:
+        pipeline_semaphore.release()
 
 
 # ─── Admin Routes ────────────────────────────────────────────────────────────────
@@ -745,6 +789,48 @@ def admin_analytics():
     return jsonify(pipeline_analytics.get_global_stats())
 
 
+@app.route("/admin/api/live-stats")
+def admin_live_stats():
+    """Return live operational stats for monitoring under load."""
+    if not session.get("admin_authenticated"):
+        return jsonify({"error": "Not authenticated"}), 401
+
+    # Active pipelines = MAX_CONCURRENT - semaphore._value (available slots)
+    # threading.Semaphore exposes _value internally
+    try:
+        available_slots = pipeline_semaphore._value
+        active_pipelines = MAX_CONCURRENT_PIPELINES - available_slots
+    except AttributeError:
+        active_pipelines = -1
+
+    with pipeline_queue_lock:
+        current_queue_depth = pipeline_queue_depth
+
+    # Memory usage via resource module (no psutil dependency)
+    # On macOS ru_maxrss is in bytes; on Linux it is in kilobytes
+    rusage = resource.getrusage(resource.RUSAGE_SELF)
+    import platform
+    if platform.system() == "Darwin":
+        mem_mb = rusage.ru_maxrss / (1024 * 1024)
+    else:
+        mem_mb = rusage.ru_maxrss / 1024
+
+    with pipeline_errors_lock:
+        recent_errors_count = len(pipeline_errors)
+
+    return jsonify({
+        "active_pipelines": active_pipelines,
+        "queue_depth": current_queue_depth,
+        "max_concurrent": MAX_CONCURRENT_PIPELINES,
+        "max_queue_depth": MAX_QUEUE_DEPTH,
+        "memory_mb": round(mem_mb, 1),
+        "thread_count": threading.active_count(),
+        "usage_stats": usage_tracker.get_stats(),
+        "analytics_stats": pipeline_analytics.get_global_stats(),
+        "recent_errors_count": recent_errors_count,
+    })
+
+
 @app.route("/api/status")
 def api_status():
     """Return whether the service is configured."""
@@ -802,9 +888,15 @@ def start_tailoring():
     else:
         model = admin_config.default_model or DEFAULT_MODEL
 
-    # Rate limiting
+    # Check queue depth before accepting new jobs
+    with pipeline_queue_lock:
+        if pipeline_queue_depth >= MAX_QUEUE_DEPTH:
+            return jsonify({"error": "Server is at capacity. Please try again in a few minutes."}), 503
+
+    # Rate limiting — use user ID if authenticated, IP otherwise
     client_ip = request.remote_addr or "unknown"
-    if not usage_tracker.check_and_record(client_ip, admin_config.rate_limit_per_hour):
+    rate_key = f"user:{current_user.id}" if current_user.is_authenticated else f"ip:{client_ip}"
+    if not usage_tracker.check_and_record(rate_key, admin_config.rate_limit_per_hour):
         return jsonify({"error": "Rate limit exceeded. Please try again later."}), 429
 
     if "resume" not in request.files:
@@ -936,17 +1028,45 @@ def progress_stream(job_id: str):
 
 @app.route("/api/result/<job_id>")
 def get_result(job_id: str):
-    """Get the final result of a completed job."""
-    with jobs_lock:
-        if job_id not in jobs:
-            return jsonify({"error": "Job not found"}), 404
-        job = jobs[job_id]
+    """Get the final result of a completed job.
 
-    if job["status"] == "running":
+    Checks in-memory jobs first, then falls back to the database for
+    jobs that have been purged from memory but persist in the DB.
+    """
+    with jobs_lock:
+        job = jobs.get(job_id)
+
+    if job is not None:
+        if job["status"] == "running":
+            return jsonify({"status": "running"}), 202
+        if job["status"] == "error":
+            return jsonify({"status": "error", "error": job["error"]}), 500
+        return jsonify({"status": "complete", "result": job["result"]})
+
+    # Fallback: query the database
+    db_job = db.session.get(TailoringJob, job_id)
+    if db_job is None:
+        return jsonify({"error": "Job not found"}), 404
+
+    if db_job.status == "running":
         return jsonify({"status": "running"}), 202
-    if job["status"] == "error":
-        return jsonify({"status": "error", "error": job["error"]}), 500
-    return jsonify({"status": "complete", "result": job["result"]})
+    if db_job.status == "error":
+        return jsonify({"status": "error", "error": db_job.error_message or "Unknown error"}), 500
+
+    return jsonify({
+        "status": "complete",
+        "result": {
+            "match_score": db_job.match_score,
+            "cosine_similarity": db_job.cosine_similarity,
+            "missing_keywords": db_job.missing_keywords,
+            "rewrite_mode": db_job.rewrite_mode,
+            "template": db_job.template,
+            "ats_resume_md": db_job.ats_resume_md,
+            "recruiter_resume_md": db_job.recruiter_resume_md,
+            "talking_points_md": db_job.talking_points_md,
+            "files": [f.filename for f in db_job.files],
+        },
+    })
 
 
 @app.route("/api/download/<job_id>/<filename>")

@@ -1580,14 +1580,19 @@
     <!-- Hero -->
     <section class="hero">
         <div class="hero-inner">
-            <h1>Tailor your resume to any job in minutes</h1>
-            <p class="hero-sub">Upload your resume, paste the job description. Get an ATS-optimized version -- scored, rewritten, and ready to submit.</p>
+            <h1>Make your resume stand out</h1>
+            <p class="hero-sub">Upload your resume, paste any job description, and get an AI-optimized version in 2 minutes.</p>
         </div>
     </section>
 
     <!-- Trust Bar -->
     <div class="trust-bar">
         AI-powered resume optimization <span>&middot;</span> Sign in to save &amp; access your history <span>&middot;</span> Your data stays private
+    </div>
+
+    <!-- Demo Banner -->
+    <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:14px 18px;max-width:920px;margin:16px auto;text-align:center;font-size:14px;color:#1E40AF;">
+        <strong>Live Demo</strong> — Each student gets 1 tailoring. Have your resume (PDF) and a job description ready.
     </div>
 
     <div class="container">
@@ -2316,9 +2321,19 @@
         if (!rawMsg) return 'An unexpected error occurred. Please try again.';
         var msg = String(rawMsg);
 
+        // High demand / queue
+        if (msg.match(/high demand/i) || msg.match(/queue/i)) {
+            return 'The system is busy. Please wait and try again.';
+        }
+
         // Rate limiting
         if (msg.match(/rate.?limit/i) || msg.match(/429/i) || msg.match(/too many requests/i)) {
-            return 'Our AI service is busy. Please try again in a moment.';
+            return "You've reached your limit. Each student gets 1 tailoring during the demo.";
+        }
+
+        // System at capacity
+        if (msg.match(/503/i)) {
+            return 'System at capacity. Please try again in a minute.';
         }
 
         // Invalid API key / auth errors
@@ -2575,6 +2590,18 @@
         try {
             var r = await fetch("/api/tailor", {method: "POST", body: fd});
             var d = await r.json();
+            if (r.status === 503) {
+                showError("The system is handling a lot of requests right now. Please wait 30 seconds and try again.");
+                btn.disabled = false; btn.textContent = "Tailor My Resume";
+                stopTipRotation(); stopElapsedTimer();
+                return;
+            }
+            if (r.status === 429) {
+                showError(d.error || "You've reached your limit for this demo session.");
+                btn.disabled = false; btn.textContent = "Tailor My Resume";
+                stopTipRotation(); stopElapsedTimer();
+                return;
+            }
             if (!r.ok) {
                 showError(friendlyErrorMessage(d.error || "Failed to start", model));
                 btn.disabled = false; btn.textContent = "Tailor My Resume";
@@ -2646,6 +2673,14 @@
                     if (m.status === "complete") { es.close(); onComplete(jobId); return; }
                     if (m.status === "error") { es.close(); onError(m.detail); return; }
                     if (m.status === "keepalive") return;
+                    if (m.status === "queued") {
+                        var pos = m.position || '';
+                        var stageText = document.getElementById("progressStageText");
+                        if (stageText) {
+                            stageText.textContent = pos ? "You're #" + pos + " in the queue — hang tight!" : "In the queue — we'll start shortly...";
+                        }
+                        return;
+                    }
                     handleStageUpdate(m);
                 };
                 es.onerror = function() {

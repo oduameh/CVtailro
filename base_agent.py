@@ -178,7 +178,7 @@ class BaseAgent(ABC, Generic[T]):
                 )
                 time.sleep(retry_after)
                 raise AgentError(
-                    f"Rate limited by OpenRouter. Retrying after {retry_after}s wait."
+                    "The AI service is handling high demand. Please wait a moment and try again."
                 )
             if response.status_code >= 400:
                 error_detail = ""
@@ -233,11 +233,11 @@ class BaseAgent(ABC, Generic[T]):
 
         except requests.exceptions.Timeout:
             raise AgentError(
-                f"OpenRouter API timed out after {self.API_TIMEOUT}s"
+                "The AI model took too long to respond. This usually resolves in a minute — please try again."
             )
         except requests.exceptions.ConnectionError:
             raise AgentError(
-                "Could not connect to OpenRouter API. Check your internet connection."
+                "Could not reach the AI service. Please check your connection and try again."
             )
 
     def run(self, input_data: Any, **prompt_vars: Any) -> T:
@@ -312,8 +312,8 @@ class BaseAgent(ABC, Generic[T]):
                     break
 
         raise AgentError(
-            f"{self.AGENT_NAME} failed after {self.MAX_RETRIES} attempts: "
-            f"{last_error}"
+            f"We couldn't complete this step after {self.MAX_RETRIES} attempts. "
+            f"Please try again in a moment."
         ) from last_error
 
     @staticmethod

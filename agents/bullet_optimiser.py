@@ -30,7 +30,7 @@ from models import (
 logger = logging.getLogger(__name__)
 
 # Maximum parallel LLM calls for role-level splitting
-_MAX_WORKERS = 4
+_MAX_WORKERS = 2
 
 
 class BulletOptimiserAgent(BaseAgent["OptimisedBullets"]):
