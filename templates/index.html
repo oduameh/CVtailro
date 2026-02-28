@@ -1600,69 +1600,86 @@
             }
             var jobId = d.job_id;
 
+            var sseRetries = 0;
+            var maxSseRetries = 5;
+            var finished = false;
+
+            function handleStageUpdate(m) {
+                if (m.stage) {
+                    var ind = document.getElementById('ind-' + m.stage);
+                    var det = document.getElementById('det-' + m.stage);
+                    var row = document.getElementById('stage-row-' + m.stage);
+                    if (ind) {
+                        ind.className = "stage-check " + m.status;
+                        if (m.status === "done") {
+                            ind.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" fill="currentColor" opacity="0.15"/><path d="M6 9.5l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+                        } else if (m.status === "running") {
+                            ind.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="10 5"><animateTransform attributeName="transform" type="rotate" from="0 9 9" to="360 9 9" dur="1s" repeatCount="indefinite"/></circle></svg>';
+                        } else if (m.status === "error") {
+                            ind.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" fill="currentColor" opacity="0.15"/><path d="M6.5 6.5l5 5M11.5 6.5l-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+                        }
+                    }
+                    if (row) {
+                        row.className = 'stage';
+                        if (m.status === 'done') row.classList.add('is-done');
+                        else if (m.status === 'running') row.classList.add('is-running');
+                    }
+                    if (det) det.textContent = m.detail || "";
+                    updateProgress();
+                }
+            }
+
+            function onComplete(jid) {
+                if (finished) return;
+                finished = true;
+                stopTipRotation();
+                loadResults(jid);
+                btn.disabled = false; btn.textContent = "Tailor My Resume";
+            }
+
+            function onError(msg) {
+                if (finished) return;
+                finished = true;
+                stopTipRotation();
+                showError("Pipeline error: " + (msg || "Unknown"));
+                btn.disabled = false; btn.textContent = "Tailor My Resume";
+            }
+
             function connectSSE() {
+                if (finished) return;
                 var es = new EventSource('/api/progress/' + jobId);
                 es.onmessage = function(ev) {
+                    sseRetries = 0; // reset on successful message
                     var m = JSON.parse(ev.data);
-                    if (m.status === "complete") {
-                        es.close();
-                        stopTipRotation();
-                        loadResults(jobId);
-                        btn.disabled = false; btn.textContent = "Tailor My Resume";
-                        return;
-                    }
-                    if (m.status === "error") {
-                        es.close();
-                        stopTipRotation();
-                        showError("Pipeline error: " + (m.detail || "Unknown"));
-                        btn.disabled = false; btn.textContent = "Tailor My Resume";
-                        return;
-                    }
+                    if (m.status === "complete") { es.close(); onComplete(jobId); return; }
+                    if (m.status === "error") { es.close(); onError(m.detail); return; }
                     if (m.status === "keepalive") return;
-                    if (m.stage) {
-                        var ind = document.getElementById('ind-' + m.stage);
-                        var det = document.getElementById('det-' + m.stage);
-                        var row = document.getElementById('stage-row-' + m.stage);
-                        if (ind) {
-                            ind.className = "stage-check " + m.status;
-                            if (m.status === "done") {
-                                ind.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" fill="currentColor" opacity="0.15"/><path d="M6 9.5l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-                            } else if (m.status === "running") {
-                                ind.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="10 5"><animateTransform attributeName="transform" type="rotate" from="0 9 9" to="360 9 9" dur="1s" repeatCount="indefinite"/></circle></svg>';
-                            } else if (m.status === "error") {
-                                ind.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" fill="currentColor" opacity="0.15"/><path d="M6.5 6.5l5 5M11.5 6.5l-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-                            }
-                        }
-                        if (row) {
-                            row.className = 'stage';
-                            if (m.status === 'done') row.classList.add('is-done');
-                            else if (m.status === 'running') row.classList.add('is-running');
-                        }
-                        if (det) det.textContent = m.detail || "";
-                        updateProgress();
+                    handleStageUpdate(m);
+                };
+                es.onerror = function() {
+                    es.close();
+                    if (finished) return;
+                    sseRetries++;
+                    if (sseRetries <= maxSseRetries) {
+                        // Try reconnecting SSE after a short delay
+                        setTimeout(connectSSE, 2000);
+                    } else {
+                        // Fall back to polling after exhausting SSE retries
+                        pollForResult(jobId);
                     }
                 };
-                es.onerror = function() { es.close(); pollForResult(jobId); };
             }
 
             function pollForResult(jid) {
                 var poll = setInterval(async function() {
+                    if (finished) { clearInterval(poll); return; }
                     try {
                         var r = await fetch('/api/result/' + jid);
                         var d = await r.json();
-                        if (d.status === "complete") {
-                            clearInterval(poll);
-                            stopTipRotation();
-                            loadResults(jid);
-                            btn.disabled = false; btn.textContent = "Tailor My Resume";
-                        } else if (d.status === "error") {
-                            clearInterval(poll);
-                            stopTipRotation();
-                            showError("Pipeline error: " + (d.error || "Unknown"));
-                            btn.disabled = false; btn.textContent = "Tailor My Resume";
-                        }
+                        if (d.status === "complete") { clearInterval(poll); onComplete(jid); }
+                        else if (d.status === "error") { clearInterval(poll); onError(d.error); }
                     } catch(e) {}
-                }, 5000);
+                }, 3000);
             }
 
             connectSSE();
