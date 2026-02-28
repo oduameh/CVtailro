@@ -59,6 +59,8 @@ from database import db, TailoringJob, JobFile
 from auth import auth_bp, login_manager, init_oauth
 from storage import r2_storage
 from pdf_generator import generate_resume_pdf
+from docx_generator import generate_resume_docx
+from similarity import resume_job_similarity
 from utils import (
     create_output_dir,
     load_resume,
@@ -457,6 +459,24 @@ def run_pipeline_job(
 
         logger.info(f"[Pipeline] Stages 5+6+7 completed at {time.time() - pipeline_start:.1f}s elapsed")
 
+        # ── Re-compute match score on the tailored ATS resume ──
+        tailored_cos_sim = resume_job_similarity(
+            ats_resume.markdown_content,
+            job_analysis.raw_text_for_similarity
+        )
+        # Count how many job keywords appear in the tailored resume
+        tailored_text_lower = ats_resume.markdown_content.lower()
+        all_job_skills = list(set(
+            job_analysis.required_skills + job_analysis.preferred_skills + job_analysis.tools
+        ))
+        tailored_missing = [s for s in all_job_skills if s.lower() not in tailored_text_lower]
+        total_skills = len(all_job_skills)
+        tailored_coverage = max(0.0, 1.0 - (len(tailored_missing) / max(total_skills, 1)))
+        tailored_match_score = round((tailored_cos_sim * 40) + (tailored_coverage * 40) + 20, 1)
+        tailored_match_score = max(0.0, min(100.0, tailored_match_score))
+
+        logger.info(f"[Pipeline] Original score: {gap_report.match_score:.0f}% -> Tailored score: {tailored_match_score:.0f}%")
+
         # ── Assemble final output (deterministic, instant) ──
         from models import MatchReport
         match_report = MatchReport(
@@ -482,6 +502,8 @@ def run_pipeline_job(
         save_markdown(recruiter_resume.markdown_content, output_dir / "tailored_resume_recruiter.md")
         generate_resume_pdf(ats_resume.markdown_content, output_dir / "tailored_resume_ats.pdf", template=template)
         generate_resume_pdf(recruiter_resume.markdown_content, output_dir / "tailored_resume_recruiter.pdf", template=template)
+        generate_resume_docx(ats_resume.markdown_content, output_dir / "tailored_resume_ats.docx")
+        generate_resume_docx(recruiter_resume.markdown_content, output_dir / "tailored_resume_recruiter.docx")
         save_json(match_report.model_dump(), output_dir / "match_report.json")
         save_markdown(format_talking_points(talking_points), output_dir / "interview_talking_points.md")
 
@@ -504,6 +526,8 @@ def run_pipeline_job(
         files_list = [
             "tailored_resume_ats.pdf",
             "tailored_resume_recruiter.pdf",
+            "tailored_resume_ats.docx",
+            "tailored_resume_recruiter.docx",
             "tailored_resume_ats.md",
             "tailored_resume_recruiter.md",
             "match_report.json",
@@ -513,7 +537,8 @@ def run_pipeline_job(
             db_job = db.session.get(TailoringJob, job_id)
             if db_job:
                 db_job.status = "complete"
-                db_job.match_score = match_report.overall_match_score
+                db_job.match_score = tailored_match_score
+                db_job.original_match_score = gap_report.match_score
                 db_job.cosine_similarity = match_report.cosine_similarity
                 db_job.missing_keywords = match_report.missing_keywords
                 db_job.job_title = job_analysis.job_title
@@ -563,16 +588,23 @@ def run_pipeline_job(
             jobs[job_id]["status"] = "complete"
             jobs[job_id]["result"] = {
                 "match_score": match_report.overall_match_score,
+                "original_match_score": gap_report.match_score,
+                "tailored_match_score": tailored_match_score,
                 "cosine_similarity": match_report.cosine_similarity,
                 "missing_keywords": match_report.missing_keywords,
                 "rewrite_mode": mode,
                 "template": template,
+                "job_title": job_analysis.job_title,
+                "company": job_analysis.company,
+                "bullets_rewritten": len(optimised_bullets.bullets),
                 "ats_resume_md": ats_resume.markdown_content,
                 "recruiter_resume_md": recruiter_resume.markdown_content,
                 "talking_points_md": format_talking_points(talking_points),
                 "files": [
                     "tailored_resume_ats.pdf",
                     "tailored_resume_recruiter.pdf",
+                    "tailored_resume_ats.docx",
+                    "tailored_resume_recruiter.docx",
                     "tailored_resume_ats.md",
                     "tailored_resume_recruiter.md",
                     "match_report.json",
@@ -1083,20 +1115,24 @@ def get_result(job_id: str):
     if db_job.status == "error":
         return jsonify({"status": "error", "error": db_job.error_message or "Unknown error"}), 500
 
-    return jsonify({
-        "status": "complete",
-        "result": {
-            "match_score": db_job.match_score,
-            "cosine_similarity": db_job.cosine_similarity,
-            "missing_keywords": db_job.missing_keywords,
-            "rewrite_mode": db_job.rewrite_mode,
-            "template": db_job.template,
-            "ats_resume_md": db_job.ats_resume_md,
-            "recruiter_resume_md": db_job.recruiter_resume_md,
-            "talking_points_md": db_job.talking_points_md,
-            "files": [f.filename for f in db_job.files],
-        },
-    })
+    result = {
+        "match_score": db_job.match_score,
+        "cosine_similarity": db_job.cosine_similarity,
+        "missing_keywords": db_job.missing_keywords,
+        "rewrite_mode": db_job.rewrite_mode,
+        "template": db_job.template,
+        "job_title": db_job.job_title,
+        "company": db_job.company,
+        "ats_resume_md": db_job.ats_resume_md,
+        "recruiter_resume_md": db_job.recruiter_resume_md,
+        "talking_points_md": db_job.talking_points_md,
+        "files": [f.filename for f in db_job.files],
+    }
+    if db_job.original_match_score is not None:
+        result["original_match_score"] = db_job.original_match_score
+    if db_job.match_score is not None:
+        result["tailored_match_score"] = db_job.match_score
+    return jsonify({"status": "complete", "result": result})
 
 
 @app.route("/api/download/<job_id>/<filename>")
@@ -1235,6 +1271,35 @@ def download_file(job_id: str, filename: str):
             logger.error(f"[Download] PDF regeneration failed for {safe_name}: {e}", exc_info=True)
             return jsonify({"error": "Could not generate PDF. Try downloading the markdown version instead."}), 500
 
+    # DOCX files — regenerate from stored markdown
+    if safe_name.endswith(".docx"):
+        source_md = None
+        if "ats" in safe_name:
+            source_md = db_job.ats_resume_md
+        elif "recruiter" in safe_name:
+            source_md = db_job.recruiter_resume_md
+
+        if not source_md:
+            logger.warning(f"[Download] DOCX requested but source markdown is NULL for {safe_name}")
+            return jsonify({"error": "Resume content not saved. Try re-running the pipeline."}), 404
+
+        try:
+            import tempfile
+            with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
+                tmp_path = tmp.name
+            logger.info(f"[Download] Regenerating DOCX from DB markdown: {safe_name}")
+            generate_resume_docx(source_md, tmp_path)
+            docx_data = open(tmp_path, "rb").read()
+            os.unlink(tmp_path)
+            return FlaskResponse(
+                docx_data,
+                mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                headers={"Content-Disposition": f"attachment; filename={safe_name}"}
+            )
+        except Exception as e:
+            logger.error(f"[Download] DOCX regeneration failed for {safe_name}: {e}", exc_info=True)
+            return jsonify({"error": "Could not generate DOCX. Try downloading the markdown version instead."}), 500
+
     # Match report JSON — reconstruct from stored fields
     if "match_report" in safe_name and safe_name.endswith(".json"):
         import json as json_mod
@@ -1353,6 +1418,8 @@ def get_history_job(job_id):
         "job_title": job.job_title,
         "company": job.company,
         "match_score": job.match_score,
+        "original_match_score": job.original_match_score,
+        "tailored_match_score": job.match_score,
         "cosine_similarity": job.cosine_similarity,
         "missing_keywords": job.missing_keywords,
         "rewrite_mode": job.rewrite_mode,

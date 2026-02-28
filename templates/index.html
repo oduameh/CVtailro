@@ -998,6 +998,24 @@
             font-size: 12px;
         }
 
+        /* --- What Changed Panel --- */
+        .changes-panel { padding: 20px; }
+        .change-section { margin-bottom: 24px; }
+        .change-section:last-child { margin-bottom: 0; }
+        .change-section h3 { font-size: 14px; font-weight: 600; color: var(--primary); margin-bottom: 10px; }
+        .score-comparison { display: flex; align-items: center; gap: 12px; font-size: 18px; padding: 16px; background: #FAFBFE; border: 1px solid var(--border); border-radius: 8px; }
+        .score-before { color: var(--score-low); font-weight: 600; }
+        .score-after { color: var(--score-high); font-weight: 700; }
+        .score-arrow { color: var(--text-secondary); font-size: 24px; }
+        .score-delta { margin-left: auto; font-size: 14px; font-weight: 700; color: var(--score-high); background: var(--accent-light); padding: 4px 10px; border-radius: 4px; }
+        .keywords-added-list { display: flex; flex-wrap: wrap; gap: 6px; }
+        .kw-added { font-size: 12px; padding: 4px 10px; border-radius: 4px; font-weight: 600; background: var(--accent-light); color: #047857; border: 1px solid #A7F3D0; }
+        .change-summary { font-size: 14px; line-height: 1.7; color: var(--text); padding: 16px; background: #FAFBFE; border: 1px solid var(--border); border-radius: 8px; }
+        .change-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+        .change-stat { text-align: center; padding: 16px 12px; background: #FAFBFE; border: 1px solid var(--border); border-radius: 8px; }
+        .change-stat-value { font-size: 24px; font-weight: 800; color: var(--primary); line-height: 1.2; }
+        .change-stat-label { font-size: 12px; color: var(--text-secondary); font-weight: 500; margin-top: 4px; }
+
         /* --- Mobile --- */
         @media (max-width: 768px) {
             .site-header {
@@ -1115,6 +1133,19 @@
             .tab-content {
                 font-size: 13px;
                 padding: 12px;
+            }
+
+            /* What Changed: stack stats vertically */
+            .change-stats {
+                grid-template-columns: 1fr;
+            }
+            .score-comparison {
+                flex-wrap: wrap;
+                font-size: 16px;
+            }
+            .score-delta {
+                margin-left: 0;
+                margin-top: 4px;
             }
 
             /* User menu: compact on mobile */
@@ -2353,9 +2384,10 @@
             var atsLink = '', recLink = '', atsFname = '', recFname = '', secondaryHtml = '';
             var effectiveJobId = jobId || s.job_id || s.id || '';
 
-            // Always generate standard download links (DB fallback regenerates PDFs)
+            // Always generate standard download links (DB fallback regenerates PDFs/DOCX)
             var fileList = (s.files && s.files.length > 0) ? s.files : [
                 "tailored_resume_ats.pdf", "tailored_resume_recruiter.pdf",
+                "tailored_resume_ats.docx", "tailored_resume_recruiter.docx",
                 "tailored_resume_ats.md", "tailored_resume_recruiter.md",
                 "match_report.json", "interview_talking_points.md"
             ];
@@ -2392,13 +2424,15 @@
             // --- Preview tabs ---
             var previews = [
                 {id: "ats", l: "ATS Resume", c: s.ats_resume_md},
-                {id: "rec", l: "Recruiter Resume", c: s.recruiter_resume_md}
+                {id: "rec", l: "Recruiter Resume", c: s.recruiter_resume_md},
+                {id: "changes", l: "What Changed", c: null}
             ];
             document.getElementById("tabs").innerHTML = previews.map(function(p, i) {
                 return '<button class="tab ' + (i === 0 ? 'active' : '') + '" onclick="switchTab(\'' + p.id + '\',this)">' + p.l + '</button>';
             }).join("");
             document.getElementById("panels").innerHTML = previews.map(function(p, i) {
-                return '<div class="tab-content ' + (i === 0 ? 'active' : '') + '" id="pnl-' + p.id + '">' + renderMarkdown(p.c) + '</div>';
+                var content = p.id === 'changes' ? buildChangesPanel(s) : renderMarkdown(p.c);
+                return '<div class="tab-content ' + (i === 0 ? 'active' : '') + '" id="pnl-' + p.id + '">' + content + '</div>';
             }).join("");
 
             document.getElementById("resultsSection").classList.add("active");
@@ -2472,6 +2506,8 @@
     var FILES = {
         "tailored_resume_ats.pdf":      {l:"ATS Resume",       b:"PDF",  cat:"ats",    primary:true},
         "tailored_resume_recruiter.pdf": {l:"Recruiter Resume", b:"PDF",  cat:"rec",    primary:true},
+        "tailored_resume_ats.docx":      {l:"ATS Resume",       b:"DOCX", cat:"ats",    primary:false},
+        "tailored_resume_recruiter.docx":{l:"Recruiter Resume", b:"DOCX", cat:"rec",    primary:false},
         "tailored_resume_ats.md":        {l:"ATS Resume",       b:"MD",   cat:"ats",    primary:false},
         "tailored_resume_recruiter.md":  {l:"Recruiter Resume", b:"MD",   cat:"rec",    primary:false},
         "match_report.json":             {l:"Match Report",     b:"JSON", cat:"other",  primary:false},
@@ -2928,6 +2964,7 @@
         // Use file list from result, or fallback to standard files (DB fallback has empty files[])
         var fileList = (s.files && s.files.length > 0) ? s.files : [
             "tailored_resume_ats.pdf", "tailored_resume_recruiter.pdf",
+            "tailored_resume_ats.docx", "tailored_resume_recruiter.docx",
             "tailored_resume_ats.md", "tailored_resume_recruiter.md",
             "match_report.json", "interview_talking_points.md"
         ];
@@ -2964,13 +3001,15 @@
         // --- Preview tabs ---
         var previews = [
             {id: "ats", l: "ATS Resume", c: s.ats_resume_md},
-            {id: "rec", l: "Recruiter Resume", c: s.recruiter_resume_md}
+            {id: "rec", l: "Recruiter Resume", c: s.recruiter_resume_md},
+            {id: "changes", l: "What Changed", c: null}
         ];
         document.getElementById("tabs").innerHTML = previews.map(function(p, i) {
             return '<button class="tab ' + (i === 0 ? 'active' : '') + '" onclick="switchTab(\'' + p.id + '\',this)">' + p.l + '</button>';
         }).join("");
         document.getElementById("panels").innerHTML = previews.map(function(p, i) {
-            return '<div class="tab-content ' + (i === 0 ? 'active' : '') + '" id="pnl-' + p.id + '">' + renderMarkdown(p.c) + '</div>';
+            var content = p.id === 'changes' ? buildChangesPanel(s) : renderMarkdown(p.c);
+            return '<div class="tab-content ' + (i === 0 ? 'active' : '') + '" id="pnl-' + p.id + '">' + content + '</div>';
         }).join("");
 
         document.getElementById("resultsSection").classList.add("active");
@@ -2980,6 +3019,73 @@
             showError("Results loaded but failed to display. Try downloading the files directly.");
             document.getElementById("resultsSection").classList.add("active");
         }
+    }
+
+    function buildChangesPanel(s) {
+        var beforeScore = Math.round(s.original_match_score || 0);
+        var afterScore = Math.round(s.tailored_match_score || s.match_score || 0);
+        var delta = afterScore - beforeScore;
+        var deltaText = delta > 0 ? ('+' + delta + '%') : (delta + '%');
+
+        var kwCount = (s.missing_keywords && s.missing_keywords.length) ? s.missing_keywords.length : 0;
+        var bulletsCount = s.bullets_rewritten || 0;
+
+        var jobTitle = s.job_title || 'the target role';
+        var company = s.company || '';
+        var roleText = company ? (jobTitle + ' at ' + escapeHtml(company)) : escapeHtml(jobTitle);
+
+        var html = '<div class="changes-panel">';
+
+        // Stats row
+        html += '<div class="change-stats">';
+        html += '<div class="change-stat"><div class="change-stat-value">' + deltaText + '</div><div class="change-stat-label">Score Improvement</div></div>';
+        html += '<div class="change-stat"><div class="change-stat-value">' + kwCount + '</div><div class="change-stat-label">Keywords Targeted</div></div>';
+        html += '<div class="change-stat"><div class="change-stat-value">' + bulletsCount + '</div><div class="change-stat-label">Bullets Rewritten</div></div>';
+        html += '</div>';
+
+        // Score comparison
+        html += '<div class="change-section">';
+        html += '<h3>Match Score Improvement</h3>';
+        html += '<div class="score-comparison">';
+        html += '<span class="score-before">Before: ' + beforeScore + '%</span>';
+        html += '<span class="score-arrow">&rarr;</span>';
+        html += '<span class="score-after">After: ' + afterScore + '%</span>';
+        if (delta > 0) {
+            html += '<span class="score-delta">+' + delta + ' points</span>';
+        }
+        html += '</div>';
+        html += '</div>';
+
+        // Keywords added
+        if (s.missing_keywords && s.missing_keywords.length > 0) {
+            html += '<div class="change-section">';
+            html += '<h3>Keywords Targeted</h3>';
+            html += '<div class="keywords-added-list">';
+            s.missing_keywords.forEach(function(k) {
+                html += '<span class="kw-added">' + escapeHtml(k) + '</span>';
+            });
+            html += '</div>';
+            html += '</div>';
+        }
+
+        // Summary
+        html += '<div class="change-section">';
+        html += '<h3>Summary</h3>';
+        var summaryText = 'Your resume was optimized for ' + roleText + '. ';
+        if (bulletsCount > 0) {
+            summaryText += bulletsCount + ' bullet point' + (bulletsCount !== 1 ? 's were' : ' was') + ' rewritten';
+        }
+        if (kwCount > 0) {
+            summaryText += (bulletsCount > 0 ? ', ' : '') + kwCount + ' keyword' + (kwCount !== 1 ? 's were' : ' was') + ' targeted for the skills section';
+        }
+        summaryText += ', and your professional summary was tailored to highlight relevant experience.';
+        var modeText = s.rewrite_mode === 'aggressive' ? 'Aggressive' : 'Conservative';
+        summaryText += ' Rewrite mode: ' + modeText + '.';
+        html += '<p class="change-summary">' + summaryText + '</p>';
+        html += '</div>';
+
+        html += '</div>';
+        return html;
     }
 
     function switchTab(id, el) {

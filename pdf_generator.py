@@ -32,94 +32,94 @@ logger = logging.getLogger(__name__)
 # ─── EXECUTIVE: serif, conservative ──────────────────────────────────────────────
 
 EXECUTIVE_CSS = """
-@page { size: A4; margin: 18mm 20mm 16mm 20mm; }
+@page { size: A4; margin: 15mm; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-    font-family: Georgia, "Palatino Linotype", "Book Antiqua", Palatino, serif;
-    font-size: 10.5pt; line-height: 1.35; color: #2a2a2a;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 10pt; line-height: 1.35; color: #2d2d2d;
 }
 
 /* --- Name & Contact --- */
 .name {
-    font-family: Georgia, "Palatino Linotype", serif;
-    font-size: 20pt; font-weight: 400; color: #1a1a1a;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 19pt; font-weight: 600; color: #1a1a1a;
     text-align: center; margin-bottom: 4pt;
-    letter-spacing: 1.5pt; text-transform: uppercase;
+    letter-spacing: 1pt;
 }
 .contact {
-    text-align: center; font-size: 9.5pt; color: #555;
-    margin-bottom: 14pt; line-height: 1.3; letter-spacing: 0.3pt;
+    text-align: center; font-size: 9pt; color: #555;
+    margin-bottom: 12pt; line-height: 1.3; letter-spacing: 0.3pt;
 }
-.contact .sep { color: #999; margin: 0 5pt; font-weight: 300; }
+.contact .sep { color: #aaa; margin: 0 6pt; font-weight: 300; }
 
 /* --- Section Headings --- */
 .section-heading {
-    font-size: 11pt; font-weight: 400; color: #333;
+    font-size: 10pt; font-weight: 400; color: #333;
     text-transform: uppercase; letter-spacing: 2.5pt;
-    border-bottom: 0.75pt solid #888; padding-bottom: 3pt;
-    margin-top: 14pt; margin-bottom: 8pt;
+    border-bottom: 0.5pt solid #ccc; padding-bottom: 2pt;
+    margin-top: 11pt; margin-bottom: 6pt;
     page-break-after: avoid;
 }
 
 /* --- Experience Roles --- */
-.role { margin-bottom: 10pt; page-break-inside: avoid; }
+.role { margin-bottom: 8pt; page-break-inside: avoid; }
 .role-header {
     display: flex; justify-content: space-between; align-items: baseline;
-    margin-bottom: 1pt; page-break-after: avoid;
+    margin-bottom: 0pt; page-break-after: avoid;
 }
-.role-title { font-size: 10.5pt; font-weight: 700; color: #1a1a1a; }
+.role-title { font-size: 10pt; font-weight: 700; color: #1a1a1a; }
 .role-date {
-    font-size: 9.5pt; color: #555; font-style: italic;
+    font-size: 9pt; color: #666; font-style: italic;
     white-space: nowrap; flex-shrink: 0; margin-left: 12pt; text-align: right;
 }
 .role-company {
-    font-size: 10pt; color: #444; font-style: italic;
-    margin-bottom: 3pt;
+    font-size: 9.5pt; color: #444; font-style: italic;
+    margin-bottom: 2pt;
 }
 
 /* --- Bullet Lists --- */
 ul {
-    margin-left: 14pt; margin-bottom: 2pt; padding-left: 0;
+    margin-left: 15pt; margin-bottom: 1pt; padding-left: 0;
     page-break-inside: avoid;
 }
 li {
-    font-size: 10.5pt; margin-bottom: 2.5pt; line-height: 1.35;
-    color: #2a2a2a; padding-left: 2pt;
+    font-size: 10pt; margin-bottom: 2pt; line-height: 1.35;
+    color: #2d2d2d; padding-left: 2pt;
 }
-li::marker { color: #888; font-size: 7pt; }
+li::marker { color: #999; font-size: 8pt; }
 
 /* --- Summary --- */
 .summary {
-    font-size: 10.5pt; line-height: 1.4; color: #333;
+    font-size: 10pt; line-height: 1.4; color: #333;
     margin-bottom: 2pt; text-align: justify;
 }
 
 /* --- Skills --- */
-.skills-text { font-size: 10.5pt; line-height: 1.35; color: #2a2a2a; margin-bottom: 2pt; }
-.skills-category { font-size: 10.5pt; line-height: 1.35; margin-bottom: 2pt; }
+.skills-text { font-size: 10pt; line-height: 1.4; color: #2d2d2d; margin-bottom: 2pt; }
+.skills-category { font-size: 10pt; line-height: 1.4; margin-bottom: 1pt; }
 .skills-cat-name { font-weight: 700; color: #1a1a1a; }
 
 /* --- Education --- */
-.edu { margin-bottom: 8pt; page-break-inside: avoid; }
+.edu { margin-bottom: 6pt; page-break-inside: avoid; }
 .edu-header {
     display: flex; justify-content: space-between; align-items: baseline;
-    margin-bottom: 1pt;
+    margin-bottom: 0pt;
 }
-.edu-degree { font-size: 10.5pt; font-weight: 700; color: #1a1a1a; }
+.edu-degree { font-size: 10pt; font-weight: 700; color: #1a1a1a; }
 .edu-date {
-    font-size: 9.5pt; color: #555; font-style: italic;
+    font-size: 9pt; color: #666; font-style: italic;
     flex-shrink: 0; margin-left: 12pt; text-align: right;
 }
-.edu-school { font-size: 10pt; color: #444; font-style: italic; margin-bottom: 2pt; }
+.edu-school { font-size: 9.5pt; color: #444; font-style: italic; margin-bottom: 1pt; }
 
 /* --- Certifications --- */
-.cert { font-size: 10.5pt; margin-bottom: 3pt; line-height: 1.35; page-break-inside: avoid; }
+.cert { font-size: 10pt; margin-bottom: 3pt; line-height: 1.35; page-break-inside: avoid; }
 .cert-name { font-weight: 700; color: #1a1a1a; }
 .cert-meta { color: #555; font-style: italic; }
 
 /* --- Dividers & Misc --- */
-.hr-divider { height: 0.5pt; background: #bbb; margin: 8pt 0; }
-p { font-size: 10.5pt; margin-bottom: 2pt; line-height: 1.35; color: #2a2a2a; }
+.hr-divider { height: 0.5pt; background: #ccc; margin: 6pt 0; }
+p { font-size: 10pt; margin-bottom: 2pt; line-height: 1.35; color: #2d2d2d; }
 strong { font-weight: 700; color: #1a1a1a; }
 em { font-style: italic; color: #333; }
 a { color: #1a1a1a; text-decoration: none; }
@@ -128,93 +128,93 @@ a { color: #1a1a1a; text-decoration: none; }
 # ─── MODERN: sans-serif, navy accent ─────────────────────────────────────────────
 
 MODERN_CSS = """
-@page { size: A4; margin: 18mm 20mm 16mm 20mm; }
+@page { size: A4; margin: 15mm; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-    font-family: "Calibri", "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-    font-size: 10.5pt; line-height: 1.35; color: #222;
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10pt; line-height: 1.35; color: #2b2b2b;
 }
 
 /* --- Name & Contact --- */
 .name {
-    font-size: 21pt; font-weight: 700; color: #1a3a5c;
+    font-size: 20pt; font-weight: 700; color: #1a3a5c;
     text-align: center; margin-bottom: 3pt; letter-spacing: 0.5pt;
 }
 .contact {
-    text-align: center; font-size: 9.5pt; color: #555;
-    margin-bottom: 14pt; line-height: 1.3; letter-spacing: 0.2pt;
+    text-align: center; font-size: 9pt; color: #555;
+    margin-bottom: 12pt; line-height: 1.3; letter-spacing: 0.2pt;
 }
-.contact .sep { color: #1a3a5c; margin: 0 5pt; font-weight: 400; font-size: 9pt; }
+.contact .sep { color: #1a3a5c; margin: 0 6pt; font-weight: 400; font-size: 8pt; }
 
 /* --- Section Headings --- */
 .section-heading {
-    font-size: 11.5pt; font-weight: 700; color: #1a3a5c;
-    text-transform: uppercase; letter-spacing: 1.8pt;
-    border-bottom: 2pt solid #1a3a5c; padding-bottom: 3pt;
-    margin-top: 14pt; margin-bottom: 8pt;
+    font-size: 10.5pt; font-weight: 700; color: #1a3a5c;
+    text-transform: uppercase; letter-spacing: 2pt;
+    border-bottom: 1.5pt solid #1a3a5c; padding-bottom: 2pt;
+    margin-top: 11pt; margin-bottom: 6pt;
     page-break-after: avoid;
 }
 
 /* --- Experience Roles --- */
-.role { margin-bottom: 10pt; page-break-inside: avoid; }
+.role { margin-bottom: 8pt; page-break-inside: avoid; }
 .role-header {
     display: flex; justify-content: space-between; align-items: baseline;
-    margin-bottom: 1pt; page-break-after: avoid;
+    margin-bottom: 0pt; page-break-after: avoid;
 }
-.role-title { font-size: 10.5pt; font-weight: 700; color: #1a3a5c; flex-grow: 1; }
+.role-title { font-size: 10pt; font-weight: 700; color: #1a1a1a; flex-grow: 1; }
 .role-date {
-    font-size: 9.5pt; color: #555;
+    font-size: 9pt; color: #666;
     white-space: nowrap; flex-shrink: 0; margin-left: 12pt; text-align: right;
 }
 .role-company {
-    font-size: 10pt; color: #444; font-weight: 500;
-    margin-bottom: 3pt; letter-spacing: 0.1pt;
+    font-size: 9.5pt; color: #444; font-weight: 400;
+    margin-bottom: 2pt; letter-spacing: 0.1pt;
 }
 
 /* --- Bullet Lists --- */
 ul {
-    margin-left: 14pt; margin-bottom: 2pt; padding-left: 0;
+    margin-left: 15pt; margin-bottom: 1pt; padding-left: 0;
     page-break-inside: avoid;
 }
 li {
-    font-size: 10.5pt; margin-bottom: 2.5pt; line-height: 1.35;
-    color: #222; padding-left: 2pt;
+    font-size: 10pt; margin-bottom: 2pt; line-height: 1.35;
+    color: #2b2b2b; padding-left: 2pt;
 }
-li::marker { color: #1a3a5c; font-size: 7pt; }
+li::marker { color: #1a3a5c; font-size: 8pt; }
 
 /* --- Summary --- */
 .summary {
-    font-size: 10.5pt; line-height: 1.4; color: #333;
-    margin-bottom: 2pt;
+    font-size: 10pt; line-height: 1.4; color: #333;
+    margin-bottom: 2pt; text-align: justify;
 }
 
 /* --- Skills --- */
-.skills-text { font-size: 10.5pt; line-height: 1.35; color: #222; margin-bottom: 2pt; }
-.skills-category { font-size: 10.5pt; line-height: 1.35; margin-bottom: 2pt; }
+.skills-text { font-size: 10pt; line-height: 1.4; color: #2b2b2b; margin-bottom: 2pt; }
+.skills-category { font-size: 10pt; line-height: 1.4; margin-bottom: 1pt; }
 .skills-cat-name { font-weight: 700; color: #1a3a5c; }
 
 /* --- Education --- */
-.edu { margin-bottom: 8pt; page-break-inside: avoid; }
+.edu { margin-bottom: 6pt; page-break-inside: avoid; }
 .edu-header {
     display: flex; justify-content: space-between; align-items: baseline;
-    margin-bottom: 1pt;
+    margin-bottom: 0pt;
 }
-.edu-degree { font-size: 10.5pt; font-weight: 700; color: #1a3a5c; }
+.edu-degree { font-size: 10pt; font-weight: 700; color: #1a1a1a; }
 .edu-date {
-    font-size: 9.5pt; color: #555;
+    font-size: 9pt; color: #666;
     flex-shrink: 0; margin-left: 12pt; text-align: right;
 }
-.edu-school { font-size: 10pt; color: #444; font-weight: 500; margin-bottom: 2pt; }
+.edu-school { font-size: 9.5pt; color: #444; font-weight: 400; margin-bottom: 1pt; }
 
 /* --- Certifications --- */
-.cert { font-size: 10.5pt; margin-bottom: 3pt; line-height: 1.35; page-break-inside: avoid; }
+.cert { font-size: 10pt; margin-bottom: 3pt; line-height: 1.35; page-break-inside: avoid; }
 .cert-name { font-weight: 700; color: #1a3a5c; }
 .cert-meta { color: #555; }
 
 /* --- Dividers & Misc --- */
-.hr-divider { height: 1pt; background: #1a3a5c; margin: 8pt 0; opacity: 0.15; }
-p { font-size: 10.5pt; margin-bottom: 2pt; line-height: 1.35; color: #222; }
-strong { font-weight: 700; color: #1a3a5c; }
+.hr-divider { height: 0.75pt; background: #ddd; margin: 6pt 0; }
+p { font-size: 10pt; margin-bottom: 2pt; line-height: 1.35; color: #2b2b2b; }
+strong { font-weight: 700; color: #1a1a1a; }
 em { font-style: italic; color: #444; }
 a { color: #1a3a5c; text-decoration: none; }
 """
@@ -222,99 +222,99 @@ a { color: #1a3a5c; text-decoration: none; }
 # ─── MINIMAL: zero color, typography only ────────────────────────────────────────
 
 MINIMAL_CSS = """
-@page { size: A4; margin: 18mm 20mm 16mm 20mm; }
+@page { size: A4; margin: 15mm; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-size: 10.5pt; line-height: 1.35; color: #222;
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10pt; line-height: 1.35; color: #2b2b2b;
 }
 
 /* --- Name & Contact --- */
 .name {
-    font-size: 20pt; font-weight: 300; color: #000;
+    font-size: 18pt; font-weight: 600; color: #000;
     text-align: center; margin-bottom: 4pt;
-    letter-spacing: 2pt; text-transform: uppercase;
+    letter-spacing: 1.5pt; text-transform: uppercase;
 }
 .contact {
-    text-align: center; font-size: 9.5pt; color: #666;
-    margin-bottom: 14pt; line-height: 1.3; letter-spacing: 0.3pt;
+    text-align: center; font-size: 9pt; color: #666;
+    margin-bottom: 12pt; line-height: 1.3; letter-spacing: 0.3pt;
 }
-.contact .sep { color: #ccc; margin: 0 6pt; font-weight: 300; font-size: 8pt; }
+.contact .sep { color: #bbb; margin: 0 6pt; font-weight: 300; font-size: 8pt; }
 
 /* --- Section Headings --- */
 .section-heading {
-    font-size: 10pt; font-weight: 400; color: #333;
+    font-size: 10pt; font-weight: 400; color: #444;
     text-transform: uppercase; letter-spacing: 3pt;
-    border-bottom: 0.5pt solid #ccc; padding-bottom: 3pt;
-    margin-top: 14pt; margin-bottom: 8pt;
+    border-bottom: 0.5pt solid #ddd; padding-bottom: 2pt;
+    margin-top: 11pt; margin-bottom: 6pt;
     page-break-after: avoid;
 }
 
 /* --- Experience Roles --- */
-.role { margin-bottom: 10pt; page-break-inside: avoid; }
+.role { margin-bottom: 8pt; page-break-inside: avoid; }
 .role-header {
     display: flex; justify-content: space-between; align-items: baseline;
-    margin-bottom: 1pt; page-break-after: avoid;
+    margin-bottom: 0pt; page-break-after: avoid;
 }
 .role-title {
-    font-size: 10.5pt; font-weight: 700; color: #000;
+    font-size: 10pt; font-weight: 700; color: #111;
     flex-grow: 1; letter-spacing: 0.2pt;
 }
 .role-date {
-    font-size: 9.5pt; color: #666;
+    font-size: 9pt; color: #777;
     white-space: nowrap; flex-shrink: 0; margin-left: 12pt; text-align: right;
 }
 .role-company {
-    font-size: 10pt; color: #555; font-weight: 400;
-    margin-bottom: 3pt;
+    font-size: 9.5pt; color: #555; font-weight: 400;
+    margin-bottom: 2pt;
 }
 
 /* --- Bullet Lists --- */
 ul {
-    margin-left: 14pt; margin-bottom: 2pt; padding-left: 0;
+    margin-left: 15pt; margin-bottom: 1pt; padding-left: 0;
     page-break-inside: avoid;
 }
 li {
-    font-size: 10.5pt; margin-bottom: 2.5pt; line-height: 1.35;
-    color: #222; padding-left: 2pt;
+    font-size: 10pt; margin-bottom: 2pt; line-height: 1.35;
+    color: #2b2b2b; padding-left: 2pt;
 }
-li::marker { color: #bbb; font-size: 7pt; }
+li::marker { color: #bbb; font-size: 8pt; }
 
 /* --- Summary --- */
 .summary {
-    font-size: 10.5pt; line-height: 1.4; color: #333;
-    margin-bottom: 2pt;
+    font-size: 10pt; line-height: 1.4; color: #333;
+    margin-bottom: 2pt; text-align: justify;
 }
 
 /* --- Skills --- */
-.skills-text { font-size: 10.5pt; line-height: 1.35; color: #222; margin-bottom: 2pt; }
-.skills-category { font-size: 10.5pt; line-height: 1.35; margin-bottom: 2pt; }
-.skills-cat-name { font-weight: 700; color: #000; }
+.skills-text { font-size: 10pt; line-height: 1.4; color: #2b2b2b; margin-bottom: 2pt; }
+.skills-category { font-size: 10pt; line-height: 1.4; margin-bottom: 1pt; }
+.skills-cat-name { font-weight: 700; color: #111; }
 
 /* --- Education --- */
-.edu { margin-bottom: 8pt; page-break-inside: avoid; }
+.edu { margin-bottom: 6pt; page-break-inside: avoid; }
 .edu-header {
     display: flex; justify-content: space-between; align-items: baseline;
-    margin-bottom: 1pt;
+    margin-bottom: 0pt;
 }
-.edu-degree { font-size: 10.5pt; font-weight: 700; color: #000; }
+.edu-degree { font-size: 10pt; font-weight: 700; color: #111; }
 .edu-date {
-    font-size: 9.5pt; color: #666;
+    font-size: 9pt; color: #777;
     flex-shrink: 0; margin-left: 12pt; text-align: right;
 }
-.edu-school { font-size: 10pt; color: #555; font-weight: 400; margin-bottom: 2pt; }
+.edu-school { font-size: 9.5pt; color: #555; font-weight: 400; margin-bottom: 1pt; }
 
 /* --- Certifications --- */
-.cert { font-size: 10.5pt; margin-bottom: 3pt; line-height: 1.35; page-break-inside: avoid; }
-.cert-name { font-weight: 700; color: #000; }
+.cert { font-size: 10pt; margin-bottom: 3pt; line-height: 1.35; page-break-inside: avoid; }
+.cert-name { font-weight: 700; color: #111; }
 .cert-meta { color: #666; }
 
 /* --- Dividers & Misc --- */
-.hr-divider { height: 0.5pt; background: #ddd; margin: 8pt 0; }
-p { font-size: 10.5pt; margin-bottom: 2pt; line-height: 1.35; color: #222; }
-strong { font-weight: 700; color: #000; }
+.hr-divider { height: 0.5pt; background: #ddd; margin: 6pt 0; }
+p { font-size: 10pt; margin-bottom: 2pt; line-height: 1.35; color: #2b2b2b; }
+strong { font-weight: 700; color: #111; }
 em { font-style: italic; color: #555; }
-a { color: #000; text-decoration: none; }
+a { color: #111; text-decoration: none; }
 """
 
 TEMPLATES = {
@@ -501,10 +501,29 @@ def markdown_to_html(md_content: str) -> str:
             i += 1
             continue
 
+        # Education header: ### Degree | School | Date  (H3 format in education sections)
+        edu_h3 = re.match(r"^###\s+(.+)", line)
+        if edu_h3 and "education" in current_section:
+            close_edu()
+            flush_list()
+            parts = [p.strip() for p in re.split(r"\s*\|\s*", re.sub(r"^###\s*", "", line)) if p.strip()]
+            degree = parts[0] if len(parts) > 0 else ""
+            school = parts[1] if len(parts) > 1 else ""
+            date = parts[2] if len(parts) > 2 else ""
+            if not date and i + 1 < len(lines):
+                nl = lines[i + 1].strip()
+                if nl and not nl.startswith(("-", "*", "#")):
+                    date = nl
+                    i += 1
+            html_parts.append(_render_edu(degree, school, date))
+            in_edu = True
+            i += 1
+            continue
+
         # Role header: ### Title | Company | Location | Date  (recruiter format)
         role_h3 = re.match(r"^###\s+(.+?)(?:\s*\|\s*(.+?))?(?:\s*\|\s*(.+?))?(?:\s*\|\s*(.+?))?\s*$", line)
         if role_h3 and ("experience" in current_section or "employment" in current_section
-                        or "work history" in current_section):
+                        or "work history" in current_section or "project" in current_section):
             close_role()
             flush_list()
             parts = [p.strip() for p in re.split(r"\s*\|\s*", re.sub(r"^###\s*", "", line)) if p.strip()]
@@ -526,7 +545,7 @@ def markdown_to_html(md_content: str) -> str:
         # Role header: **Title** | Company | Location  (ATS format)
         role3 = re.match(r"^\*\*(.+?)\*\*\s*\|\s*(.+?)\s*\|\s*(.+)", line)
         if role3 and ("experience" in current_section or "employment" in current_section
-                      or "work history" in current_section):
+                      or "work history" in current_section or "project" in current_section):
             close_role()
             flush_list()
             title, company, location = role3.group(1), role3.group(2), role3.group(3)
@@ -544,7 +563,7 @@ def markdown_to_html(md_content: str) -> str:
         # Role header: **Title** | Company
         role2 = re.match(r"^\*\*(.+?)\*\*\s*\|\s*(.+)", line)
         if role2 and ("experience" in current_section or "employment" in current_section
-                      or "work history" in current_section):
+                      or "work history" in current_section or "project" in current_section):
             close_role()
             flush_list()
             title, company = role2.group(1), role2.group(2)

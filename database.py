@@ -59,6 +59,7 @@ class TailoringJob(db.Model):
     job_title = db.Column(db.String(500), nullable=True)
     company = db.Column(db.String(500), nullable=True)
     match_score = db.Column(db.Float, nullable=True)
+    original_match_score = db.Column(db.Float, nullable=True)
     cosine_similarity = db.Column(db.Float, nullable=True)
     missing_keywords = db.Column(db.JSON, nullable=True)
     rewrite_mode = db.Column(db.String(20), nullable=False, default="conservative")
