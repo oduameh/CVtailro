@@ -3032,7 +3032,7 @@
 
         var jobTitle = s.job_title || 'the target role';
         var company = s.company || '';
-        var roleText = company ? (jobTitle + ' at ' + escapeHtml(company)) : escapeHtml(jobTitle);
+        var roleText = company ? (escapeHtml(jobTitle) + ' at ' + escapeHtml(company)) : escapeHtml(jobTitle);
 
         var html = '<div class="changes-panel">';
 
