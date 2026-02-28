@@ -68,6 +68,11 @@ class AdminConfigManager:
 
     @classmethod
     def verify_password(cls, password: str) -> bool:
+        # Check against ADMIN_PASSWORD env var directly
+        env_pw = os.environ.get("ADMIN_PASSWORD", "")
+        if env_pw and password == env_pw:
+            return True
+        # Check against stored hash
         config = cls.load()
         if not config.admin_password_hash:
             return False
@@ -75,6 +80,8 @@ class AdminConfigManager:
 
     @classmethod
     def has_password(cls) -> bool:
+        if os.environ.get("ADMIN_PASSWORD", ""):
+            return True
         return bool(cls.load().admin_password_hash)
 
     @staticmethod
