@@ -17,6 +17,7 @@ import json
 import logging
 import os
 import queue
+import re
 import threading
 import time
 import uuid
@@ -34,7 +35,11 @@ from flask import (
     session,
 )
 
+from flask_login import current_user, login_required
+from flask_migrate import Migrate
+
 from admin_config import AdminConfigManager
+from analytics import pipeline_analytics
 from agents.ats_optimiser import ATSOptimiserAgent
 from agents.bullet_optimiser import BulletOptimiserAgent
 from agents.final_assembly import FinalAssemblyAgent
@@ -44,6 +49,9 @@ from agents.recruiter_optimiser import RecruiterOptimiserAgent
 from agents.resume_parser import ResumeParserAgent
 from config import AppConfig, DEFAULT_MODEL, RECOMMENDED_MODELS
 from models import RewriteMode
+from database import db, TailoringJob, JobFile
+from auth import auth_bp, login_manager, init_oauth
+from storage import r2_storage
 from pdf_generator import generate_resume_pdf
 from utils import (
     create_output_dir,
@@ -57,6 +65,46 @@ app = Flask(__name__)
 logger = logging.getLogger("cvtailro.app")
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "cvtailro-dev-secret-change-in-production")
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10 MB upload limit
+
+# ── CSRF / Session Cookie Hardening ─────────────────────────────────────────
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = os.environ.get("FLASK_ENV") != "development"
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["PERMANENT_SESSION_LIFETIME"] = 86400  # 24 hours
+
+
+# ── Security Headers ────────────────────────────────────────────────────────
+@app.after_request
+def set_security_headers(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    if request.is_secure:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
+
+# Database
+db_url = os.environ.get("DATABASE_URL", "sqlite:///cvtailro_dev.db")
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+if db_url.startswith("sqlite"):
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {}
+else:
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_size": 5,
+        "pool_recycle": 300,
+        "pool_pre_ping": True,
+    }
+
+db.init_app(app)
+migrate = Migrate(app, db)
+login_manager.init_app(app)
+init_oauth(app)
+app.register_blueprint(auth_bp)
+r2_storage.init_app(app)
 
 # Thread-safe job storage
 jobs: dict[str, dict] = {}
@@ -101,6 +149,46 @@ class UsageTracker:
 
 
 usage_tracker = UsageTracker()
+
+
+class LoginRateLimiter:
+    """Track failed login attempts by IP to prevent brute-force attacks.
+
+    After MAX_ATTEMPTS failed attempts within WINDOW seconds, the IP is
+    blocked for WINDOW seconds.  Successful logins reset the counter.
+    """
+
+    MAX_ATTEMPTS = 5
+    WINDOW = 900  # 15 minutes
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        # {ip: [timestamp, ...]}
+        self._failures: dict[str, list[float]] = {}
+
+    def is_blocked(self, ip: str) -> bool:
+        """Return True if *ip* has exceeded the failure threshold."""
+        with self._lock:
+            now = time.time()
+            attempts = [t for t in self._failures.get(ip, []) if t > now - self.WINDOW]
+            self._failures[ip] = attempts
+            return len(attempts) >= self.MAX_ATTEMPTS
+
+    def record_failure(self, ip: str) -> None:
+        """Record a failed login attempt from *ip*."""
+        with self._lock:
+            now = time.time()
+            attempts = [t for t in self._failures.get(ip, []) if t > now - self.WINDOW]
+            attempts.append(now)
+            self._failures[ip] = attempts
+
+    def reset(self, ip: str) -> None:
+        """Clear failure history for *ip* after a successful login."""
+        with self._lock:
+            self._failures.pop(ip, None)
+
+
+login_rate_limiter = LoginRateLimiter()
 
 
 def _cleanup_old_jobs() -> None:
@@ -158,7 +246,11 @@ def run_pipeline_job(
             output_dir=str(output_dir),
             api_key=api_key,
             model=model,
+            job_id=job_id,
         )
+
+        # Start analytics tracking for this pipeline run
+        pipeline_analytics.start_job(job_id, model)
 
         setup_logging(log_file=output_dir / "pipeline.log")
 
@@ -351,6 +443,15 @@ def run_pipeline_job(
         total_elapsed = time.time() - pipeline_start
         logger.info(f"[Pipeline] Total pipeline completed in {total_elapsed:.1f}s")
 
+        # Finalise analytics for this pipeline run
+        job_stats = pipeline_analytics.complete_job(job_id)
+        if job_stats:
+            logger.info(
+                f"[Pipeline] Analytics: {job_stats.get('total_tokens', 0)} tokens, "
+                f"{job_stats.get('api_calls', 0)} API calls, "
+                f"${job_stats.get('estimated_cost_usd', 0):.4f} est. cost"
+            )
+
         with jobs_lock:
             jobs[job_id]["status"] = "complete"
             jobs[job_id]["result"] = {
@@ -376,6 +477,8 @@ def run_pipeline_job(
     except Exception as e:
         logging.getLogger("pipeline").exception("Pipeline failed")
         error_msg = str(e)
+        # Finalise analytics even on failure (captures partial usage)
+        pipeline_analytics.complete_job(job_id)
         # Log to admin-visible error list
         import traceback
         with pipeline_errors_lock:
@@ -405,6 +508,13 @@ def admin_page():
 @app.route("/admin/api/login", methods=["POST"])
 def admin_login():
     """Authenticate admin or set initial password."""
+    client_ip = request.remote_addr or "unknown"
+
+    # ── Brute-force protection ──
+    if login_rate_limiter.is_blocked(client_ip):
+        logger.warning(f"[Admin] Blocked login attempt from rate-limited IP: {client_ip}")
+        return jsonify({"error": "Too many failed attempts. Try again in 15 minutes."}), 429
+
     data = request.get_json(force=True)
     password = data.get("password", "")
     if not password:
@@ -416,13 +526,19 @@ def admin_login():
         config.admin_password_hash = AdminConfigManager._hash_password(password)
         AdminConfigManager.save(config)
         session["admin_authenticated"] = True
+        login_rate_limiter.reset(client_ip)
+        logger.info(f"[Admin] Initial password set by IP: {client_ip}")
         return jsonify({"ok": True, "message": "Password set successfully"})
     else:
         # Subsequent: verify
         if AdminConfigManager.verify_password(password):
             session["admin_authenticated"] = True
+            login_rate_limiter.reset(client_ip)
+            logger.info(f"[Admin] Successful login from IP: {client_ip}")
             return jsonify({"ok": True})
         else:
+            login_rate_limiter.record_failure(client_ip)
+            logger.warning(f"[Admin] Failed login attempt from IP: {client_ip}")
             return jsonify({"error": "Invalid password"}), 401
 
 
@@ -459,16 +575,33 @@ def admin_save_config():
     data = request.get_json(force=True)
     config = AdminConfigManager.load()
 
+    client_ip = request.remote_addr or "unknown"
+    changes = []
     if "api_key" in data:
+        old_has_key = bool(config.api_key)
         config.api_key = data["api_key"]
+        new_has_key = bool(config.api_key)
+        if old_has_key != new_has_key:
+            changes.append(f"api_key={'set' if new_has_key else 'cleared'}")
+        elif old_has_key and new_has_key:
+            changes.append("api_key=updated")
     if "default_model" in data:
+        old_model = config.default_model
         config.default_model = data["default_model"]
+        if old_model != config.default_model:
+            changes.append(f"default_model={config.default_model}")
     if "allow_user_model_selection" in data:
         config.allow_user_model_selection = bool(data["allow_user_model_selection"])
+        changes.append(f"allow_user_model_selection={config.allow_user_model_selection}")
     if "rate_limit_per_hour" in data:
         config.rate_limit_per_hour = int(data["rate_limit_per_hour"])
+        changes.append(f"rate_limit_per_hour={config.rate_limit_per_hour}")
 
     AdminConfigManager.save(config)
+    logger.info(
+        f"[Admin] Config saved by IP {client_ip}: "
+        f"{', '.join(changes) if changes else 'no changes'}"
+    )
     return jsonify({"ok": True, "updated_at": config.updated_at})
 
 
@@ -477,10 +610,13 @@ def admin_test_key():
     """Test an API key against OpenRouter."""
     if not session.get("admin_authenticated"):
         return jsonify({"error": "Not authenticated"}), 401
+    client_ip = request.remote_addr or "unknown"
     data = request.get_json(force=True)
     api_key = data.get("api_key", "").strip()
     if not api_key:
         return jsonify({"valid": False, "error": "No key provided"})
+    # Mask the key for logging (never log the full key)
+    masked = f"{api_key[:6]}***" if len(api_key) > 6 else "***"
     try:
         r = http_requests.get(
             "https://openrouter.ai/api/v1/models",
@@ -488,10 +624,13 @@ def admin_test_key():
             timeout=10,
         )
         if r.status_code == 200:
+            logger.info(f"[Admin] API key test PASSED by IP {client_ip} (key={masked})")
             return jsonify({"valid": True})
         else:
+            logger.info(f"[Admin] API key test FAILED by IP {client_ip} (key={masked}): HTTP {r.status_code}")
             return jsonify({"valid": False, "error": f"HTTP {r.status_code}"})
     except Exception as e:
+        logger.warning(f"[Admin] API key test ERROR by IP {client_ip} (key={masked}): {e}")
         return jsonify({"valid": False, "error": str(e)})
 
 
@@ -510,6 +649,14 @@ def admin_usage():
     if not session.get("admin_authenticated"):
         return jsonify({"error": "Not authenticated"}), 401
     return jsonify(usage_tracker.get_stats())
+
+
+@app.route("/admin/api/analytics")
+def admin_analytics():
+    """Return token usage and cost analytics across all pipeline runs."""
+    if not session.get("admin_authenticated"):
+        return jsonify({"error": "Not authenticated"}), 401
+    return jsonify(pipeline_analytics.get_global_stats())
 
 
 @app.route("/api/status")
@@ -584,6 +731,14 @@ def start_tailoring():
 
     if not resume_file.filename:
         return jsonify({"error": "No resume file selected"}), 400
+
+    # ── Input sanitization: job description ──
+    # Strip HTML tags to prevent stored XSS
+    job_text = re.sub(r"<[^>]+>", "", job_text)
+    # Enforce max length
+    if len(job_text) > 50000:
+        return jsonify({"error": "Job description is too long (maximum 50,000 characters)"}), 400
+
     if not job_text or len(job_text) < 50:
         return jsonify({"error": "Job description is too short (minimum 50 characters)"}), 400
     if mode not in ("conservative", "aggressive"):
@@ -591,9 +746,16 @@ def start_tailoring():
     if template not in ("executive", "modern", "minimal"):
         return jsonify({"error": "Invalid template"}), 400
 
-    # Validate PDF before accepting
+    # Validate resume file
     resume_ext = Path(resume_file.filename).suffix.lower()
     if resume_ext == ".pdf":
+        # ── Validate PDF magic bytes (%PDF-) ──
+        resume_file.stream.seek(0)
+        magic_bytes = resume_file.stream.read(5)
+        resume_file.stream.seek(0)
+        if magic_bytes != b"%PDF-":
+            return jsonify({"error": "File does not appear to be a valid PDF (bad magic bytes)"}), 400
+
         try:
             resume_file.stream.seek(0)
             with pdfplumber.open(resume_file.stream) as pdf:
@@ -710,11 +872,72 @@ def download_file(job_id: str, filename: str):
     return send_from_directory(output_dir, safe_name, as_attachment=True)
 
 
+# ─── History API ─────────────────────────────────────────────────────────────
+
+
+@app.route("/api/history")
+@login_required
+def get_history():
+    """Return paginated job history for the current user."""
+    page = request.args.get("page", 1, type=int)
+    per_page = min(request.args.get("per_page", 20, type=int), 50)
+    query = TailoringJob.query.filter_by(user_id=current_user.id).order_by(
+        TailoringJob.created_at.desc()
+    )
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    return jsonify({
+        "jobs": [{
+            "id": j.id,
+            "status": j.status,
+            "job_title": j.job_title,
+            "company": j.company,
+            "match_score": j.match_score,
+            "rewrite_mode": j.rewrite_mode,
+            "model_used": j.model_used,
+            "created_at": j.created_at.isoformat() if j.created_at else None,
+            "files": [
+                {"filename": f.filename, "size_bytes": f.size_bytes}
+                for f in j.files
+            ],
+        } for j in pagination.items],
+        "total": pagination.total,
+        "page": pagination.page,
+        "pages": pagination.pages,
+    })
+
+
+@app.route("/api/history/<job_id>")
+@login_required
+def get_history_job(job_id):
+    """Return full details of a specific job for the current user."""
+    job = TailoringJob.query.filter_by(
+        id=job_id, user_id=current_user.id
+    ).first_or_404()
+    return jsonify({
+        "id": job.id,
+        "status": job.status,
+        "job_title": job.job_title,
+        "company": job.company,
+        "match_score": job.match_score,
+        "cosine_similarity": job.cosine_similarity,
+        "missing_keywords": job.missing_keywords,
+        "rewrite_mode": job.rewrite_mode,
+        "model_used": job.model_used,
+        "ats_resume_md": job.ats_resume_md,
+        "recruiter_resume_md": job.recruiter_resume_md,
+        "talking_points_md": job.talking_points_md,
+        "created_at": job.created_at.isoformat() if job.created_at else None,
+        "files": [
+            {"filename": f.filename, "size_bytes": f.size_bytes}
+            for f in job.files
+        ],
+    })
+
+
 if __name__ == "__main__":
     setup_logging(verbose=False)
-
+    with app.app_context():
+        db.create_all()
     port = int(os.environ.get("PORT", 5050))
-    print("\n  CVtailro Web UI")
-    print("  ───────────────")
-    print(f"  Open http://localhost:{port} in your browser\n")
+    print(f"\n  CVtailro Web UI\n  ───────────────\n  Open http://localhost:{port} in your browser\n")
     app.run(host="0.0.0.0", port=port, debug=False, threaded=True)

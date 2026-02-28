@@ -10,4 +10,35 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-}
+      - DATABASE_URL=postgresql://cvtailro:cvtailro@postgres:5432/cvtailro
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - ADMIN_EMAILS=${ADMIN_EMAILS:-}
+      - R2_ACCOUNT_ID=${R2_ACCOUNT_ID:-}
+      - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID:-}
+      - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY:-}
+      - R2_BUCKET_NAME=${R2_BUCKET_NAME:-cvtailro}
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cvtailro
+      POSTGRES_PASSWORD: cvtailro
+      POSTGRES_DB: cvtailro
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cvtailro"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  pgdata:

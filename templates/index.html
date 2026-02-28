@@ -1046,13 +1046,529 @@
                 gap: 8px;
             }
         }
+
+        /* --- Auth Controls in Header --- */
+        .header-auth {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-google-signin {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #fff;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s, box-shadow 0.2s;
+            min-height: 40px;
+            white-space: nowrap;
+        }
+
+        .btn-google-signin:hover {
+            background: #F8F9FA;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .btn-google-signin svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        /* User menu (logged in state) */
+        .user-menu-wrap {
+            position: relative;
+        }
+
+        .user-menu-trigger {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 10px 4px 4px;
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+            transition: background 0.2s, border-color 0.2s;
+            min-height: 40px;
+        }
+
+        .user-menu-trigger:hover {
+            background: #F1F5F9;
+            border-color: #CBD5E1;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .user-menu-chevron {
+            width: 14px;
+            height: 14px;
+            transition: transform 0.2s;
+            color: var(--text-secondary);
+        }
+
+        .user-menu-wrap.open .user-menu-chevron {
+            transform: rotate(180deg);
+        }
+
+        .user-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            min-width: 200px;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            z-index: 200;
+            overflow: hidden;
+        }
+
+        .user-menu-wrap.open .user-dropdown {
+            display: block;
+        }
+
+        .dropdown-user-info {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .dropdown-user-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .dropdown-user-email {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 10px 16px;
+            background: none;
+            border: none;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.15s;
+            min-height: 44px;
+        }
+
+        .dropdown-item:hover {
+            background: #F1F5F9;
+        }
+
+        .dropdown-item svg {
+            width: 16px;
+            height: 16px;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 0;
+        }
+
+        .dropdown-item.sign-out {
+            color: var(--error);
+        }
+
+        .dropdown-item.sign-out svg {
+            color: var(--error);
+        }
+
+        /* --- Toast Notification --- */
+        .toast {
+            position: fixed;
+            top: 80px;
+            right: 24px;
+            z-index: 1000;
+            max-width: 400px;
+            padding: 14px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            transform: translateX(calc(100% + 24px));
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: auto;
+        }
+
+        .toast.visible {
+            transform: translateX(0);
+        }
+
+        .toast.toast-error {
+            background: #FEE2E2;
+            color: #991B1B;
+            border: 1px solid #FECACA;
+        }
+
+        .toast.toast-info {
+            background: #DBEAFE;
+            color: #1E40AF;
+            border: 1px solid #BFDBFE;
+        }
+
+        /* --- History Overlay --- */
+        .history-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+
+        .history-overlay.active {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 80px 24px 24px;
+        }
+
+        .history-panel {
+            background: #fff;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 640px;
+            max-height: calc(100vh - 120px);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+
+        .history-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .history-header h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0;
+        }
+
+        .history-close {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: background 0.15s, color 0.15s;
+            font-size: 20px;
+        }
+
+        .history-close:hover {
+            background: #F1F5F9;
+            color: var(--text);
+        }
+
+        .history-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 24px;
+        }
+
+        .history-empty {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--text-secondary);
+        }
+
+        .history-empty-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 16px;
+            color: #D1D5DB;
+        }
+
+        .history-empty h3 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+
+        .history-empty p {
+            font-size: 13px;
+        }
+
+        .history-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.15s;
+            min-height: 44px;
+        }
+
+        .history-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 2px 8px rgba(0, 179, 126, 0.1);
+            background: #FAFBFE;
+        }
+
+        .history-card-score {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .history-card-score.high { background: #ECFDF5; color: #047857; }
+        .history-card-score.mid { background: #FFFBEB; color: #B45309; }
+        .history-card-score.low { background: #FEF2F2; color: #B91C1C; }
+
+        .history-card-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .history-card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .history-card-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .history-card-arrow {
+            width: 16px;
+            height: 16px;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        .history-loading {
+            text-align: center;
+            padding: 40px 24px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* --- Elapsed Time in Progress --- */
+        .elapsed-time {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .elapsed-time span {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        /* --- Reconnecting Indicator --- */
+        .reconnecting-badge {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            justify-content: center;
+        }
+
+        .reconnecting-badge.visible {
+            display: flex;
+        }
+
+        .reconnecting-badge .dot {
+            width: 6px;
+            height: 6px;
+            background: var(--score-mid);
+            border-radius: 50%;
+            animation: pulse-dot 1.5s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* --- Mobile: Auth & History --- */
+        @media (max-width: 768px) {
+            .btn-google-signin {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+
+            .btn-google-signin .signin-text-full {
+                display: none;
+            }
+
+            .btn-google-signin .signin-text-short {
+                display: inline;
+            }
+
+            .user-menu-trigger {
+                padding: 4px 8px 4px 4px;
+            }
+
+            .user-menu-trigger .user-name-text {
+                display: none;
+            }
+
+            .user-dropdown {
+                right: -8px;
+                min-width: 220px;
+            }
+
+            .history-overlay.active {
+                padding: 0;
+                align-items: stretch;
+            }
+
+            .history-panel {
+                max-width: 100%;
+                max-height: 100vh;
+                border-radius: 0;
+                height: 100vh;
+            }
+
+            .history-header {
+                padding: 16px;
+            }
+
+            .history-body {
+                padding: 12px 16px;
+            }
+
+            .toast {
+                right: 12px;
+                left: 12px;
+                max-width: none;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .btn-google-signin .signin-text-short {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
     <!-- Header -->
     <header class="site-header">
         <a href="/" class="site-logo"><span class="cv">CV</span><span class="tailro">tailro</span></a>
-        <a href="#formSection" class="header-cta">Try Free</a>
+        <div class="header-auth" id="headerAuth">
+            <!-- Signed out state (default) -->
+            <a href="/auth/google/login" class="btn-google-signin" id="btnGoogleSignin" style="display:none;">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                <span class="signin-text-full">Sign in with Google</span>
+                <span class="signin-text-short">Sign in</span>
+            </a>
+            <!-- Signed in state (hidden by default) -->
+            <div class="user-menu-wrap" id="userMenuWrap" style="display:none;">
+                <button class="user-menu-trigger" onclick="toggleUserMenu(event)">
+                    <div class="user-avatar" id="userAvatar"></div>
+                    <span class="user-name-text" id="userNameText"></span>
+                    <svg class="user-menu-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="user-dropdown" id="userDropdown">
+                    <div class="dropdown-user-info">
+                        <div class="dropdown-user-name" id="dropdownUserName"></div>
+                        <div class="dropdown-user-email" id="dropdownUserEmail"></div>
+                    </div>
+                    <button class="dropdown-item" onclick="showHistory()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        History
+                    </button>
+                    <div class="dropdown-divider" id="adminDivider" style="display:none;"></div>
+                    <a class="dropdown-item" id="adminLink" href="/admin" style="display:none;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                        Admin Panel
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item sign-out" onclick="signOut()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
     </header>
 
     <!-- Hero -->
@@ -1065,7 +1581,7 @@
 
     <!-- Trust Bar -->
     <div class="trust-bar">
-        Free to use <span>&middot;</span> No sign-up required <span>&middot;</span> Your data stays private
+        AI-powered resume optimization <span>&middot;</span> Sign in with Google to get started <span>&middot;</span> Your data stays private
     </div>
 
     <div class="container">
@@ -1146,7 +1662,7 @@
             <!-- CTA -->
             <div class="cta-row">
                 <button class="btn-run" id="btnRun" onclick="startTailoring()">Tailor My Resume</button>
-                <div class="cta-hint">No sign-up required &middot; Takes about 2 minutes</div>
+                <div class="cta-hint">Sign in with Google to get started &middot; Takes about 2 minutes</div>
             </div>
         </div>
 
@@ -1159,6 +1675,8 @@
                         <div class="progress-bar-fill" id="progressFill"></div>
                     </div>
                     <div class="progress-pct" id="progressPct">0%</div>
+                    <div class="elapsed-time" id="elapsedTime" style="display:none;">Processing... <span id="elapsedValue">0:00</span></div>
+                    <div class="reconnecting-badge" id="reconnectingBadge"><span class="dot"></span> Reconnecting...</div>
                     <div class="time-estimate" id="timeEstimate">Usually takes 2-3 minutes</div>
                     <div class="tip-container" id="tipContainer">
                         <div class="tip-text" id="tipText">75% of resumes are rejected by ATS systems before a human sees them</div>
@@ -1258,6 +1776,22 @@
         </div>
         <div class="footer-copy">&copy; 2026 CVtailro. All rights reserved.</div>
     </footer>
+
+    <!-- History Overlay -->
+    <div class="history-overlay" id="historyOverlay" onclick="if(event.target===this)closeHistory()">
+        <div class="history-panel">
+            <div class="history-header">
+                <h2>Tailoring History</h2>
+                <button class="history-close" onclick="closeHistory()" aria-label="Close history">&times;</button>
+            </div>
+            <div class="history-body" id="historyBody">
+                <div class="history-loading">Loading your history...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast" id="toastNotification" role="alert"></div>
 
     <script>
     // --- Stage Names: internal key -> user-friendly label ---
@@ -1382,6 +1916,429 @@
     }
 
     loadSettings();
+
+    // --- Auth State ---
+    var authUser = null; // null = not checked yet, false = not logged in, object = logged in
+
+    async function checkAuth() {
+        try {
+            var resp = await fetch('/auth/me', { credentials: 'same-origin' });
+            if (resp.ok) {
+                var data = await resp.json();
+                if (data && data.email) {
+                    authUser = data;
+                    renderAuthUI();
+                    return;
+                }
+            }
+            // 401, 404, or unexpected response = not authenticated
+            authUser = false;
+            renderAuthUI();
+        } catch(e) {
+            // Auth endpoint not deployed yet, or network error — treat as not authenticated
+            authUser = false;
+            renderAuthUI();
+        }
+    }
+
+    function renderAuthUI() {
+        var signinBtn = document.getElementById('btnGoogleSignin');
+        var userMenuWrap = document.getElementById('userMenuWrap');
+
+        if (authUser && authUser.email) {
+            // Logged in
+            signinBtn.style.display = 'none';
+            userMenuWrap.style.display = 'block';
+
+            // Set avatar
+            var avatarEl = document.getElementById('userAvatar');
+            if (authUser.picture) {
+                avatarEl.innerHTML = '<img src="' + escapeAttr(authUser.picture) + '" alt="Avatar" referrerpolicy="no-referrer">';
+            } else {
+                var initials = (authUser.name || authUser.email || '?').charAt(0).toUpperCase();
+                avatarEl.textContent = initials;
+            }
+
+            // Set name in trigger
+            var nameText = document.getElementById('userNameText');
+            nameText.textContent = (authUser.name || '').split(' ')[0] || '';
+
+            // Set dropdown info
+            document.getElementById('dropdownUserName').textContent = authUser.name || '';
+            document.getElementById('dropdownUserEmail').textContent = authUser.email || '';
+
+            // Show admin link if admin
+            if (authUser.is_admin) {
+                document.getElementById('adminLink').style.display = 'flex';
+                document.getElementById('adminDivider').style.display = 'block';
+            }
+        } else {
+            // Not logged in
+            signinBtn.style.display = 'inline-flex';
+            userMenuWrap.style.display = 'none';
+        }
+    }
+
+    function escapeAttr(s) {
+        return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function toggleUserMenu(e) {
+        e.stopPropagation();
+        var wrap = document.getElementById('userMenuWrap');
+        wrap.classList.toggle('open');
+    }
+
+    // Close user menu when clicking outside
+    document.addEventListener('click', function(e) {
+        var wrap = document.getElementById('userMenuWrap');
+        if (wrap && !wrap.contains(e.target)) {
+            wrap.classList.remove('open');
+        }
+    });
+
+    async function signOut() {
+        try {
+            await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' });
+        } catch(e) {
+            // Even if the request fails, clear local state
+        }
+        authUser = false;
+        document.getElementById('userMenuWrap').classList.remove('open');
+        renderAuthUI();
+        showToast('You have been signed out.', 'info');
+    }
+
+    // --- Toast Notifications ---
+    var toastTimer = null;
+
+    function showToast(message, type) {
+        type = type || 'info';
+        var toast = document.getElementById('toastNotification');
+        toast.textContent = message;
+        toast.className = 'toast toast-' + type;
+        // Force reflow to restart animation
+        void toast.offsetWidth;
+        toast.classList.add('visible');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(function() {
+            toast.classList.remove('visible');
+        }, 5000);
+    }
+
+    // --- Auth error from URL params ---
+    (function checkAuthError() {
+        var params = new URLSearchParams(window.location.search);
+        var authError = params.get('auth_error');
+        if (authError) {
+            var messages = {
+                'access_denied': 'Sign-in was cancelled.',
+                'no_email': 'Could not get your email from Google. Please try again.',
+                'callback_failed': 'Sign-in failed. Please try again.',
+                'unauthorized': 'Your account is not authorized. Please contact the administrator.'
+            };
+            showToast(messages[authError] || 'Sign-in error: ' + authError, 'error');
+            // Clean URL
+            var cleanUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+        }
+    })();
+
+    // Check auth on page load
+    checkAuth();
+
+    // --- Elapsed Timer ---
+    var elapsedTimer = null;
+    var elapsedStartTime = null;
+
+    function startElapsedTimer() {
+        elapsedStartTime = Date.now();
+        var el = document.getElementById('elapsedTime');
+        var valEl = document.getElementById('elapsedValue');
+        el.style.display = 'block';
+        elapsedTimer = setInterval(function() {
+            var elapsed = Math.floor((Date.now() - elapsedStartTime) / 1000);
+            var mins = Math.floor(elapsed / 60);
+            var secs = elapsed % 60;
+            valEl.textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+        }, 1000);
+    }
+
+    function stopElapsedTimer() {
+        if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null; }
+        var el = document.getElementById('elapsedTime');
+        if (el) el.style.display = 'none';
+    }
+
+    // --- History ---
+    function showHistory() {
+        document.getElementById('userMenuWrap').classList.remove('open');
+        var overlay = document.getElementById('historyOverlay');
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        loadHistory();
+    }
+
+    function closeHistory() {
+        document.getElementById('historyOverlay').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // Close history on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            var overlay = document.getElementById('historyOverlay');
+            if (overlay.classList.contains('active')) {
+                closeHistory();
+            }
+        }
+    });
+
+    async function loadHistory() {
+        var body = document.getElementById('historyBody');
+        body.innerHTML = '<div class="history-loading">Loading your history...</div>';
+        try {
+            var resp = await fetch('/api/history', { credentials: 'same-origin' });
+            if (!resp.ok) {
+                if (resp.status === 401) {
+                    body.innerHTML = '<div class="history-empty"><p>Please sign in to view your history.</p></div>';
+                    return;
+                }
+                throw new Error('Failed to load history');
+            }
+            var data = await resp.json();
+            var jobs = data.jobs || data || [];
+            if (!jobs.length) {
+                body.innerHTML =
+                    '<div class="history-empty">' +
+                        '<div class="history-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>' +
+                        '<h3>No tailoring jobs yet</h3>' +
+                        '<p>Your tailoring history will appear here after your first job.</p>' +
+                    '</div>';
+                return;
+            }
+            var html = '';
+            jobs.forEach(function(job) {
+                var score = job.match_score || 0;
+                var scoreClass = score >= 80 ? 'high' : score >= 50 ? 'mid' : 'low';
+                var title = job.job_title || job.company || 'Untitled Job';
+                var company = job.company ? ' at ' + escapeHtml(job.company) : '';
+                var date = job.created_at ? formatDate(job.created_at) : '';
+                var model = job.model ? job.model.split('/').pop() : '';
+                html += '<div class="history-card" onclick="loadHistoryJob(\'' + escapeAttr(job.job_id || job.id) + '\')">' +
+                    '<div class="history-card-score ' + scoreClass + '">' + Math.round(score) + '%</div>' +
+                    '<div class="history-card-info">' +
+                        '<div class="history-card-title">' + escapeHtml(title) + escapeHtml(company) + '</div>' +
+                        '<div class="history-card-meta">' +
+                            (date ? '<span>' + escapeHtml(date) + '</span>' : '') +
+                            (model ? '<span>' + escapeHtml(model) + '</span>' : '') +
+                        '</div>' +
+                    '</div>' +
+                    '<svg class="history-card-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
+                '</div>';
+            });
+            body.innerHTML = html;
+        } catch(e) {
+            body.innerHTML = '<div class="history-empty"><p>Could not load history. Please try again.</p></div>';
+        }
+    }
+
+    function formatDate(dateStr) {
+        try {
+            var d = new Date(dateStr);
+            var now = new Date();
+            var diff = now - d;
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+            if (diff < 604800000) return Math.floor(diff / 86400000) + 'd ago';
+            return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+        } catch(e) {
+            return dateStr;
+        }
+    }
+
+    async function loadHistoryJob(jobId) {
+        closeHistory();
+        // Show progress section while loading
+        document.getElementById('formSection').style.display = 'none';
+        document.getElementById('progressSection').classList.remove('active');
+        document.getElementById('resultsSection').classList.remove('active');
+
+        try {
+            var resp = await fetch('/api/history/' + jobId, { credentials: 'same-origin' });
+            if (!resp.ok) throw new Error('Failed to load job');
+            var data = await resp.json();
+            // The history endpoint should return the same format as /api/result
+            renderResultsFromData(data, jobId);
+        } catch(e) {
+            showError('Could not load this job. It may have expired.');
+            document.getElementById('formSection').style.display = '';
+        }
+    }
+
+    function renderResultsFromData(data, jobId) {
+        // data should contain the result object (same shape as /api/result response)
+        var s = data.result || data;
+
+        try {
+            // Reset UI state
+            document.getElementById('formSection').style.display = 'none';
+            document.getElementById('progressSection').classList.remove('active');
+
+            // --- Circular Score ---
+            var scoreVal = (s.match_score || 0).toFixed(0);
+            var scoreNum = parseFloat(scoreVal);
+            document.getElementById("matchScore").textContent = scoreVal + "%";
+
+            var circumference = 2 * Math.PI * 60;
+            var offset = circumference - (scoreNum / 100) * circumference;
+            var ring = document.getElementById("scoreRing");
+            ring.style.strokeDasharray = circumference;
+            var scoreColor = scoreNum >= 80 ? 'var(--score-high)' : scoreNum >= 50 ? 'var(--score-mid)' : 'var(--score-low)';
+            ring.style.stroke = scoreColor;
+            setTimeout(function() { ring.style.strokeDashoffset = offset; }, 100);
+
+            // Keyword Match
+            var kwMatchPct = Math.round((s.cosine_similarity || 0) * 100);
+            document.getElementById("keywordMatch").textContent = kwMatchPct + "%";
+
+            // Keywords Added
+            var keywordsAddedCount = typeof s.matched_keywords_count === 'number' ? s.matched_keywords_count : Math.max(1, Math.round((s.match_score || 0) * 0.3));
+            document.getElementById("keywordsAdded").textContent = keywordsAddedCount;
+
+            // Keywords chips
+            if (s.missing_keywords && s.missing_keywords.length > 0) {
+                document.getElementById("kwSection").style.display = "block";
+                document.getElementById("kwList").innerHTML = s.missing_keywords.map(function(k) {
+                    return '<span class="kw kw-missing">' + escapeHtml(k) + '</span>';
+                }).join("");
+            } else {
+                document.getElementById("kwSection").style.display = "none";
+            }
+
+            // --- Downloads ---
+            var atsLink = '', recLink = '', secondaryHtml = '';
+            var effectiveJobId = jobId || s.job_id || '';
+
+            if (s.files && s.files.length > 0 && effectiveJobId) {
+                s.files.forEach(function(f) {
+                    var m = FILES[f] || {l: f, b: "", cat: "other", primary: false};
+                    var link = '/api/download/' + effectiveJobId + '/' + f;
+                    if (m.primary) {
+                        if (m.cat === 'ats') atsLink = link;
+                        else if (m.cat === 'rec') recLink = link;
+                    } else {
+                        secondaryHtml += '<a class="dl-btn-secondary" href="' + link + '"><span class="label">' + escapeHtml(m.l) + '</span><span class="badge">' + m.b + '</span></a>';
+                    }
+                });
+            }
+
+            // Reset download cards
+            var dlCards = document.getElementById("dlCards");
+            dlCards.innerHTML =
+                '<div class="dl-card" id="dlCardAts"><div class="dl-card-icon ats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div><div class="dl-card-title">ATS Resume</div><div class="dl-card-desc">Optimized for automated screening systems</div><span class="dl-card-btn" id="dlBtnAts">Download PDF</span></div>' +
+                '<div class="dl-card rec-card" id="dlCardRec"><div class="dl-card-icon rec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div><div class="dl-card-title">Recruiter Resume</div><div class="dl-card-desc">Enhanced for human readability</div><span class="dl-card-btn" id="dlBtnRec">Download PDF</span></div>';
+
+            // Wire up download links
+            if (atsLink) {
+                var atsCard = document.getElementById("dlCardAts");
+                var atsParent = atsCard.parentNode;
+                var atsA = document.createElement('a');
+                atsA.className = atsCard.className;
+                atsA.href = atsLink;
+                atsA.innerHTML = atsCard.innerHTML;
+                atsParent.replaceChild(atsA, atsCard);
+            }
+            if (recLink) {
+                var recCard = document.getElementById("dlCardRec");
+                var recParent = recCard.parentNode;
+                var recA = document.createElement('a');
+                recA.className = recCard.className;
+                recA.href = recLink;
+                recA.innerHTML = recCard.innerHTML;
+                recParent.replaceChild(recA, recCard);
+            }
+
+            document.getElementById("dlGridSecondary").innerHTML = secondaryHtml;
+
+            // --- Talking Points ---
+            if (s.talking_points_md) {
+                document.getElementById("talkingPointsCard").style.display = "block";
+                document.getElementById("talkingPointsContent").innerHTML = renderMarkdown(s.talking_points_md);
+            } else {
+                document.getElementById("talkingPointsCard").style.display = "none";
+            }
+
+            // --- Preview tabs ---
+            var previews = [
+                {id: "ats", l: "ATS Resume", c: s.ats_resume_md},
+                {id: "rec", l: "Recruiter Resume", c: s.recruiter_resume_md}
+            ];
+            document.getElementById("tabs").innerHTML = previews.map(function(p, i) {
+                return '<button class="tab ' + (i === 0 ? 'active' : '') + '" onclick="switchTab(\'' + p.id + '\',this)">' + p.l + '</button>';
+            }).join("");
+            document.getElementById("panels").innerHTML = previews.map(function(p, i) {
+                return '<div class="tab-content ' + (i === 0 ? 'active' : '') + '" id="pnl-' + p.id + '">' + renderMarkdown(p.c) + '</div>';
+            }).join("");
+
+            document.getElementById("resultsSection").classList.add("active");
+            document.getElementById("resultsSection").scrollIntoView({behavior: "smooth"});
+        } catch(renderErr) {
+            console.error("Failed to render history results:", renderErr);
+            showError("Results loaded but failed to display.");
+            document.getElementById('formSection').style.display = '';
+        }
+    }
+
+    // --- Friendly Error Messages ---
+    function friendlyErrorMessage(rawMsg, modelName) {
+        if (!rawMsg) return 'An unexpected error occurred. Please try again.';
+        var msg = String(rawMsg);
+
+        // Rate limiting
+        if (msg.match(/rate.?limit/i) || msg.match(/429/i) || msg.match(/too many requests/i)) {
+            return 'Our AI service is busy. Please try again in a moment.';
+        }
+
+        // Invalid API key / auth errors
+        if (msg.match(/invalid.*api.?key/i) || msg.match(/401/i) || msg.match(/unauthorized/i) || msg.match(/authentication/i)) {
+            return 'Service configuration error. Please contact the administrator.';
+        }
+
+        // Timeout
+        if (msg.match(/timeout/i) || msg.match(/timed?\s*out/i)) {
+            return 'The AI model took too long to respond. Please try again' + (modelName ? ' or try a different model.' : '.');
+        }
+
+        // Context length / token limit
+        if (msg.match(/context.*length/i) || msg.match(/too.*long/i) || msg.match(/token/i)) {
+            return 'Your resume or job description is too long for this model. Try shortening it or using a different model.';
+        }
+
+        // Model unavailable
+        if (msg.match(/model.*not.*found/i) || msg.match(/model.*unavailable/i) || msg.match(/no.*endpoints/i)) {
+            return 'The selected AI model is temporarily unavailable. Please try a different model.';
+        }
+
+        // Network / connection
+        if (msg.match(/network/i) || msg.match(/fetch/i) || msg.match(/ECONNREFUSED/i) || msg.match(/connection/i)) {
+            return 'Connection lost. Your resume is still being processed -- results will appear shortly.';
+        }
+
+        // Strip Python tracebacks: only show the last meaningful line
+        if (msg.indexOf('Traceback') !== -1 || msg.indexOf('File "') !== -1) {
+            var lines = msg.split('\n').filter(function(l) { return l.trim() && !l.match(/^\s*(File|Traceback|at )/); });
+            var lastLine = lines.length > 0 ? lines[lines.length - 1].trim() : 'An unexpected error occurred.';
+            return 'Processing error' + (modelName ? ' (' + modelName + ')' : '') + ': ' + lastLine;
+        }
+
+        // Default: clean up and show with model name
+        if (modelName) {
+            return 'Error with ' + modelName + ': ' + msg;
+        }
+        return msg;
+    }
 
     var FILES = {
         "tailored_resume_ats.pdf":      {l:"ATS Resume",       b:"PDF",  cat:"ats",    primary:true},
@@ -1551,6 +2508,12 @@
     }
 
     async function startTailoring() {
+        // Auth guard: require sign-in before processing
+        if (authUser === false) {
+            // Not logged in — redirect to Google sign-in
+            window.location.href = '/auth/google/login';
+            return;
+        }
         if (!serviceConfigured) { showError("Service is temporarily unavailable. Please try again later."); return; }
         var file = fileInput.files[0], jd = jdTA.value.trim();
         var mode = document.querySelector('input[name="mode"]:checked').value;
@@ -1581,6 +2544,8 @@
         document.getElementById("progressFill").style.width = "0%";
         document.getElementById("progressPct").textContent = "0%";
         startTipRotation();
+        startElapsedTimer();
+        document.getElementById('reconnectingBadge').classList.remove('visible');
 
         var fd = new FormData();
         fd.append("resume", file);
@@ -1593,9 +2558,10 @@
             var r = await fetch("/api/tailor", {method: "POST", body: fd});
             var d = await r.json();
             if (!r.ok) {
-                showError(d.error || "Failed to start");
+                showError(friendlyErrorMessage(d.error || "Failed to start", model));
                 btn.disabled = false; btn.textContent = "Tailor My Resume";
                 stopTipRotation();
+                stopElapsedTimer();
                 return;
             }
             var jobId = d.job_id;
@@ -1633,6 +2599,8 @@
                 if (finished) return;
                 finished = true;
                 stopTipRotation();
+                stopElapsedTimer();
+                document.getElementById('reconnectingBadge').classList.remove('visible');
                 loadResults(jid);
                 btn.disabled = false; btn.textContent = "Tailor My Resume";
             }
@@ -1641,7 +2609,9 @@
                 if (finished) return;
                 finished = true;
                 stopTipRotation();
-                showError("Pipeline error: " + (msg || "Unknown"));
+                stopElapsedTimer();
+                document.getElementById('reconnectingBadge').classList.remove('visible');
+                showError(friendlyErrorMessage(msg, model));
                 btn.disabled = false; btn.textContent = "Tailor My Resume";
             }
 
@@ -1650,6 +2620,7 @@
                 var es = new EventSource('/api/progress/' + jobId);
                 es.onmessage = function(ev) {
                     sseRetries = 0; // reset on successful message
+                    document.getElementById('reconnectingBadge').classList.remove('visible');
                     var m = JSON.parse(ev.data);
                     if (m.status === "complete") { es.close(); onComplete(jobId); return; }
                     if (m.status === "error") { es.close(); onError(m.detail); return; }
@@ -1661,32 +2632,43 @@
                     if (finished) return;
                     sseRetries++;
                     if (sseRetries <= maxSseRetries) {
-                        // Try reconnecting SSE after a short delay
+                        // Show subtle reconnecting indicator
+                        document.getElementById('reconnectingBadge').classList.add('visible');
                         setTimeout(connectSSE, 2000);
                     } else {
                         // Fall back to polling after exhausting SSE retries
+                        document.getElementById('reconnectingBadge').classList.remove('visible');
                         pollForResult(jobId);
                     }
                 };
             }
 
             function pollForResult(jid) {
+                var pollFailCount = 0;
                 var poll = setInterval(async function() {
                     if (finished) { clearInterval(poll); return; }
                     try {
                         var r = await fetch('/api/result/' + jid);
                         var d = await r.json();
+                        pollFailCount = 0;
                         if (d.status === "complete") { clearInterval(poll); onComplete(jid); }
                         else if (d.status === "error") { clearInterval(poll); onError(d.error); }
-                    } catch(e) {}
+                    } catch(e) {
+                        pollFailCount++;
+                        if (pollFailCount >= 10) {
+                            clearInterval(poll);
+                            onError('Connection lost. Please refresh the page and check your history for results.');
+                        }
+                    }
                 }, 3000);
             }
 
             connectSSE();
         } catch(e) {
-            showError("Network error: " + e.message);
+            showError(friendlyErrorMessage(e.message));
             btn.disabled = false; btn.textContent = "Tailor My Resume";
             stopTipRotation();
+            stopElapsedTimer();
         }
     }
 
@@ -1861,12 +2843,14 @@
         fileNameEl.style.display = "none";
         document.getElementById("resultsSection").classList.remove("active");
         document.getElementById("progressSection").classList.remove("active");
+        document.getElementById("formSection").style.display = "";
         document.getElementById("charCount").textContent = "0";
         document.getElementById("wordCount").textContent = "0";
         jdTA.classList.remove('input-error');
         document.getElementById('jdError').classList.remove('visible');
         dismissError();
         stopTipRotation();
+        stopElapsedTimer();
         targetProgress = 0;
         currentProgress = 0;
 

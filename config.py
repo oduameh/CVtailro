@@ -44,6 +44,7 @@ class AppConfig:
     verbose: bool = False
     api_key: str = ""
     model: str = DEFAULT_MODEL
+    job_id: str = ""  # Set by app.py so agents can report analytics
 
     def validate_api_config(self) -> None:
         """Verify the API key and model are set.

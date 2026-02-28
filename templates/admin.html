@@ -141,13 +141,32 @@
 
         .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
 
+        .analytics-table {
+            width: 100%; border-collapse: collapse; font-size: 13px;
+        }
+        .analytics-table th {
+            text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary);
+            border-bottom: 2px solid var(--border); background: var(--bg);
+        }
+        .analytics-table td {
+            padding: 8px 10px; border-bottom: 1px solid var(--border);
+        }
+        .analytics-table tr:last-child td { border-bottom: none; }
+        .analytics-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+        .analytics-bar {
+            height: 6px; border-radius: 3px; background: var(--accent);
+            display: inline-block; vertical-align: middle; margin-right: 6px;
+            min-width: 2px;
+        }
+
         footer { text-align: center; color: #94a3b8; font-size: 12px; margin-top: 48px; padding-bottom: 32px; }
 
         @media (max-width: 768px) {
             header { padding: 36px 16px; }
             header h1 { font-size: 28px; }
             .container { padding: 0 16px 40px; }
-            .status-grid { grid-template-columns: 1fr; }
+            .status-grid { grid-template-columns: 1fr 1fr; }
         }
     </style>
 </head>
@@ -251,6 +270,41 @@
                     <input type="number" id="rateLimit" value="0" min="0" step="1">
                     <div class="hint">Set to 0 for unlimited requests.</div>
                 </div>
+            </div>
+
+            <!-- Cost & Usage Analytics -->
+            <div class="card">
+                <h2>Cost &amp; Usage Analytics</h2>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">
+                    Token usage and estimated cost across all pipeline runs since last restart.
+                </div>
+                <div class="status-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
+                    <div class="status-item">
+                        <div class="status-value" id="analyticsJobs">--</div>
+                        <div class="status-label">Total Jobs</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="analyticsTokens">--</div>
+                        <div class="status-label">Total Tokens</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="analyticsCost">--</div>
+                        <div class="status-label">Est. Cost (USD)</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="analyticsAvgCost">--</div>
+                        <div class="status-label">Avg Cost / Job</div>
+                    </div>
+                </div>
+
+                <!-- Jobs by model table -->
+                <div style="margin-top:16px;">
+                    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;">Usage by Model</div>
+                    <div id="analyticsModelTable">
+                        <div style="color:#6B7280;font-size:13px;">No data yet.</div>
+                    </div>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="loadAnalytics()" style="margin-top:12px;">Refresh Analytics</button>
             </div>
 
             <!-- Pipeline Error Log -->
@@ -388,6 +442,7 @@
 
         loadModels(config.default_model);
         loadUsage();
+        loadAnalytics();
         loadErrors();
     }
 
@@ -423,6 +478,66 @@
             document.getElementById('statusSessions').textContent = d.active_sessions || 0;
             document.getElementById('totalRequests').textContent = d.total_requests || 0;
         } catch(e) {}
+    }
+
+    async function loadAnalytics() {
+        try {
+            const r = await fetch('/admin/api/analytics');
+            if (!r.ok) return;
+            const d = await r.json();
+
+            // Summary numbers
+            document.getElementById('analyticsJobs').textContent = d.total_jobs || 0;
+
+            const tokens = d.total_tokens || 0;
+            document.getElementById('analyticsTokens').textContent =
+                tokens >= 1000000 ? (tokens / 1000000).toFixed(1) + 'M' :
+                tokens >= 1000 ? (tokens / 1000).toFixed(1) + 'K' :
+                tokens;
+
+            const cost = d.total_cost_usd || 0;
+            document.getElementById('analyticsCost').textContent = '$' + cost.toFixed(4);
+
+            const avg = d.avg_cost_per_job || 0;
+            document.getElementById('analyticsAvgCost').textContent = '$' + avg.toFixed(4);
+
+            // Model breakdown table
+            const tableEl = document.getElementById('analyticsModelTable');
+            const models = d.jobs_by_model || {};
+            const tokensByModel = d.tokens_by_model || {};
+            const modelNames = Object.keys(models);
+
+            if (modelNames.length === 0) {
+                tableEl.innerHTML = '<div style="color:#6B7280;font-size:13px;">No completed jobs yet.</div>';
+                return;
+            }
+
+            // Sort by job count descending
+            modelNames.sort((a, b) => (models[b] || 0) - (models[a] || 0));
+            const maxJobs = Math.max(...modelNames.map(m => models[m] || 0), 1);
+
+            let html = '<table class="analytics-table">';
+            html += '<thead><tr><th>Model</th><th class="num">Jobs</th><th class="num">Tokens</th><th style="width:30%"></th></tr></thead>';
+            html += '<tbody>';
+            modelNames.forEach(function(model) {
+                const jobs = models[model] || 0;
+                const toks = tokensByModel[model] || 0;
+                const barWidth = Math.max(2, Math.round((jobs / maxJobs) * 100));
+                const shortName = model.split('/').pop().replace(/:free$/, ' (free)');
+                const tokStr = toks >= 1000000 ? (toks / 1000000).toFixed(1) + 'M' :
+                               toks >= 1000 ? (toks / 1000).toFixed(1) + 'K' : toks;
+                html += '<tr>';
+                html += '<td title="' + model + '" style="font-weight:500;">' + shortName + '</td>';
+                html += '<td class="num">' + jobs + '</td>';
+                html += '<td class="num">' + tokStr + '</td>';
+                html += '<td><span class="analytics-bar" style="width:' + barWidth + '%"></span></td>';
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            tableEl.innerHTML = html;
+        } catch(e) {
+            console.error('Failed to load analytics:', e);
+        }
     }
 
     // ─── Actions ───

@@ -21,6 +21,7 @@ from typing import Any, Generic, TypeVar
 import requests
 from pydantic import BaseModel, ValidationError
 
+from analytics import pipeline_analytics
 from config import AppConfig
 
 T = TypeVar("T", bound=BaseModel)
@@ -42,6 +43,17 @@ _http_session.headers.update({
 
 class AgentError(Exception):
     """Raised when an agent fails after all retries."""
+
+
+def _mask_key(key: str) -> str:
+    """Return a masked version of an API key for safe logging.
+
+    Shows only the first 6 and last 3 characters, replacing the middle
+    with '***'.  Short keys are fully masked.
+    """
+    if not key or len(key) <= 10:
+        return "***"
+    return f"{key[:6]}***{key[-3:]}"
 
 
 class BaseAgent(ABC, Generic[T]):
@@ -195,6 +207,11 @@ class BaseAgent(ABC, Generic[T]):
                     f"completion={usage.get('completion_tokens', '?')}, "
                     f"total={usage.get('total_tokens', '?')}"
                 )
+                # Track analytics if this agent belongs to a pipeline job
+                if self.config.job_id:
+                    pipeline_analytics.record_api_call(
+                        self.config.job_id, usage
+                    )
 
             # Check if actual model differs from requested model
             actual_model = data.get("model", "")
@@ -235,6 +252,9 @@ class BaseAgent(ABC, Generic[T]):
             f"[{self.AGENT_NAME}] Calling OpenRouter API ({self.config.model})..."
         )
         logger.debug(
+            f"[{self.AGENT_NAME}] API key (masked): {_mask_key(self.config.api_key)}"
+        )
+        logger.debug(
             f"[{self.AGENT_NAME}] System prompt: {len(system)} chars, "
             f"User message: {len(user_message)} chars"
         )
@@ -266,6 +286,8 @@ class BaseAgent(ABC, Generic[T]):
                     f"[{self.AGENT_NAME}] Attempt {attempt}/{self.MAX_RETRIES} "
                     f"failed (parse/validation): {e}"
                 )
+                if self.config.job_id:
+                    pipeline_analytics.record_retry(self.config.job_id)
                 if attempt < self.MAX_RETRIES:
                     delay = self.RETRY_DELAY_BASE ** attempt
                     logger.info(f"Retrying in {delay:.1f}s...")
@@ -277,6 +299,8 @@ class BaseAgent(ABC, Generic[T]):
                     f"[{self.AGENT_NAME}] Attempt {attempt}/{self.MAX_RETRIES} "
                     f"API error: {e}"
                 )
+                if self.config.job_id:
+                    pipeline_analytics.record_retry(self.config.job_id)
                 # Do NOT retry on auth errors — they won't self-resolve
                 if "Invalid OpenRouter API key" in str(e) or "Insufficient" in str(e):
                     break

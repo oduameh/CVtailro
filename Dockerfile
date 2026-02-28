@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpangocairo-1.0-0 \
     libgdk-pixbuf-2.0-0 \
     libffi-dev \
+    libpq-dev \
     shared-mime-info \
     fonts-liberation \
     fonts-dejavu-core \
