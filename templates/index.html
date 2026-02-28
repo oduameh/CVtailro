@@ -2241,7 +2241,7 @@
             }
 
             // --- Downloads ---
-            var atsLink = '', recLink = '', secondaryHtml = '';
+            var atsLink = '', recLink = '', atsFname = '', recFname = '', secondaryHtml = '';
             var effectiveJobId = jobId || s.job_id || s.id || '';
 
             // Always generate standard download links (DB fallback regenerates PDFs)
@@ -2256,39 +2256,19 @@
                     var m = FILES[fname] || {l: fname, b: "", cat: "other", primary: false};
                     var link = '/api/download/' + effectiveJobId + '/' + fname;
                     if (m.primary) {
-                        if (m.cat === 'ats') atsLink = link;
-                        else if (m.cat === 'rec') recLink = link;
+                        if (m.cat === 'ats') { atsLink = link; atsFname = fname; }
+                        else if (m.cat === 'rec') { recLink = link; recFname = fname; }
                     } else {
-                        secondaryHtml += '<a class="dl-btn-secondary" href="' + link + '"><span class="label">' + escapeHtml(m.l) + '</span><span class="badge">' + m.b + '</span></a>';
+                        secondaryHtml += '<a class="dl-btn-secondary" href="#" onclick="safeDownload(\'' + link + '\',\'' + fname + '\',event); return false;"><span class="label">' + escapeHtml(m.l) + '</span><span class="badge">' + m.b + '</span></a>';
                     }
                 });
             }
 
-            // Reset download cards
+            // Reset download cards with click handlers that use safeDownload
             var dlCards = document.getElementById("dlCards");
             dlCards.innerHTML =
-                '<div class="dl-card" id="dlCardAts"><div class="dl-card-icon ats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div><div class="dl-card-title">ATS Resume</div><div class="dl-card-desc">Optimized for automated screening systems</div><span class="dl-card-btn" id="dlBtnAts">Download PDF</span></div>' +
-                '<div class="dl-card rec-card" id="dlCardRec"><div class="dl-card-icon rec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div><div class="dl-card-title">Recruiter Resume</div><div class="dl-card-desc">Enhanced for human readability</div><span class="dl-card-btn" id="dlBtnRec">Download PDF</span></div>';
-
-            // Wire up download links
-            if (atsLink) {
-                var atsCard = document.getElementById("dlCardAts");
-                var atsParent = atsCard.parentNode;
-                var atsA = document.createElement('a');
-                atsA.className = atsCard.className;
-                atsA.href = atsLink;
-                atsA.innerHTML = atsCard.innerHTML;
-                atsParent.replaceChild(atsA, atsCard);
-            }
-            if (recLink) {
-                var recCard = document.getElementById("dlCardRec");
-                var recParent = recCard.parentNode;
-                var recA = document.createElement('a');
-                recA.className = recCard.className;
-                recA.href = recLink;
-                recA.innerHTML = recCard.innerHTML;
-                recParent.replaceChild(recA, recCard);
-            }
+                '<div class="dl-card" id="dlCardAts" style="cursor:pointer" onclick="' + (atsLink ? 'safeDownload(\'' + atsLink + '\',\'' + atsFname + '\',event)' : '') + '"><div class="dl-card-icon ats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div><div class="dl-card-title">ATS Resume</div><div class="dl-card-desc">Optimized for automated screening systems</div><span class="dl-card-btn" id="dlBtnAts">Download PDF</span></div>' +
+                '<div class="dl-card rec-card" id="dlCardRec" style="cursor:pointer" onclick="' + (recLink ? 'safeDownload(\'' + recLink + '\',\'' + recFname + '\',event)' : '') + '"><div class="dl-card-icon rec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div><div class="dl-card-title">Recruiter Resume</div><div class="dl-card-desc">Enhanced for human readability</div><span class="dl-card-btn" id="dlBtnRec">Download PDF</span></div>';
 
             document.getElementById("dlGridSecondary").innerHTML = secondaryHtml;
 
@@ -2448,6 +2428,32 @@
 
     function dismissError() {
         document.getElementById("errorBanner").classList.remove("active");
+    }
+
+    // --- Safe download via fetch (shows errors as toast instead of navigating away) ---
+    async function safeDownload(url, filename, event) {
+        if (event) event.preventDefault();
+        try {
+            var resp = await fetch(url, { credentials: 'same-origin' });
+            if (!resp.ok) {
+                var errData;
+                try { errData = await resp.json(); } catch(e) { errData = {}; }
+                var errMsg = errData.error || ('Download failed (HTTP ' + resp.status + ')');
+                showError(errMsg);
+                return;
+            }
+            var blob = await resp.blob();
+            var blobUrl = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = filename || url.split('/').pop();
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 1000);
+        } catch(e) {
+            showError('Download failed: ' + e.message);
+        }
     }
 
     // --- Simple markdown to HTML renderer ---
@@ -2806,43 +2812,35 @@
         // --- Downloads ---
         var atsLink = '';
         var recLink = '';
+        var atsFname = '';
+        var recFname = '';
         var secondaryHtml = '';
 
-        s.files.forEach(function(f) {
-            var m = FILES[f] || {l: f, b: "", cat: "other", primary: false};
-            var link = '/api/download/' + jobId + '/' + f;
+        // Use file list from result, or fallback to standard files (DB fallback has empty files[])
+        var fileList = (s.files && s.files.length > 0) ? s.files : [
+            "tailored_resume_ats.pdf", "tailored_resume_recruiter.pdf",
+            "tailored_resume_ats.md", "tailored_resume_recruiter.md",
+            "match_report.json", "interview_talking_points.md"
+        ];
+        fileList.forEach(function(f) {
+            var fname = typeof f === 'string' ? f : f.filename;
+            var m = FILES[fname] || {l: fname, b: "", cat: "other", primary: false};
+            var link = '/api/download/' + jobId + '/' + fname;
             if (m.primary) {
-                if (m.cat === 'ats') atsLink = link;
-                else if (m.cat === 'rec') recLink = link;
+                if (m.cat === 'ats') { atsLink = link; atsFname = fname; }
+                else if (m.cat === 'rec') { recLink = link; recFname = fname; }
             } else {
-                secondaryHtml += '<a class="dl-btn-secondary" href="' + link + '">' +
+                secondaryHtml += '<a class="dl-btn-secondary" href="#" onclick="safeDownload(\'' + link + '\',\'' + fname + '\',event); return false;">' +
                     '<span class="label">' + escapeHtml(m.l) + '</span>' +
                     '<span class="badge">' + m.b + '</span></a>';
             }
         });
 
-        // Wire up download cards
-        var atsCard = document.getElementById("dlCardAts");
-        var recCard = document.getElementById("dlCardRec");
-        if (atsLink) {
-            atsCard.href = atsLink;
-            atsCard.setAttribute('href', atsLink);
-            // Make it a link
-            var atsParent = atsCard.parentNode;
-            var atsA = document.createElement('a');
-            atsA.className = atsCard.className;
-            atsA.href = atsLink;
-            atsA.innerHTML = atsCard.innerHTML;
-            atsParent.replaceChild(atsA, atsCard);
-        }
-        if (recLink) {
-            var recParent = recCard.parentNode;
-            var recA = document.createElement('a');
-            recA.className = recCard.className;
-            recA.href = recLink;
-            recA.innerHTML = recCard.innerHTML;
-            recParent.replaceChild(recA, recCard);
-        }
+        // Wire up download cards with safeDownload click handlers
+        var dlCards = document.getElementById("dlCards");
+        dlCards.innerHTML =
+            '<div class="dl-card" id="dlCardAts" style="cursor:pointer"' + (atsLink ? ' onclick="safeDownload(\'' + atsLink + '\',\'' + atsFname + '\',event)"' : '') + '><div class="dl-card-icon ats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div><div class="dl-card-title">ATS Resume</div><div class="dl-card-desc">Optimized for automated screening systems</div><span class="dl-card-btn" id="dlBtnAts">Download PDF</span></div>' +
+            '<div class="dl-card rec-card" id="dlCardRec" style="cursor:pointer"' + (recLink ? ' onclick="safeDownload(\'' + recLink + '\',\'' + recFname + '\',event)"' : '') + '><div class="dl-card-icon rec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div><div class="dl-card-title">Recruiter Resume</div><div class="dl-card-desc">Enhanced for human readability</div><span class="dl-card-btn" id="dlBtnRec">Download PDF</span></div>';
 
         document.getElementById("dlGridSecondary").innerHTML = secondaryHtml;
 

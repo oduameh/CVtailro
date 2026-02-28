@@ -1049,7 +1049,10 @@ def get_result(job_id: str):
             return jsonify({"status": "running"}), 202
         if job["status"] == "error":
             return jsonify({"status": "error", "error": job["error"]}), 500
-        return jsonify({"status": "complete", "result": job["result"]})
+        # Only return in-memory result if it hasn't been purged
+        if job.get("result") is not None:
+            return jsonify({"status": "complete", "result": job["result"]})
+        # Result was purged from memory — fall through to DB
 
     # Fallback: query the database
     db_job = db.session.get(TailoringJob, job_id)
@@ -1081,18 +1084,32 @@ def get_result(job_id: str):
 def download_file(job_id: str, filename: str):
     """Download an output file from a completed job.
 
-    Checks in-memory jobs first (current session), then falls back to R2
-    storage for historical files.
+    Three fallback paths:
+      1. In-memory jobs (current session, files on disk)
+      2. R2 cloud storage (if configured, via presigned URL)
+      3. Database (markdown served directly, PDFs regenerated on-the-fly)
     """
     safe_name = Path(filename).name
+    is_authed = current_user.is_authenticated
+    user_id = current_user.id if is_authed else None
+    logger.info(
+        f"[Download] job_id={job_id} file={safe_name} "
+        f"authed={is_authed} user_id={user_id}"
+    )
 
     # 1. Check in-memory jobs (current session)
+    output_dir = None
     with jobs_lock:
         if job_id in jobs:
             output_dir = jobs[job_id]["output_dir"]
-            file_path = Path(output_dir) / safe_name
-            if file_path.exists():
-                return send_from_directory(output_dir, safe_name, as_attachment=True)
+
+    if output_dir:
+        file_path = Path(output_dir) / safe_name
+        if file_path.exists():
+            logger.info(f"[Download] Serving from local disk: {file_path}")
+            return send_from_directory(output_dir, safe_name, as_attachment=True)
+        else:
+            logger.info(f"[Download] In-memory job found but file missing on disk: {file_path}")
 
     # 2. Fall back to R2 for historical files
     if r2_storage.is_configured:
@@ -1101,79 +1118,173 @@ def download_file(job_id: str, filename: str):
         ).first()
         if job_file:
             # Verify the job belongs to the current user (if authenticated)
-            if current_user.is_authenticated:
+            if is_authed:
                 job_record = TailoringJob.query.filter_by(
-                    id=job_id, user_id=current_user.id
+                    id=job_id, user_id=user_id
                 ).first()
                 if not job_record:
+                    logger.warning(f"[Download] R2 access denied: job {job_id} user {user_id}")
                     return jsonify({"error": "Access denied"}), 403
             try:
                 url = r2_storage.generate_presigned_url(job_file.r2_key)
+                logger.info(f"[Download] Redirecting to R2 presigned URL for {safe_name}")
                 return redirect(url)
             except Exception as e:
-                logger.error(f"R2 presigned URL failed: {e}")
-                return jsonify({"error": "File temporarily unavailable"}), 500
+                logger.error(f"[Download] R2 presigned URL failed: {e}")
+                # Fall through to DB path instead of returning error
+        else:
+            logger.info(f"[Download] R2 configured but no JobFile record for {safe_name}")
 
-    # 3. Last resort: serve from DB (markdown or regenerate PDF)
-    if current_user.is_authenticated:
-        db_job = TailoringJob.query.filter_by(id=job_id, user_id=current_user.id).first()
-        if db_job:
-            from flask import Response as FlaskResponse
+    # 3. Serve from DB (markdown directly, PDFs regenerated, JSON reconstructed)
+    # Try with user_id filter first, then without (handles jobs created before auth)
+    db_job = None
+    if is_authed:
+        db_job = TailoringJob.query.filter_by(id=job_id, user_id=user_id).first()
+    if db_job is None:
+        # Fallback: try without user filter (for jobs with null user_id or
+        # created by the same user before session rotation)
+        db_job = db.session.get(TailoringJob, job_id)
+        if db_job and db_job.user_id is not None and db_job.user_id != user_id:
+            # Job belongs to a different user — deny access
+            logger.warning(
+                f"[Download] DB access denied: job {job_id} belongs to "
+                f"user {db_job.user_id}, requester is {user_id}"
+            )
+            db_job = None
 
-            # Markdown files — serve directly from DB
-            md_content = None
-            if "ats" in safe_name and safe_name.endswith(".md") and db_job.ats_resume_md:
-                md_content = db_job.ats_resume_md
-            elif "recruiter" in safe_name and safe_name.endswith(".md") and db_job.recruiter_resume_md:
-                md_content = db_job.recruiter_resume_md
-            elif "talking" in safe_name and db_job.talking_points_md:
-                md_content = db_job.talking_points_md
-            if md_content:
-                return FlaskResponse(
-                    md_content, mimetype="text/markdown",
-                    headers={"Content-Disposition": f"attachment; filename={safe_name}"}
-                )
+    if db_job is None:
+        logger.warning(
+            f"[Download] Job {job_id} not found in DB "
+            f"(user_id={user_id})"
+        )
+        return jsonify({"error": "File not found. The job may have expired or you may need to sign in again."}), 404
 
-            # PDF files — regenerate from stored markdown
-            if safe_name.endswith(".pdf"):
-                source_md = None
-                if "ats" in safe_name and db_job.ats_resume_md:
-                    source_md = db_job.ats_resume_md
-                elif "recruiter" in safe_name and db_job.recruiter_resume_md:
-                    source_md = db_job.recruiter_resume_md
-                if source_md:
-                    try:
-                        import tempfile
-                        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
-                            tmp_path = tmp.name
-                        template = db_job.template or "modern"
-                        generate_resume_pdf(source_md, tmp_path, template=template)
-                        pdf_data = open(tmp_path, "rb").read()
-                        os.unlink(tmp_path)
-                        return FlaskResponse(
-                            pdf_data, mimetype="application/pdf",
-                            headers={"Content-Disposition": f"attachment; filename={safe_name}"}
-                        )
-                    except Exception as e:
-                        logger.error(f"PDF regeneration failed: {e}")
-                        return jsonify({"error": "Could not generate PDF. Try downloading the markdown version."}), 500
+    logger.info(
+        f"[Download] Found job in DB: status={db_job.status} "
+        f"has_ats_md={db_job.ats_resume_md is not None} "
+        f"has_rec_md={db_job.recruiter_resume_md is not None} "
+        f"has_tp_md={db_job.talking_points_md is not None}"
+    )
 
-            # Match report JSON
-            if "match_report" in safe_name and safe_name.endswith(".json"):
-                import json as json_mod
-                report = {
-                    "job_title": db_job.job_title,
-                    "company": db_job.company,
-                    "match_score": db_job.match_score,
-                    "cosine_similarity": db_job.cosine_similarity,
-                    "missing_keywords": db_job.missing_keywords,
-                }
-                return FlaskResponse(
-                    json_mod.dumps(report, indent=2), mimetype="application/json",
-                    headers={"Content-Disposition": f"attachment; filename={safe_name}"}
-                )
+    from flask import Response as FlaskResponse
 
+    # Markdown files — serve directly from DB
+    md_content = None
+    if "ats" in safe_name and safe_name.endswith(".md"):
+        md_content = db_job.ats_resume_md
+    elif "recruiter" in safe_name and safe_name.endswith(".md"):
+        md_content = db_job.recruiter_resume_md
+    elif "talking" in safe_name and safe_name.endswith(".md"):
+        md_content = db_job.talking_points_md
+
+    if md_content:
+        logger.info(f"[Download] Serving markdown from DB: {safe_name} ({len(md_content)} chars)")
+        return FlaskResponse(
+            md_content, mimetype="text/markdown",
+            headers={"Content-Disposition": f"attachment; filename={safe_name}"}
+        )
+    elif safe_name.endswith(".md"):
+        logger.warning(f"[Download] Markdown requested but content is NULL in DB for {safe_name}")
+        return jsonify({"error": f"Resume content not found in database. The pipeline may not have saved results for this job."}), 404
+
+    # PDF files — regenerate from stored markdown
+    if safe_name.endswith(".pdf"):
+        source_md = None
+        if "ats" in safe_name:
+            source_md = db_job.ats_resume_md
+        elif "recruiter" in safe_name:
+            source_md = db_job.recruiter_resume_md
+
+        if not source_md:
+            logger.warning(f"[Download] PDF requested but source markdown is NULL for {safe_name}")
+            return jsonify({"error": "Resume content not saved. Try re-running the pipeline."}), 404
+
+        try:
+            import tempfile
+            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+                tmp_path = tmp.name
+            template = db_job.template or "modern"
+            logger.info(f"[Download] Regenerating PDF from DB markdown: {safe_name} template={template}")
+            generate_resume_pdf(source_md, tmp_path, template=template)
+            pdf_data = open(tmp_path, "rb").read()
+            os.unlink(tmp_path)
+            return FlaskResponse(
+                pdf_data, mimetype="application/pdf",
+                headers={"Content-Disposition": f"attachment; filename={safe_name}"}
+            )
+        except Exception as e:
+            logger.error(f"[Download] PDF regeneration failed for {safe_name}: {e}", exc_info=True)
+            return jsonify({"error": "Could not generate PDF. Try downloading the markdown version instead."}), 500
+
+    # Match report JSON — reconstruct from stored fields
+    if "match_report" in safe_name and safe_name.endswith(".json"):
+        import json as json_mod
+        report = {
+            "job_title": db_job.job_title,
+            "company": db_job.company,
+            "match_score": db_job.match_score,
+            "cosine_similarity": db_job.cosine_similarity,
+            "missing_keywords": db_job.missing_keywords,
+        }
+        logger.info(f"[Download] Serving reconstructed match report JSON")
+        return FlaskResponse(
+            json_mod.dumps(report, indent=2), mimetype="application/json",
+            headers={"Content-Disposition": f"attachment; filename={safe_name}"}
+        )
+
+    logger.warning(f"[Download] Unrecognised filename pattern: {safe_name}")
     return jsonify({"error": "File not found. Try re-downloading from your History."}), 404
+
+
+@app.route("/api/download-check/<job_id>")
+@login_required
+def download_check(job_id: str):
+    """Diagnostic endpoint: check what download paths are available for a job.
+
+    Useful for debugging download failures from the browser console:
+        fetch('/api/download-check/<job_id>').then(r => r.json()).then(console.log)
+    """
+    result = {
+        "job_id": job_id,
+        "user_id": current_user.id,
+        "in_memory": False,
+        "local_files": [],
+        "r2_configured": r2_storage.is_configured,
+        "r2_files": [],
+        "db_found": False,
+        "db_status": None,
+        "db_has_ats_md": False,
+        "db_has_rec_md": False,
+        "db_has_tp_md": False,
+        "db_user_id": None,
+    }
+
+    with jobs_lock:
+        if job_id in jobs:
+            result["in_memory"] = True
+            output_dir = jobs[job_id]["output_dir"]
+            try:
+                result["local_files"] = [
+                    f.name for f in Path(output_dir).iterdir() if f.is_file()
+                ]
+            except Exception:
+                pass
+
+    if r2_storage.is_configured:
+        job_files = JobFile.query.filter_by(job_id=job_id).all()
+        result["r2_files"] = [jf.filename for jf in job_files]
+
+    db_job = db.session.get(TailoringJob, job_id)
+    if db_job:
+        result["db_found"] = True
+        result["db_status"] = db_job.status
+        result["db_has_ats_md"] = db_job.ats_resume_md is not None and len(db_job.ats_resume_md or "") > 0
+        result["db_has_rec_md"] = db_job.recruiter_resume_md is not None and len(db_job.recruiter_resume_md or "") > 0
+        result["db_has_tp_md"] = db_job.talking_points_md is not None and len(db_job.talking_points_md or "") > 0
+        result["db_user_id"] = db_job.user_id
+        result["db_user_match"] = db_job.user_id == current_user.id
+
+    return jsonify(result)
 
 
 # ─── History API ─────────────────────────────────────────────────────────────
