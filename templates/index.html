@@ -2244,9 +2244,14 @@
             var atsLink = '', recLink = '', secondaryHtml = '';
             var effectiveJobId = jobId || s.job_id || s.id || '';
 
-            if (s.files && s.files.length > 0 && effectiveJobId) {
-                s.files.forEach(function(f) {
-                    // Support both string filenames and {filename, size_bytes} objects
+            // Always generate standard download links (DB fallback regenerates PDFs)
+            var fileList = (s.files && s.files.length > 0) ? s.files : [
+                "tailored_resume_ats.pdf", "tailored_resume_recruiter.pdf",
+                "tailored_resume_ats.md", "tailored_resume_recruiter.md",
+                "match_report.json", "interview_talking_points.md"
+            ];
+            if (effectiveJobId) {
+                fileList.forEach(function(f) {
                     var fname = typeof f === 'string' ? f : f.filename;
                     var m = FILES[fname] || {l: fname, b: "", cat: "other", primary: false};
                     var link = '/api/download/' + effectiveJobId + '/' + fname;
