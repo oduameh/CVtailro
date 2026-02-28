@@ -550,10 +550,14 @@ def run_pipeline_job(
                 db.session.commit()
                 logger.info(f"[Pipeline] Job {job_id} persisted to database")
 
-        # Clean up local output files after R2 upload to reclaim disk space
+        # Clean up local output files after a delay (give user time to download)
+        # Only clean up if R2 upload succeeded
         if r2_storage.is_configured:
-            shutil.rmtree(str(output_dir), ignore_errors=True)
-            logger.info(f"[Pipeline] Cleaned up local output dir for job {job_id}")
+            def _cleanup_output(path, delay=300):
+                time.sleep(delay)  # Wait 5 minutes before deleting
+                shutil.rmtree(str(path), ignore_errors=True)
+                logger.info(f"[Pipeline] Cleaned up local output dir (delayed)")
+            threading.Thread(target=_cleanup_output, args=(output_dir,), daemon=True).start()
 
         with jobs_lock:
             jobs[job_id]["status"] = "complete"
@@ -1110,7 +1114,26 @@ def download_file(job_id: str, filename: str):
                 logger.error(f"R2 presigned URL failed: {e}")
                 return jsonify({"error": "File temporarily unavailable"}), 500
 
-    return jsonify({"error": "Job not found"}), 404
+    # 3. Last resort: serve markdown content from DB as a downloadable file
+    if current_user.is_authenticated:
+        db_job = TailoringJob.query.filter_by(id=job_id, user_id=current_user.id).first()
+        if db_job:
+            content = None
+            ct = "text/markdown"
+            if "ats" in safe_name and safe_name.endswith(".md") and db_job.ats_resume_md:
+                content = db_job.ats_resume_md
+            elif "recruiter" in safe_name and safe_name.endswith(".md") and db_job.recruiter_resume_md:
+                content = db_job.recruiter_resume_md
+            elif "talking" in safe_name and db_job.talking_points_md:
+                content = db_job.talking_points_md
+            if content:
+                from flask import Response as FlaskResponse
+                return FlaskResponse(
+                    content, mimetype=ct,
+                    headers={"Content-Disposition": f"attachment; filename={safe_name}"}
+                )
+
+    return jsonify({"error": "File not found. Try re-downloading from your History."}), 404
 
 
 # ─── History API ─────────────────────────────────────────────────────────────
