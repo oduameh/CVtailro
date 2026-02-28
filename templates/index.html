@@ -1587,7 +1587,7 @@
 
     <!-- Trust Bar -->
     <div class="trust-bar">
-        AI-powered resume optimization <span>&middot;</span> Sign in to save &amp; access your history <span>&middot;</span> Your data stays private
+        AI-powered resume optimization <span>&middot;</span> Sign in with Google to get started <span>&middot;</span> Your data stays private
     </div>
 
     <!-- Demo Banner -->
@@ -1996,7 +1996,7 @@
 
             // Update CTA hint for signed-out users
             if (ctaHint) {
-                ctaHint.textContent = 'Takes about 2 minutes \u00b7 Sign in to save your results';
+                ctaHint.textContent = 'Takes about 2 minutes \u00b7 Sign in with Google to get started';
             }
         }
     }
@@ -2543,9 +2543,11 @@
     }
 
     async function startTailoring() {
-        // Show hint if not signed in (but don't block)
-        if (authUser === false) {
-            showToast('Sign in to save your results and access them later', 'info');
+        // Require sign-in
+        if (!authUser || authUser === false) {
+            showToast('Please sign in with Google to use this tool', 'info');
+            setTimeout(function() { window.location.href = '/auth/google/login'; }, 1500);
+            return;
         }
         if (!serviceConfigured) { showError("Service is temporarily unavailable. Please try again later."); return; }
         var file = fileInput.files[0], jd = jdTA.value.trim();
