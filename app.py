@@ -656,7 +656,8 @@ def download_file(job_id: str, filename: str):
 if __name__ == "__main__":
     setup_logging(verbose=False)
 
+    port = int(os.environ.get("PORT", 5050))
     print("\n  CVtailro Web UI")
     print("  ───────────────")
-    print("  Open http://localhost:5050 in your browser\n")
-    app.run(host="0.0.0.0", port=5050, debug=False, threaded=True)
+    print(f"  Open http://localhost:{port} in your browser\n")
+    app.run(host="0.0.0.0", port=port, debug=False, threaded=True)
