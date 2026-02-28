@@ -253,6 +253,18 @@
                 </div>
             </div>
 
+            <!-- Pipeline Error Log -->
+            <div class="card">
+                <h2>Pipeline Errors</h2>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">
+                    Last 50 errors (most recent first). Shows which model failed and why.
+                </div>
+                <div id="errorLog" style="max-height:300px;overflow-y:auto;">
+                    <div style="color:#6B7280;font-size:13px;">Loading...</div>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="loadErrors()" style="margin-top:8px;">Refresh</button>
+            </div>
+
             <!-- Save / Logout -->
             <div class="card">
                 <div id="saveAlert" class="alert"></div>
@@ -376,6 +388,7 @@
 
         loadModels(config.default_model);
         loadUsage();
+        loadErrors();
     }
 
     async function loadModels(selectedModel) {
@@ -479,6 +492,26 @@
             alert.className = 'alert error'; alert.textContent = 'Network error.';
         }
         setTimeout(() => { alert.className = 'alert'; }, 5000);
+    }
+
+    async function loadErrors() {
+        try {
+            const r = await fetch('/admin/api/errors');
+            if (!r.ok) return;
+            const d = await r.json();
+            const el = document.getElementById('errorLog');
+            if (!el) return;
+            if (!d.errors || d.errors.length === 0) {
+                el.innerHTML = '<div style="color:#6B7280;font-size:13px;">No errors recorded.</div>';
+                return;
+            }
+            el.innerHTML = d.errors.map(e =>
+                '<div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:12px;margin-bottom:8px;">' +
+                '<div style="font-size:11px;color:#6B7280;">' + e.time + ' &middot; <strong>' + e.model + '</strong></div>' +
+                '<div style="font-size:13px;color:#DC2626;margin-top:4px;">' + e.error + '</div>' +
+                '</div>'
+            ).join('');
+        } catch(e) {}
     }
 
     // ─── Init ───

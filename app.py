@@ -64,6 +64,10 @@ jobs_lock = threading.Lock()
 # Clean up jobs older than 2 hours
 JOB_TTL = 7200
 
+# Pipeline error log (in-memory, last 50 errors)
+pipeline_errors: list[dict] = []
+pipeline_errors_lock = threading.Lock()
+
 
 class UsageTracker:
     def __init__(self):
@@ -357,10 +361,22 @@ def run_pipeline_job(
 
     except Exception as e:
         logging.getLogger("pipeline").exception("Pipeline failed")
+        error_msg = str(e)
+        # Log to admin-visible error list
+        import traceback
+        with pipeline_errors_lock:
+            pipeline_errors.append({
+                "time": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+                "model": model,
+                "error": error_msg,
+                "traceback": traceback.format_exc()[-500:],
+            })
+            if len(pipeline_errors) > 50:
+                pipeline_errors.pop(0)
         with jobs_lock:
             jobs[job_id]["status"] = "error"
-            jobs[job_id]["error"] = str(e)
-        progress_queue.put({"status": "error", "detail": str(e)})
+            jobs[job_id]["error"] = error_msg
+        progress_queue.put({"status": "error", "detail": f"[{model}] {error_msg}"})
 
 
 # ─── Admin Routes ────────────────────────────────────────────────────────────────
@@ -463,6 +479,15 @@ def admin_test_key():
             return jsonify({"valid": False, "error": f"HTTP {r.status_code}"})
     except Exception as e:
         return jsonify({"valid": False, "error": str(e)})
+
+
+@app.route("/admin/api/errors")
+def admin_errors():
+    """Return recent pipeline errors."""
+    if not session.get("admin_authenticated"):
+        return jsonify({"error": "Not authenticated"}), 401
+    with pipeline_errors_lock:
+        return jsonify({"errors": list(reversed(pipeline_errors))})
 
 
 @app.route("/admin/api/usage")
