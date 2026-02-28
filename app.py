@@ -15,12 +15,14 @@ from __future__ import annotations
 
 import json
 import logging
+import mimetypes
 import os
 import queue
 import re
 import threading
 import time
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pdfplumber
@@ -29,6 +31,7 @@ from flask import (
     Flask,
     Response,
     jsonify,
+    redirect,
     render_template,
     request,
     send_from_directory,
@@ -231,6 +234,7 @@ def run_pipeline_job(
     output_dir: Path,
     api_key: str,
     model: str,
+    user_id: str | None = None,
 ) -> None:
     """Run the full pipeline in a background thread, pushing progress events."""
     progress_queue = jobs[job_id]["queue"]
@@ -254,6 +258,19 @@ def run_pipeline_job(
             model=model,
             job_id=job_id,
         )
+
+        # Persist TailoringJob to database at the start
+        with app.app_context():
+            db_job = TailoringJob(
+                id=job_id,
+                user_id=user_id,
+                status="running",
+                rewrite_mode=mode,
+                template=template,
+                model_used=model,
+            )
+            db.session.add(db_job)
+            db.session.commit()
 
         # Start analytics tracking for this pipeline run
         pipeline_analytics.start_job(job_id, model)
@@ -458,6 +475,56 @@ def run_pipeline_job(
                 f"${job_stats.get('estimated_cost_usd', 0):.4f} est. cost"
             )
 
+        # Persist results to database and upload files to R2
+        files_list = [
+            "tailored_resume_ats.pdf",
+            "tailored_resume_recruiter.pdf",
+            "tailored_resume_ats.md",
+            "tailored_resume_recruiter.md",
+            "match_report.json",
+            "interview_talking_points.md",
+        ]
+        with app.app_context():
+            db_job = db.session.get(TailoringJob, job_id)
+            if db_job:
+                db_job.status = "complete"
+                db_job.match_score = match_report.overall_match_score
+                db_job.cosine_similarity = match_report.cosine_similarity
+                db_job.missing_keywords = match_report.missing_keywords
+                db_job.job_title = job_analysis.job_title
+                db_job.company = job_analysis.company
+                db_job.ats_resume_md = ats_resume.markdown_content
+                db_job.recruiter_resume_md = recruiter_resume.markdown_content
+                db_job.talking_points_md = format_talking_points(talking_points)
+                db_job.completed_at = datetime.now(timezone.utc)
+                db_job.duration_seconds = total_elapsed
+
+                # Upload output files to R2 if configured
+                if r2_storage.is_configured:
+                    for filename in files_list:
+                        file_path = output_dir / filename
+                        if file_path.exists():
+                            try:
+                                r2_key = r2_storage.upload_file(
+                                    job_id, filename, file_path=file_path
+                                )
+                                job_file = JobFile(
+                                    job_id=job_id,
+                                    filename=filename,
+                                    r2_key=r2_key,
+                                    content_type=mimetypes.guess_type(filename)[0]
+                                    or "application/octet-stream",
+                                    size_bytes=file_path.stat().st_size,
+                                )
+                                db.session.add(job_file)
+                            except Exception as upload_err:
+                                logger.error(
+                                    f"R2 upload failed for {filename}: {upload_err}"
+                                )
+
+                db.session.commit()
+                logger.info(f"[Pipeline] Job {job_id} persisted to database")
+
         with jobs_lock:
             jobs[job_id]["status"] = "complete"
             jobs[job_id]["result"] = {
@@ -496,6 +563,19 @@ def run_pipeline_job(
             })
             if len(pipeline_errors) > 50:
                 pipeline_errors.pop(0)
+
+        # Mark job as failed in database
+        try:
+            with app.app_context():
+                db_job = db.session.get(TailoringJob, job_id)
+                if db_job:
+                    db_job.status = "error"
+                    db_job.error_message = str(e)[:2000]
+                    db_job.completed_at = datetime.now(timezone.utc)
+                    db.session.commit()
+        except Exception as db_err:
+            logger.error(f"Failed to update job status in database: {db_err}")
+
         with jobs_lock:
             jobs[job_id]["status"] = "error"
             jobs[job_id]["error"] = error_msg
@@ -794,6 +874,9 @@ def start_tailoring():
     # Save job description
     (output_dir / "input_job_description.txt").write_text(job_text, encoding="utf-8")
 
+    # Get user_id if authenticated (not available in background thread)
+    user_id = current_user.id if current_user.is_authenticated else None
+
     with jobs_lock:
         jobs[job_id] = {
             "status": "running",
@@ -807,7 +890,7 @@ def start_tailoring():
     thread = threading.Thread(
         target=run_pipeline_job,
         args=(job_id, str(resume_path), job_text, mode, template, output_dir,
-              api_key, model),
+              api_key, model, user_id),
         daemon=True,
     )
     thread.start()
@@ -868,14 +951,42 @@ def get_result(job_id: str):
 
 @app.route("/api/download/<job_id>/<filename>")
 def download_file(job_id: str, filename: str):
-    """Download an output file from a completed job."""
-    with jobs_lock:
-        if job_id not in jobs:
-            return jsonify({"error": "Job not found"}), 404
-        output_dir = jobs[job_id]["output_dir"]
+    """Download an output file from a completed job.
 
+    Checks in-memory jobs first (current session), then falls back to R2
+    storage for historical files.
+    """
     safe_name = Path(filename).name
-    return send_from_directory(output_dir, safe_name, as_attachment=True)
+
+    # 1. Check in-memory jobs (current session)
+    with jobs_lock:
+        if job_id in jobs:
+            output_dir = jobs[job_id]["output_dir"]
+            file_path = Path(output_dir) / safe_name
+            if file_path.exists():
+                return send_from_directory(output_dir, safe_name, as_attachment=True)
+
+    # 2. Fall back to R2 for historical files
+    if r2_storage.is_configured:
+        job_file = JobFile.query.filter_by(
+            job_id=job_id, filename=safe_name
+        ).first()
+        if job_file:
+            # Verify the job belongs to the current user (if authenticated)
+            if current_user.is_authenticated:
+                job_record = TailoringJob.query.filter_by(
+                    id=job_id, user_id=current_user.id
+                ).first()
+                if not job_record:
+                    return jsonify({"error": "Access denied"}), 403
+            try:
+                url = r2_storage.generate_presigned_url(job_file.r2_key)
+                return redirect(url)
+            except Exception as e:
+                logger.error(f"R2 presigned URL failed: {e}")
+                return jsonify({"error": "File temporarily unavailable"}), 500
+
+    return jsonify({"error": "Job not found"}), 404
 
 
 # ─── History API ─────────────────────────────────────────────────────────────

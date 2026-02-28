@@ -30,6 +30,12 @@ def load_user(user_id):
     return db.session.get(User, user_id)
 
 
+@login_manager.unauthorized_handler
+def unauthorized():
+    """Return JSON 401 for API requests instead of redirecting."""
+    return jsonify({"error": "Authentication required"}), 401
+
+
 def init_oauth(app):
     """Initialize OAuth with the Flask app and register the Google provider."""
     oauth.init_app(app)

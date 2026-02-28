@@ -1258,6 +1258,12 @@
             border: 1px solid #BFDBFE;
         }
 
+        .toast.toast-success {
+            background: #ECFDF5;
+            color: #065F46;
+            border: 1px solid #A7F3D0;
+        }
+
         /* --- History Overlay --- */
         .history-overlay {
             display: none;
@@ -1581,7 +1587,7 @@
 
     <!-- Trust Bar -->
     <div class="trust-bar">
-        AI-powered resume optimization <span>&middot;</span> Sign in with Google to get started <span>&middot;</span> Your data stays private
+        AI-powered resume optimization <span>&middot;</span> Sign in to save &amp; access your history <span>&middot;</span> Your data stays private
     </div>
 
     <div class="container">
@@ -1662,7 +1668,7 @@
             <!-- CTA -->
             <div class="cta-row">
                 <button class="btn-run" id="btnRun" onclick="startTailoring()">Tailor My Resume</button>
-                <div class="cta-hint">Sign in with Google to get started &middot; Takes about 2 minutes</div>
+                <div class="cta-hint" id="ctaHint">Takes about 2 minutes &middot; Sign in to save your results</div>
             </div>
         </div>
 
@@ -1925,17 +1931,17 @@
             var resp = await fetch('/auth/me', { credentials: 'same-origin' });
             if (resp.ok) {
                 var data = await resp.json();
-                if (data && data.email) {
+                if (data && data.authenticated && data.email) {
                     authUser = data;
                     renderAuthUI();
                     return;
                 }
             }
-            // 401, 404, or unexpected response = not authenticated
+            // {authenticated: false}, 401, 404, or unexpected response
             authUser = false;
             renderAuthUI();
         } catch(e) {
-            // Auth endpoint not deployed yet, or network error — treat as not authenticated
+            // Auth endpoint not deployed yet, network error, or 500 — show sign-in button
             authUser = false;
             renderAuthUI();
         }
@@ -1944,6 +1950,7 @@
     function renderAuthUI() {
         var signinBtn = document.getElementById('btnGoogleSignin');
         var userMenuWrap = document.getElementById('userMenuWrap');
+        var ctaHint = document.getElementById('ctaHint');
 
         if (authUser && authUser.email) {
             // Logged in
@@ -1972,10 +1979,20 @@
                 document.getElementById('adminLink').style.display = 'flex';
                 document.getElementById('adminDivider').style.display = 'block';
             }
+
+            // Update CTA hint for signed-in users
+            if (ctaHint) {
+                ctaHint.textContent = 'Takes about 2 minutes \u00b7 Results will be saved to your history';
+            }
         } else {
             // Not logged in
             signinBtn.style.display = 'inline-flex';
             userMenuWrap.style.display = 'none';
+
+            // Update CTA hint for signed-out users
+            if (ctaHint) {
+                ctaHint.textContent = 'Takes about 2 minutes \u00b7 Sign in to save your results';
+            }
         }
     }
 
@@ -2124,8 +2141,9 @@
                 var title = job.job_title || job.company || 'Untitled Job';
                 var company = job.company ? ' at ' + escapeHtml(job.company) : '';
                 var date = job.created_at ? formatDate(job.created_at) : '';
-                var model = job.model ? job.model.split('/').pop() : '';
-                html += '<div class="history-card" onclick="loadHistoryJob(\'' + escapeAttr(job.job_id || job.id) + '\')">' +
+                var model = (job.model_used || job.model || '');
+                model = model ? model.split('/').pop() : '';
+                html += '<div class="history-card" onclick="loadHistoryJob(\'' + escapeAttr(job.id || job.job_id) + '\')">' +
                     '<div class="history-card-score ' + scoreClass + '">' + Math.round(score) + '%</div>' +
                     '<div class="history-card-info">' +
                         '<div class="history-card-title">' + escapeHtml(title) + escapeHtml(company) + '</div>' +
@@ -2219,12 +2237,14 @@
 
             // --- Downloads ---
             var atsLink = '', recLink = '', secondaryHtml = '';
-            var effectiveJobId = jobId || s.job_id || '';
+            var effectiveJobId = jobId || s.job_id || s.id || '';
 
             if (s.files && s.files.length > 0 && effectiveJobId) {
                 s.files.forEach(function(f) {
-                    var m = FILES[f] || {l: f, b: "", cat: "other", primary: false};
-                    var link = '/api/download/' + effectiveJobId + '/' + f;
+                    // Support both string filenames and {filename, size_bytes} objects
+                    var fname = typeof f === 'string' ? f : f.filename;
+                    var m = FILES[fname] || {l: fname, b: "", cat: "other", primary: false};
+                    var link = '/api/download/' + effectiveJobId + '/' + fname;
                     if (m.primary) {
                         if (m.cat === 'ats') atsLink = link;
                         else if (m.cat === 'rec') recLink = link;
@@ -2508,11 +2528,9 @@
     }
 
     async function startTailoring() {
-        // Auth guard: require sign-in before processing
+        // Show hint if not signed in (but don't block)
         if (authUser === false) {
-            // Not logged in — redirect to Google sign-in
-            window.location.href = '/auth/google/login';
-            return;
+            showToast('Sign in to save your results and access them later', 'info');
         }
         if (!serviceConfigured) { showError("Service is temporarily unavailable. Please try again later."); return; }
         var file = fileInput.files[0], jd = jdTA.value.trim();
@@ -2603,6 +2621,9 @@
                 document.getElementById('reconnectingBadge').classList.remove('visible');
                 loadResults(jid);
                 btn.disabled = false; btn.textContent = "Tailor My Resume";
+                if (authUser && authUser.email) {
+                    showToast('Results saved to your history', 'success');
+                }
             }
 
             function onError(msg) {
