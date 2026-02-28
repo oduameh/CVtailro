@@ -1078,8 +1078,7 @@
         <!-- Config Banner -->
         <div id="configBanner" style="display:none; padding: 14px 18px; background: #FEF3C7; color: #92400E;
              border: 1px solid #FCD34D; border-radius: 8px; font-size: 14px; margin-bottom: 20px;">
-            Service is not configured. An admin needs to set the API key in the
-            <a href="/admin" style="color: #92400E; font-weight: 600;">Admin Panel</a>.
+            Service is temporarily unavailable. Please try again later.
         </div>
 
         <!-- Form Section -->
@@ -1519,7 +1518,7 @@
     }
 
     async function startTailoring() {
-        if (!serviceConfigured) { showError("Service is not configured. An admin must set the API key at /admin."); return; }
+        if (!serviceConfigured) { showError("Service is temporarily unavailable. Please try again later."); return; }
         var file = fileInput.files[0], jd = jdTA.value.trim();
         var mode = document.querySelector('input[name="mode"]:checked').value;
         var template = document.querySelector('input[name="template"]:checked').value;
