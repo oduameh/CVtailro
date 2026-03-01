@@ -1541,6 +1541,49 @@
             flex-wrap: wrap;
         }
 
+        .history-card-snippet {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .history-card-badges {
+            display: flex;
+            gap: 6px;
+            margin-top: 4px;
+            flex-wrap: wrap;
+        }
+
+        .history-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        .history-badge.template {
+            background: #EDE9FE;
+            color: #6D28D9;
+        }
+
+        .history-badge.mode-conservative {
+            background: #DBEAFE;
+            color: #1D4ED8;
+        }
+
+        .history-badge.mode-aggressive {
+            background: #FEE2E2;
+            color: #B91C1C;
+        }
+
         .history-card-arrow {
             width: 16px;
             height: 16px;
@@ -2288,6 +2331,13 @@
                 var date = job.created_at ? formatDate(job.created_at) : '';
                 var model = (job.model_used || job.model || '');
                 model = model ? model.split('/').pop() : '';
+                var snippet = job.job_description_snippet || '';
+                if (snippet.length > 100) snippet = snippet.substring(0, 100) + '...';
+                var tmpl = job.template || '';
+                var tmplLabel = tmpl ? tmpl.charAt(0).toUpperCase() + tmpl.slice(1) : '';
+                var rwMode = job.rewrite_mode || '';
+                var rwLabel = rwMode ? rwMode.charAt(0).toUpperCase() + rwMode.slice(1) : '';
+                var rwClass = rwMode === 'aggressive' ? 'mode-aggressive' : 'mode-conservative';
                 html += '<div class="history-card" onclick="loadHistoryJob(\'' + escapeAttr(job.id || job.job_id) + '\')">' +
                     '<div class="history-card-score ' + scoreClass + '">' + Math.round(score) + '%</div>' +
                     '<div class="history-card-info">' +
@@ -2295,6 +2345,11 @@
                         '<div class="history-card-meta">' +
                             (date ? '<span>' + escapeHtml(date) + '</span>' : '') +
                             (model ? '<span>' + escapeHtml(model) + '</span>' : '') +
+                        '</div>' +
+                        (snippet ? '<div class="history-card-snippet">' + escapeHtml(snippet) + '</div>' : '') +
+                        '<div class="history-card-badges">' +
+                            (tmplLabel ? '<span class="history-badge template">' + escapeHtml(tmplLabel) + '</span>' : '') +
+                            (rwLabel ? '<span class="history-badge ' + rwClass + '">' + escapeHtml(rwLabel) + '</span>' : '') +
                         '</div>' +
                     '</div>' +
                     '<svg class="history-card-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
@@ -2394,7 +2449,7 @@
             if (effectiveJobId) {
                 fileList.forEach(function(f) {
                     var fname = typeof f === 'string' ? f : f.filename;
-                    var m = FILES[fname] || {l: fname, b: "", cat: "other", primary: false};
+                    var m = getFileInfo(fname);
                     var link = '/api/download/' + effectiveJobId + '/' + fname;
                     if (m.primary) {
                         if (m.cat === 'ats') { atsLink = link; atsFname = fname; }
@@ -2503,16 +2558,29 @@
         return msg;
     }
 
-    var FILES = {
-        "tailored_resume_ats.pdf":      {l:"ATS Resume",       b:"PDF",  cat:"ats",    primary:true},
-        "tailored_resume_recruiter.pdf": {l:"Recruiter Resume", b:"PDF",  cat:"rec",    primary:true},
-        "tailored_resume_ats.docx":      {l:"ATS Resume",       b:"DOCX", cat:"ats",    primary:false},
-        "tailored_resume_recruiter.docx":{l:"Recruiter Resume", b:"DOCX", cat:"rec",    primary:false},
-        "tailored_resume_ats.md":        {l:"ATS Resume",       b:"MD",   cat:"ats",    primary:false},
-        "tailored_resume_recruiter.md":  {l:"Recruiter Resume", b:"MD",   cat:"rec",    primary:false},
-        "match_report.json":             {l:"Match Report",     b:"JSON", cat:"other",  primary:false},
-        "interview_talking_points.md":   {l:"Talking Points",   b:"MD",   cat:"other",  primary:false}
-    };
+    // Map filenames to display info. Supports dynamic smart filenames
+    // (e.g. "Software_Engineer_Google_ATS.pdf") by pattern matching.
+    function getFileInfo(fname) {
+        var ext = fname.split('.').pop().toUpperCase();
+        var lower = fname.toLowerCase();
+        if (lower.indexOf('ats') !== -1 && ext === 'PDF')
+            return {l:"ATS Resume", b:"PDF", cat:"ats", primary:true};
+        if (lower.indexOf('recruiter') !== -1 && ext === 'PDF')
+            return {l:"Recruiter Resume", b:"PDF", cat:"rec", primary:true};
+        if (lower.indexOf('ats') !== -1 && ext === 'DOCX')
+            return {l:"ATS Resume", b:"DOCX", cat:"ats", primary:false};
+        if (lower.indexOf('recruiter') !== -1 && ext === 'DOCX')
+            return {l:"Recruiter Resume", b:"DOCX", cat:"rec", primary:false};
+        if (lower.indexOf('ats') !== -1 && ext === 'MD')
+            return {l:"ATS Resume", b:"MD", cat:"ats", primary:false};
+        if (lower.indexOf('recruiter') !== -1 && ext === 'MD')
+            return {l:"Recruiter Resume", b:"MD", cat:"rec", primary:false};
+        if (lower.indexOf('match') !== -1 && ext === 'JSON')
+            return {l:"Match Report", b:"JSON", cat:"other", primary:false};
+        if (lower.indexOf('talking') !== -1 && ext === 'MD')
+            return {l:"Talking Points", b:"MD", cat:"other", primary:false};
+        return {l: fname, b: ext, cat: "other", primary: false};
+    }
 
     // --- Mobile detection for upload label ---
     function isTouchDevice() {
@@ -2970,7 +3038,7 @@
         ];
         fileList.forEach(function(f) {
             var fname = typeof f === 'string' ? f : f.filename;
-            var m = FILES[fname] || {l: fname, b: "", cat: "other", primary: false};
+            var m = getFileInfo(fname);
             var link = '/api/download/' + jobId + '/' + fname;
             if (m.primary) {
                 if (m.cat === 'ats') { atsLink = link; atsFname = fname; }

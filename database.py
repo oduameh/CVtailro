@@ -65,6 +65,7 @@ class TailoringJob(db.Model):
     rewrite_mode = db.Column(db.String(20), nullable=False, default="conservative")
     template = db.Column(db.String(20), nullable=False, default="modern")
     model_used = db.Column(db.String(255), nullable=True)
+    job_description_snippet = db.Column(db.String(500), nullable=True)
     error_message = db.Column(db.Text, nullable=True)
     ats_resume_md = db.Column(db.Text, nullable=True)
     recruiter_resume_md = db.Column(db.Text, nullable=True)

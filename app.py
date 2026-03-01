@@ -239,6 +239,18 @@ def format_talking_points(talking_points: list) -> str:
     return "\n".join(lines)
 
 
+def _safe_filename(job_title, company, suffix):
+    """Generate a clean filename from job title and company."""
+    # Clean the strings
+    title = re.sub(r'[^\w\s-]', '', job_title or 'Resume')[:30].strip()
+    comp = re.sub(r'[^\w\s-]', '', company or '')[:20].strip()
+    title = title.replace(' ', '_')
+    comp = comp.replace(' ', '_')
+    if comp:
+        return f"{title}_{comp}_{suffix}"
+    return f"{title}_{suffix}"
+
+
 def run_pipeline_job(
     job_id: str,
     resume_path: str,
@@ -497,15 +509,25 @@ def run_pipeline_job(
             ),
         )
 
+        # Build smart filenames from job title + company
+        ats_pdf_name = _safe_filename(job_analysis.job_title, job_analysis.company, "ATS.pdf")
+        rec_pdf_name = _safe_filename(job_analysis.job_title, job_analysis.company, "Recruiter.pdf")
+        ats_docx_name = _safe_filename(job_analysis.job_title, job_analysis.company, "ATS.docx")
+        rec_docx_name = _safe_filename(job_analysis.job_title, job_analysis.company, "Recruiter.docx")
+        ats_md_name = _safe_filename(job_analysis.job_title, job_analysis.company, "ATS.md")
+        rec_md_name = _safe_filename(job_analysis.job_title, job_analysis.company, "Recruiter.md")
+        report_name = _safe_filename(job_analysis.job_title, job_analysis.company, "Match_Report.json")
+        tp_name = _safe_filename(job_analysis.job_title, job_analysis.company, "Talking_Points.md")
+
         # Write artifacts
-        save_markdown(ats_resume.markdown_content, output_dir / "tailored_resume_ats.md")
-        save_markdown(recruiter_resume.markdown_content, output_dir / "tailored_resume_recruiter.md")
-        generate_resume_pdf(ats_resume.markdown_content, output_dir / "tailored_resume_ats.pdf", template=template)
-        generate_resume_pdf(recruiter_resume.markdown_content, output_dir / "tailored_resume_recruiter.pdf", template=template)
-        generate_resume_docx(ats_resume.markdown_content, output_dir / "tailored_resume_ats.docx")
-        generate_resume_docx(recruiter_resume.markdown_content, output_dir / "tailored_resume_recruiter.docx")
-        save_json(match_report.model_dump(), output_dir / "match_report.json")
-        save_markdown(format_talking_points(talking_points), output_dir / "interview_talking_points.md")
+        save_markdown(ats_resume.markdown_content, output_dir / ats_md_name)
+        save_markdown(recruiter_resume.markdown_content, output_dir / rec_md_name)
+        generate_resume_pdf(ats_resume.markdown_content, output_dir / ats_pdf_name, template=template)
+        generate_resume_pdf(recruiter_resume.markdown_content, output_dir / rec_pdf_name, template=template)
+        generate_resume_docx(ats_resume.markdown_content, output_dir / ats_docx_name)
+        generate_resume_docx(recruiter_resume.markdown_content, output_dir / rec_docx_name)
+        save_json(match_report.model_dump(), output_dir / report_name)
+        save_markdown(format_talking_points(talking_points), output_dir / tp_name)
 
         emit(7, 7, "Final Assembly", "done",
              f"{len(talking_points)} talking points generated")
@@ -524,14 +546,14 @@ def run_pipeline_job(
 
         # Persist results to database and upload files to R2
         files_list = [
-            "tailored_resume_ats.pdf",
-            "tailored_resume_recruiter.pdf",
-            "tailored_resume_ats.docx",
-            "tailored_resume_recruiter.docx",
-            "tailored_resume_ats.md",
-            "tailored_resume_recruiter.md",
-            "match_report.json",
-            "interview_talking_points.md",
+            ats_pdf_name,
+            rec_pdf_name,
+            ats_docx_name,
+            rec_docx_name,
+            ats_md_name,
+            rec_md_name,
+            report_name,
+            tp_name,
         ]
         with app.app_context():
             db_job = db.session.get(TailoringJob, job_id)
@@ -546,6 +568,7 @@ def run_pipeline_job(
                 db_job.ats_resume_md = ats_resume.markdown_content
                 db_job.recruiter_resume_md = recruiter_resume.markdown_content
                 db_job.talking_points_md = format_talking_points(talking_points)
+                db_job.job_description_snippet = job_text[:500] if job_text else None
                 db_job.completed_at = datetime.now(timezone.utc)
                 db_job.duration_seconds = total_elapsed
 
@@ -600,16 +623,7 @@ def run_pipeline_job(
                 "ats_resume_md": ats_resume.markdown_content,
                 "recruiter_resume_md": recruiter_resume.markdown_content,
                 "talking_points_md": format_talking_points(talking_points),
-                "files": [
-                    "tailored_resume_ats.pdf",
-                    "tailored_resume_recruiter.pdf",
-                    "tailored_resume_ats.docx",
-                    "tailored_resume_recruiter.docx",
-                    "tailored_resume_ats.md",
-                    "tailored_resume_recruiter.md",
-                    "match_report.json",
-                    "interview_talking_points.md",
-                ],
+                "files": files_list,
             }
         progress_queue.put({"status": "complete"})
 
@@ -1392,7 +1406,9 @@ def get_history():
             "company": j.company,
             "match_score": j.match_score,
             "rewrite_mode": j.rewrite_mode,
+            "template": j.template,
             "model_used": j.model_used,
+            "job_description_snippet": j.job_description_snippet,
             "created_at": j.created_at.isoformat() if j.created_at else None,
             "files": [
                 {"filename": f.filename, "size_bytes": f.size_bytes}
@@ -1423,7 +1439,9 @@ def get_history_job(job_id):
         "cosine_similarity": job.cosine_similarity,
         "missing_keywords": job.missing_keywords,
         "rewrite_mode": job.rewrite_mode,
+        "template": job.template,
         "model_used": job.model_used,
+        "job_description_snippet": job.job_description_snippet,
         "ats_resume_md": job.ats_resume_md,
         "recruiter_resume_md": job.recruiter_resume_md,
         "talking_points_md": job.talking_points_md,
@@ -1447,6 +1465,10 @@ def _run_migrations():
             db.session.execute(text("ALTER TABLE tailoring_jobs ADD COLUMN original_match_score FLOAT"))
             db.session.commit()
             logger.info("Added original_match_score column to tailoring_jobs")
+        if "job_description_snippet" not in columns:
+            db.session.execute(text("ALTER TABLE tailoring_jobs ADD COLUMN job_description_snippet VARCHAR(500)"))
+            db.session.commit()
+            logger.info("Added job_description_snippet column to tailoring_jobs")
 
 
 # Run migrations on import (not just __main__)
