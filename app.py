@@ -855,6 +855,41 @@ def admin_users():
     })
 
 
+@app.route("/admin/api/user-jobs/<user_id>")
+def admin_user_jobs(user_id: str):
+    """Return all tailoring jobs for a specific user (admin only)."""
+    if not session.get("admin_authenticated") and not (
+        current_user.is_authenticated and current_user.is_admin
+    ):
+        return jsonify({"error": "Not authenticated"}), 401
+    from database import User
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    jobs_list = TailoringJob.query.filter_by(user_id=user_id).order_by(
+        TailoringJob.created_at.desc()
+    ).all()
+    return jsonify({
+        "user": {"id": user.id, "email": user.email, "name": user.name},
+        "jobs": [{
+            "id": j.id,
+            "status": j.status,
+            "job_title": j.job_title,
+            "company": j.company,
+            "match_score": j.match_score,
+            "original_match_score": j.original_match_score,
+            "rewrite_mode": j.rewrite_mode,
+            "model_used": j.model_used,
+            "job_description_snippet": j.job_description_snippet,
+            "ats_resume_md": j.ats_resume_md,
+            "talking_points_md": j.talking_points_md,
+            "created_at": j.created_at.isoformat() if j.created_at else None,
+            "duration_seconds": j.duration_seconds,
+            "error_message": j.error_message,
+        } for j in jobs_list],
+    })
+
+
 @app.route("/admin/api/live-stats")
 def admin_live_stats():
     """Return live operational stats for monitoring under load."""

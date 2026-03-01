@@ -319,6 +319,40 @@
                 <button class="btn btn-secondary btn-sm" onclick="loadErrors()" style="margin-top:8px;">Refresh</button>
             </div>
 
+            <!-- Users & Resumes Browser -->
+            <div class="card">
+                <h2>Users &amp; Resumes</h2>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">
+                    Click any user to view their tailoring jobs and resume content.
+                </div>
+                <div id="usersList" style="max-height:400px;overflow-y:auto;">
+                    <div style="color:#6B7280;font-size:13px;">Loading users...</div>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="loadUsersList()" style="margin-top:8px;">Refresh Users</button>
+            </div>
+
+            <!-- User Jobs Detail (hidden by default) -->
+            <div class="card" id="userJobsPanel" style="display:none;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                    <h2 id="userJobsTitle" style="margin-bottom:0;">User Jobs</h2>
+                    <button class="btn btn-secondary btn-sm" onclick="closeUserJobs()">Back to Users</button>
+                </div>
+                <div id="userJobsList"></div>
+            </div>
+
+            <!-- Resume Viewer Modal (hidden by default) -->
+            <div class="card" id="resumeViewerPanel" style="display:none;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                    <h2 id="resumeViewerTitle" style="margin-bottom:0;">Resume Content</h2>
+                    <button class="btn btn-secondary btn-sm" onclick="closeResumeViewer()">Close</button>
+                </div>
+                <div style="display:flex;gap:8px;margin-bottom:12px;">
+                    <button class="btn btn-sm" id="btnViewTailored" onclick="showResumeTab('tailored')" style="background:var(--accent);color:#fff;">Tailored Resume</button>
+                    <button class="btn btn-sm btn-secondary" id="btnViewTalking" onclick="showResumeTab('talking')">Talking Points</button>
+                </div>
+                <div id="resumeContent" style="max-height:600px;overflow-y:auto;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:20px;font-size:13px;line-height:1.7;white-space:pre-wrap;font-family:'Inter',monospace;"></div>
+            </div>
+
             <!-- Save / Logout -->
             <div class="card">
                 <div id="saveAlert" class="alert"></div>
@@ -444,6 +478,7 @@
         loadUsage();
         loadAnalytics();
         loadErrors();
+        loadUsersList();
     }
 
     async function loadModels(selectedModel) {
@@ -632,6 +667,123 @@
                 '</div>'
             ).join('');
         } catch(e) {}
+    }
+
+    // ─── Users & Resumes Browser ───
+
+    var currentJobsData = null;
+
+    async function loadUsersList() {
+        try {
+            var r = await fetch('/admin/api/users');
+            if (!r.ok) return;
+            var d = await r.json();
+            var el = document.getElementById('usersList');
+            if (!d.users || d.users.length === 0) {
+                el.innerHTML = '<div style="color:#6B7280;font-size:13px;">No users yet.</div>';
+                return;
+            }
+            el.innerHTML = d.users.map(function(u) {
+                var initials = (u.name || u.email || '?').substring(0, 2).toUpperCase();
+                var pic = u.picture ? '<img src="' + u.picture + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover;" alt="">' : '<div style="width:32px;height:32px;border-radius:50%;background:var(--accent-light);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">' + initials + '</div>';
+                return '<div onclick="loadUserJobs(\'' + u.id + '\')" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background=\'var(--accent-light)\';this.style.borderColor=\'var(--accent)\'" onmouseout="this.style.background=\'#fff\';this.style.borderColor=\'var(--border)\'">' +
+                    pic +
+                    '<div style="flex:1;min-width:0;">' +
+                        '<div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (u.name || 'Unknown') + '</div>' +
+                        '<div style="font-size:12px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (u.email || '') + '</div>' +
+                    '</div>' +
+                    '<div style="text-align:right;">' +
+                        '<div style="font-size:16px;font-weight:700;color:var(--accent);">' + u.jobs_count + '</div>' +
+                        '<div style="font-size:11px;color:var(--text-secondary);">jobs</div>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        } catch(e) {
+            console.error('Failed to load users:', e);
+        }
+    }
+
+    async function loadUserJobs(userId) {
+        try {
+            var r = await fetch('/admin/api/user-jobs/' + userId);
+            if (!r.ok) return;
+            var d = await r.json();
+            currentJobsData = d;
+            document.getElementById('userJobsTitle').textContent = (d.user.name || d.user.email) + ' — Jobs';
+            var el = document.getElementById('userJobsList');
+            if (!d.jobs || d.jobs.length === 0) {
+                el.innerHTML = '<div style="color:#6B7280;font-size:13px;">No tailoring jobs for this user.</div>';
+            } else {
+                el.innerHTML = d.jobs.map(function(j, idx) {
+                    var score = j.match_score ? Math.round(j.match_score) + '%' : '--';
+                    var scoreColor = j.match_score >= 80 ? 'var(--success)' : j.match_score >= 50 ? '#F59E0B' : 'var(--error)';
+                    var date = j.created_at ? new Date(j.created_at).toLocaleDateString() + ' ' + new Date(j.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+                    var duration = j.duration_seconds ? Math.round(j.duration_seconds) + 's' : '';
+                    var hasResume = j.ats_resume_md ? true : false;
+                    return '<div style="padding:14px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;' + (j.status === 'error' ? 'border-left:3px solid var(--error);' : hasResume ? 'border-left:3px solid var(--success);' : '') + '">' +
+                        '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px;">' +
+                            '<div style="flex:1;min-width:0;">' +
+                                '<div style="font-size:14px;font-weight:700;">' + (j.job_title || 'Untitled') + (j.company ? ' <span style="font-weight:400;color:var(--text-secondary);">at ' + j.company + '</span>' : '') + '</div>' +
+                                '<div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">' + date + (duration ? ' &middot; ' + duration : '') + ' &middot; ' + (j.model_used || 'unknown model') + ' &middot; ' + (j.rewrite_mode || '') + '</div>' +
+                                (j.job_description_snippet ? '<div style="font-size:12px;color:var(--text-secondary);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:500px;">' + j.job_description_snippet + '</div>' : '') +
+                                (j.error_message ? '<div style="font-size:12px;color:var(--error);margin-top:6px;">' + j.error_message + '</div>' : '') +
+                            '</div>' +
+                            '<div style="text-align:right;flex-shrink:0;">' +
+                                '<div style="font-size:20px;font-weight:800;color:' + scoreColor + ';">' + score + '</div>' +
+                                (hasResume ? '<button class="btn btn-sm" onclick="viewResume(' + idx + ')" style="margin-top:6px;background:var(--accent);color:#fff;font-size:11px;padding:4px 10px;">View Resume</button>' : '<span style="font-size:11px;color:var(--text-secondary);">' + j.status + '</span>') +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
+                }).join('');
+            }
+            document.getElementById('userJobsPanel').style.display = 'block';
+            document.getElementById('userJobsPanel').scrollIntoView({behavior: 'smooth'});
+        } catch(e) {
+            console.error('Failed to load user jobs:', e);
+        }
+    }
+
+    function closeUserJobs() {
+        document.getElementById('userJobsPanel').style.display = 'none';
+        document.getElementById('resumeViewerPanel').style.display = 'none';
+        currentJobsData = null;
+    }
+
+    function viewResume(jobIdx) {
+        if (!currentJobsData || !currentJobsData.jobs[jobIdx]) return;
+        var job = currentJobsData.jobs[jobIdx];
+        document.getElementById('resumeViewerTitle').textContent = (job.job_title || 'Resume') + (job.company ? ' — ' + job.company : '');
+        document.getElementById('resumeViewerPanel').style.display = 'block';
+        showResumeTab('tailored');
+        document.getElementById('resumeViewerPanel').scrollIntoView({behavior: 'smooth'});
+        // Store job index for tab switching
+        document.getElementById('resumeViewerPanel').dataset.jobIdx = jobIdx;
+    }
+
+    function showResumeTab(tab) {
+        var idx = parseInt(document.getElementById('resumeViewerPanel').dataset.jobIdx || '0');
+        if (!currentJobsData || !currentJobsData.jobs[idx]) return;
+        var job = currentJobsData.jobs[idx];
+        var content = document.getElementById('resumeContent');
+        var btnTailored = document.getElementById('btnViewTailored');
+        var btnTalking = document.getElementById('btnViewTalking');
+        if (tab === 'tailored') {
+            content.textContent = job.ats_resume_md || 'No resume content available.';
+            btnTailored.style.background = 'var(--accent)';
+            btnTailored.style.color = '#fff';
+            btnTalking.style.background = '';
+            btnTalking.style.color = '';
+        } else {
+            content.textContent = job.talking_points_md || 'No talking points available.';
+            btnTalking.style.background = 'var(--accent)';
+            btnTalking.style.color = '#fff';
+            btnTailored.style.background = '';
+            btnTailored.style.color = '';
+        }
+    }
+
+    function closeResumeViewer() {
+        document.getElementById('resumeViewerPanel').style.display = 'none';
     }
 
     // ─── Init ───
