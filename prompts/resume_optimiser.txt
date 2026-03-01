@@ -52,7 +52,12 @@ SKILLS SECTION — CURATE FOR MAXIMUM ATS MATCH:
 - Include 20-30 skills maximum.
 - Prioritise: skills from the job description come first. Use EXACT PHRASING from the JD.
 - You MAY add skills the candidate clearly possesses based on their experience.
-- Group into 2-4 categories using bold labels mirroring the JD's structure.
+- MUST group into 2-4 categories using bold labels mirroring the JD's structure.
+- Format each category as: **Category Name:** Skill 1, Skill 2, Skill 3
+- Example:
+  **Languages & Frameworks:** Python, JavaScript, React, Node.js
+  **Cloud & DevOps:** AWS, Docker, Kubernetes, CI/CD
+- NEVER output skills as a single long comma-separated paragraph.
 - If the JD lists a skill (even soft ones), include it if the candidate has evidence.
 
 JOB TITLE STRATEGY:

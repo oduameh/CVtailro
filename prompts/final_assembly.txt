@@ -5,26 +5,36 @@ You will receive:
 - The job analysis showing what the employer is looking for
 - The optimised resume content
 
-Generate interview talking points that help the candidate:
+Generate comprehensive interview talking points that help the candidate:
 
-1. HIGHLIGHT STRENGTHS:
+1. HIGHLIGHT STRENGTHS (2-3 points):
    - Talking points for discussing their strongest matching experiences
-   - How to frame their most relevant achievements
+   - How to frame their most relevant achievements using specific numbers and outcomes
    - Specific examples they can reference from their resume
+   - Include the "elevator pitch" — a 30-second summary of why they're the right fit
 
-2. ADDRESS GAPS:
-   - How to address missing skills or experience gaps honestly
-   - Transferable experience they can point to
-   - Learning narratives they can present
+2. ADDRESS GAPS (2-3 points):
+   - How to address missing skills or experience gaps honestly and confidently
+   - Transferable experience they can point to as evidence of ability to learn
+   - Learning narratives: "I've been studying X" or "My experience with Y maps directly to Z"
+   - Turn each gap into a growth opportunity narrative
 
-3. KEY STORIES:
-   - 3-5 structured talking points using the STAR format (Situation, Task, Action, Result)
+3. KEY STORIES (3-5 stories):
+   - Structured talking points using the STAR format (Situation, Task, Action, Result)
    - Each mapped to a specific resume bullet and job requirement
    - Focus on the highest-priority alignment areas
+   - Include at least one story about overcoming a challenge
+   - Include at least one story about collaboration/teamwork
 
-4. QUESTIONS TO ASK:
+4. COMMON QUESTIONS & ANSWERS (2-3 points):
+   - "Tell me about yourself" — tailored 90-second response
+   - "Why are you interested in this role?" — specific to company and role
+   - "What's your biggest weakness?" — honest but strategic answer
+
+5. QUESTIONS TO ASK THE INTERVIEWER (3-5 questions):
    - Intelligent questions that demonstrate understanding of the role
    - Questions that let the candidate showcase relevant experience
+   - Questions about team culture, growth opportunities, and success metrics
 
 Each talking point should include:
 - topic: The interview topic or likely question area

@@ -10,7 +10,7 @@ EXTRACTION RULES:
 4. seniority_signals: Phrases that indicate the expected seniority level (e.g., "5+ years experience", "lead a team", "mentor junior developers", "strategic vision").
 5. inferred_seniority: Your best assessment of the seniority level based on the signals. Must be one of: junior, mid, senior, staff, principal, director, vp, c_level.
 6. soft_skills: Interpersonal, communication, leadership, and collaboration skills mentioned.
-7. domain_keywords: Industry-specific terminology, domain concepts, and buzzwords that an ATS system would scan for.
+7. domain_keywords: Industry-specific terminology, domain concepts, and buzzwords that an ATS system would scan for. These are INDUSTRY terms only — do NOT duplicate required/preferred/tools here.
 8. responsibilities: The key job responsibilities and duties listed.
 9. inferred_priority_skills: Combine required and preferred skills into a priority-ranked list. Priority is based on:
    - "critical": appears in the job title or first paragraph
@@ -23,6 +23,8 @@ IMPORTANT:
 - Extract skills exactly as written in the job description (preserve casing and specific version numbers).
 - If the company name or department is not explicitly stated, leave those fields as empty strings.
 - Be thorough — do not miss any skills, tools, or keywords.
+- Pay attention to employment type signals: full-time, part-time, contract, remote, hybrid, on-site.
+- Note minimum years of experience if mentioned (e.g., "5+ years").
 
 Respond with a single JSON object matching this schema:
 

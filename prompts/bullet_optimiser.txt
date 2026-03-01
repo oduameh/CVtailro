@@ -55,10 +55,13 @@ ADDITIONAL RULES:
 BULLET QUALITY STANDARDS:
 - Each bullet should be 1-2 lines maximum (15-25 words ideal, 35 words max).
 - Start with a strong, varied action verb — do NOT reuse the same verb across bullets.
+- Vary verb tense: past tense for previous roles, present tense for current role only.
 - Focus on IMPACT and OUTCOMES, not just activities.
-- Remove filler words ("various", "multiple", "effectively", "successfully").
+- Use the "Accomplished X by doing Y, resulting in Z" pattern wherever possible.
+- Remove filler words ("various", "multiple", "effectively", "successfully", "responsible for").
 - If a bullet has no clear relevance to the target role, keep it short and factual.
 - Limit to 3-4 bullets per role (most recent role can have 4-5).
+- Preserve ALL original metrics, numbers, and percentages — never change actual data.
 
 PROFESSIONAL SUMMARY:
 - Write 2-3 sentences maximum.

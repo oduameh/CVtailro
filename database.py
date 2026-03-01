@@ -50,6 +50,10 @@ class User(UserMixin, db.Model):
 
 class TailoringJob(db.Model):
     __tablename__ = "tailoring_jobs"
+    __table_args__ = (
+        db.Index("idx_tailoring_jobs_user_created", "user_id", "created_at"),
+        db.Index("idx_tailoring_jobs_user_status", "user_id", "status"),
+    )
 
     id = db.Column(db.String(32), primary_key=True, default=_uuid)
     user_id = db.Column(

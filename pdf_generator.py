@@ -37,6 +37,7 @@ EXECUTIVE_CSS = """
 body {
     font-family: Georgia, "Times New Roman", serif;
     font-size: 10pt; line-height: 1.35; color: #2d2d2d;
+    word-break: break-word;
 }
 
 /* --- Name & Contact --- */
@@ -54,8 +55,8 @@ body {
 
 /* --- Section Headings --- */
 .section-heading {
-    font-size: 10pt; font-weight: 400; color: #333;
-    text-transform: uppercase; letter-spacing: 2.5pt;
+    font-size: 10pt; font-weight: 700; color: #333;
+    text-transform: uppercase; letter-spacing: 1.5pt;
     border-bottom: 0.5pt solid #ccc; padding-bottom: 2pt;
     margin-top: 11pt; margin-bottom: 6pt;
     page-break-after: avoid;
@@ -87,6 +88,7 @@ li {
     color: #2d2d2d; padding-left: 2pt;
 }
 li::marker { color: #999; font-size: 8pt; }
+ul { orphans: 2; widows: 2; }
 
 /* --- Summary --- */
 .summary {
@@ -133,6 +135,7 @@ MODERN_CSS = """
 body {
     font-family: Helvetica, Arial, sans-serif;
     font-size: 10pt; line-height: 1.35; color: #2b2b2b;
+    word-break: break-word;
 }
 
 /* --- Name & Contact --- */
@@ -149,7 +152,7 @@ body {
 /* --- Section Headings --- */
 .section-heading {
     font-size: 10.5pt; font-weight: 700; color: #1a3a5c;
-    text-transform: uppercase; letter-spacing: 2pt;
+    text-transform: uppercase; letter-spacing: 1.5pt;
     border-bottom: 1.5pt solid #1a3a5c; padding-bottom: 2pt;
     margin-top: 11pt; margin-bottom: 6pt;
     page-break-after: avoid;
@@ -180,7 +183,8 @@ li {
     font-size: 10pt; margin-bottom: 2pt; line-height: 1.35;
     color: #2b2b2b; padding-left: 2pt;
 }
-li::marker { color: #1a3a5c; font-size: 8pt; }
+li::marker { color: #333; font-size: 8pt; }
+ul { orphans: 2; widows: 2; }
 
 /* --- Summary --- */
 .summary {
@@ -227,6 +231,7 @@ MINIMAL_CSS = """
 body {
     font-family: Helvetica, Arial, sans-serif;
     font-size: 10pt; line-height: 1.35; color: #2b2b2b;
+    word-break: break-word;
 }
 
 /* --- Name & Contact --- */
@@ -244,7 +249,7 @@ body {
 /* --- Section Headings --- */
 .section-heading {
     font-size: 10pt; font-weight: 400; color: #444;
-    text-transform: uppercase; letter-spacing: 3pt;
+    text-transform: uppercase; letter-spacing: 2pt;
     border-bottom: 0.5pt solid #ddd; padding-bottom: 2pt;
     margin-top: 11pt; margin-bottom: 6pt;
     page-break-after: avoid;
@@ -279,6 +284,7 @@ li {
     color: #2b2b2b; padding-left: 2pt;
 }
 li::marker { color: #bbb; font-size: 8pt; }
+ul { orphans: 2; widows: 2; }
 
 /* --- Summary --- */
 .summary {
@@ -437,7 +443,7 @@ def _inline_md(text: str) -> str:
     """Process inline markdown: bold, italic, links."""
     text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
     text = re.sub(r"\*(.+?)\*", r"<em>\1</em>", text)
-    text = re.sub(r"\[(.+?)\]\((.+?)\)", r'<a href="\2">\1</a>', text)
+    text = re.sub(r'\[([^\]]+)\]\(([^)]+(?:\([^)]*\))*[^)]*)\)', r'<a href="\2">\1</a>', text)
     return text
 
 

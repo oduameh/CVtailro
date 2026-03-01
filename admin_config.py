@@ -9,6 +9,8 @@ import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from werkzeug.security import check_password_hash, generate_password_hash
+
 logger = logging.getLogger(__name__)
 
 CONFIG_FILE = Path(__file__).parent / "admin_config.json"
@@ -73,15 +75,29 @@ class AdminConfigManager:
 
     @classmethod
     def verify_password(cls, password: str) -> bool:
-        # Check against ADMIN_PASSWORD env var directly
+        # Check against ADMIN_PASSWORD env var (constant-time comparison)
         env_pw = os.environ.get("ADMIN_PASSWORD", "")
-        if env_pw and password == env_pw:
-            return True
+        if env_pw:
+            import hmac
+            if hmac.compare_digest(password, env_pw):
+                return True
         # Check against stored hash
         config = cls.load()
         if not config.admin_password_hash:
             return False
-        return cls._hash_password(password) == config.admin_password_hash
+        # Support both legacy SHA-256 hashes and new pbkdf2 hashes
+        if config.admin_password_hash.startswith("pbkdf2:"):
+            return check_password_hash(config.admin_password_hash, password)
+        # Legacy SHA-256 hash — verify and auto-upgrade
+        if hashlib.sha256(password.encode()).hexdigest() == config.admin_password_hash:
+            config.admin_password_hash = cls._hash_password(password)
+            try:
+                cls.save(config)
+                logger.info("Auto-upgraded admin password hash from SHA-256 to pbkdf2")
+            except Exception:
+                pass  # Still valid, just couldn't upgrade
+            return True
+        return False
 
     @classmethod
     def has_password(cls) -> bool:
@@ -91,4 +107,4 @@ class AdminConfigManager:
 
     @staticmethod
     def _hash_password(password: str) -> str:
-        return hashlib.sha256(password.encode()).hexdigest()
+        return generate_password_hash(password, method="pbkdf2:sha256", salt_length=16)

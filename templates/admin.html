@@ -246,7 +246,7 @@
                         <button class="btn btn-sm btn-secondary" onclick="toggleApiKeyVisibility()" id="eyeBtn">Show</button>
                     </div>
                     <div class="hint">
-                        Get your key at <a href="https://openrouter.ai/keys" target="_blank"
+                        Get your key at <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer"
                         style="color:var(--accent);text-decoration:none;">openrouter.ai/keys</a>
                     </div>
                 </div>
@@ -620,10 +620,15 @@
                 el.innerHTML = '<div style="color:#6B7280;font-size:13px;">No errors recorded.</div>';
                 return;
             }
+            function escapeHtml(s) {
+                var d = document.createElement('div');
+                d.textContent = s;
+                return d.innerHTML;
+            }
             el.innerHTML = d.errors.map(e =>
                 '<div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:12px;margin-bottom:8px;">' +
-                '<div style="font-size:11px;color:#6B7280;">' + e.time + ' &middot; <strong>' + e.model + '</strong></div>' +
-                '<div style="font-size:13px;color:#DC2626;margin-top:4px;">' + e.error + '</div>' +
+                '<div style="font-size:11px;color:#6B7280;">' + escapeHtml(e.time) + ' &middot; <strong>' + escapeHtml(e.model) + '</strong></div>' +
+                '<div style="font-size:13px;color:#DC2626;margin-top:4px;">' + escapeHtml(e.error) + '</div>' +
                 '</div>'
             ).join('');
         } catch(e) {}

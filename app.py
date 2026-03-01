@@ -20,7 +20,6 @@ import mimetypes
 import os
 import queue
 import re
-import resource
 import shutil
 import threading
 import time
@@ -93,6 +92,18 @@ def set_security_headers(response):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: https: blob:; "
+        "connect-src 'self' https://accounts.google.com; "
+        "frame-src https://accounts.google.com; "
+        "base-uri 'self'; "
+        "form-action 'self' https://accounts.google.com"
+    )
     if request.is_secure:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
@@ -814,20 +825,28 @@ def admin_analytics():
 
 @app.route("/admin/api/users")
 def admin_users():
-    """Return all registered users."""
+    """Return all registered users with job counts (single query, no N+1)."""
     if not session.get("admin_authenticated") and not (current_user.is_authenticated and current_user.is_admin):
         return jsonify({"error": "Not authenticated"}), 401
     from database import User
-    users = User.query.order_by(User.created_at.desc()).all()
+    from sqlalchemy import func
+    # Single query with LEFT JOIN + GROUP BY instead of N+1
+    results = db.session.query(
+        User,
+        func.count(TailoringJob.id).label("jobs_count")
+    ).outerjoin(TailoringJob, User.id == TailoringJob.user_id)\
+     .group_by(User.id)\
+     .order_by(User.created_at.desc())\
+     .all()
     return jsonify({
-        "total": len(users),
+        "total": len(results),
         "users": [{
             "id": u.id, "email": u.email, "name": u.name,
             "picture": u.picture_url, "is_admin": u.is_admin,
             "created_at": u.created_at.isoformat() if u.created_at else None,
             "last_login": u.last_login_at.isoformat() if u.last_login_at else None,
-            "jobs_count": u.jobs.count(),
-        } for u in users],
+            "jobs_count": jobs_count,
+        } for u, jobs_count in results],
     })
 
 
@@ -850,9 +869,10 @@ def admin_live_stats():
 
     # Memory usage via resource module (no psutil dependency)
     # On macOS ru_maxrss is in bytes; on Linux it is in kilobytes
-    rusage = resource.getrusage(resource.RUSAGE_SELF)
-    import platform
-    if platform.system() == "Darwin":
+    import resource as resource_mod
+    import platform as platform_mod
+    rusage = resource_mod.getrusage(resource_mod.RUSAGE_SELF)
+    if platform_mod.system() == "Darwin":
         mem_mb = rusage.ru_maxrss / (1024 * 1024)
     else:
         mem_mb = rusage.ru_maxrss / 1024
@@ -893,8 +913,21 @@ def index():
 
 @app.route("/api/health")
 def health():
-    """Health check endpoint."""
-    return jsonify({"status": "healthy", "backend": "openrouter"})
+    """Health check endpoint with database connectivity test."""
+    from sqlalchemy import text
+    db_status = "healthy"
+    status_code = 200
+    try:
+        db.session.execute(text("SELECT 1"))
+    except Exception:
+        db_status = "unhealthy"
+        status_code = 503
+    return jsonify({
+        "status": "healthy" if db_status == "healthy" else "degraded",
+        "database": db_status,
+        "configured": AdminConfigManager.is_configured(),
+        "backend": "openrouter",
+    }), status_code
 
 
 @app.route("/api/models")
@@ -1037,6 +1070,12 @@ def start_tailoring():
 @app.route("/api/progress/<job_id>")
 def progress_stream(job_id: str):
     """SSE endpoint for real-time pipeline progress."""
+    # Verify job ownership: check in-memory owner or DB owner
+    if current_user.is_authenticated:
+        with jobs_lock:
+            job_data = jobs.get(job_id)
+            if job_data and job_data.get("user_id") and job_data["user_id"] != current_user.id:
+                return jsonify({"error": "Job not found"}), 404
     with jobs_lock:
         if job_id not in jobs:
             return jsonify({"error": "Job not found"}), 404
@@ -1077,8 +1116,12 @@ def get_result(job_id: str):
     Checks in-memory jobs first, then falls back to the database for
     jobs that have been purged from memory but persist in the DB.
     """
+    # Verify job ownership for in-memory jobs
     with jobs_lock:
         job = jobs.get(job_id)
+        if job is not None and current_user.is_authenticated:
+            if job.get("user_id") and job["user_id"] != current_user.id:
+                return jsonify({"error": "Job not found"}), 404
 
     if job is not None:
         if job["status"] == "running":
@@ -1090,8 +1133,11 @@ def get_result(job_id: str):
             return jsonify({"status": "complete", "result": job["result"]})
         # Result was purged from memory — fall through to DB
 
-    # Fallback: query the database
-    db_job = db.session.get(TailoringJob, job_id)
+    # Fallback: query the database — enforce user ownership
+    if current_user.is_authenticated:
+        db_job = TailoringJob.query.filter_by(id=job_id, user_id=current_user.id).first()
+    else:
+        db_job = db.session.get(TailoringJob, job_id)
     if db_job is None:
         return jsonify({"error": "Job not found"}), 404
 
@@ -1435,9 +1481,8 @@ def get_history_job(job_id):
 
 
 def _run_migrations():
-    """Create tables and add any missing columns."""
+    """Create tables and add any missing columns/indexes."""
     db.create_all()
-    # Add columns that might be missing from older table schemas
     from sqlalchemy import text, inspect
     insp = inspect(db.engine)
     if insp.has_table("tailoring_jobs"):
@@ -1450,6 +1495,29 @@ def _run_migrations():
             db.session.execute(text("ALTER TABLE tailoring_jobs ADD COLUMN job_description_snippet VARCHAR(500)"))
             db.session.commit()
             logger.info("Added job_description_snippet column to tailoring_jobs")
+
+        # Add composite indexes for query performance
+        existing_indexes = {idx["name"] for idx in insp.get_indexes("tailoring_jobs")}
+        if "idx_tailoring_jobs_user_created" not in existing_indexes:
+            try:
+                db.session.execute(text(
+                    "CREATE INDEX idx_tailoring_jobs_user_created "
+                    "ON tailoring_jobs(user_id, created_at DESC)"
+                ))
+                db.session.commit()
+                logger.info("Added composite index idx_tailoring_jobs_user_created")
+            except Exception:
+                db.session.rollback()
+        if "idx_tailoring_jobs_user_status" not in existing_indexes:
+            try:
+                db.session.execute(text(
+                    "CREATE INDEX idx_tailoring_jobs_user_status "
+                    "ON tailoring_jobs(user_id, status)"
+                ))
+                db.session.commit()
+                logger.info("Added composite index idx_tailoring_jobs_user_status")
+            except Exception:
+                db.session.rollback()
 
 
 # Run migrations on import (not just __main__)
