@@ -2155,17 +2155,6 @@
                 <!-- Job Description Card -->
                 <div class="card">
                     <h2>Paste the Job Description</h2>
-                    <div style="display:flex;gap:8px;margin-bottom:12px;">
-                        <button class="detail-tab active" id="jdTextBtn" onclick="toggleJdMode('text')" style="font-size:12px;padding:6px 12px;">Paste Text</button>
-                        <button class="detail-tab" id="jdUrlBtn" onclick="toggleJdMode('url')" style="font-size:12px;padding:6px 12px;">Paste URL</button>
-                    </div>
-                    <div id="jdUrlInput" style="display:none;margin-bottom:12px;">
-                        <div style="display:flex;gap:8px;">
-                            <input type="text" id="jdUrlField" placeholder="https://linkedin.com/jobs/..." style="flex:1;padding:12px 16px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;outline:none;">
-                            <button onclick="extractJdFromUrl()" style="padding:12px 20px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius);font-weight:600;cursor:pointer;font-size:13px;">Extract</button>
-                        </div>
-                        <div id="jdUrlStatus" style="font-size:12px;margin-top:6px;color:var(--text-secondary);"></div>
-                    </div>
                     <textarea id="jobDescription" placeholder="Paste the full job description here..."></textarea>
                     <div class="inline-error" id="jdError">Job description is too short. Please paste at least 50 characters.</div>
                     <div class="char-count"><span id="charCount">0</span> characters &middot; <span id="wordCount">0</span> words</div>
@@ -3893,16 +3882,21 @@
 
                 showDetailTab('tailored');
 
-                // Download buttons — always show if resume exists (backend regenerates from markdown)
+                // Download buttons — smart filenames from job title + company
                 var dlHtml = '';
                 if (data.ats_resume_md) {
+                    var safeTitle = (data.job_title || 'Resume').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_').substring(0, 30);
+                    var safeCo = (data.company || '').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_').substring(0, 20);
+                    var prefix = safeTitle + (safeCo ? '_' + safeCo : '');
                     dlHtml += '<div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Download</div>';
                     dlHtml += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
                     var btnStyle = 'padding:8px 14px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;color:var(--text);text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:4px;';
                     ['Modern', 'Executive', 'Minimal'].forEach(function(tpl) {
-                        dlHtml += '<a href="/api/download/' + jobId + '/' + tpl + '.pdf" style="' + btnStyle + '" onmouseover="this.style.borderColor=\'var(--primary)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' + tpl + ' PDF</a>';
+                        var fname = prefix + '_' + tpl + '.pdf';
+                        dlHtml += '<a href="/api/download/' + jobId + '/' + fname + '" style="' + btnStyle + '" onmouseover="this.style.borderColor=\'var(--primary)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' + tpl + ' PDF</a>';
                     });
-                    dlHtml += '<a href="/api/download/' + jobId + '/Resume.docx" style="' + btnStyle + '" onmouseover="this.style.borderColor=\'var(--primary)\'" onmouseout="this.style.borderColor=\'var(--border)\'">DOCX</a>';
+                    var docxName = prefix + '_Resume.docx';
+                    dlHtml += '<a href="/api/download/' + jobId + '/' + docxName + '" style="' + btnStyle + '" onmouseover="this.style.borderColor=\'var(--primary)\'" onmouseout="this.style.borderColor=\'var(--border)\'">DOCX</a>';
                     dlHtml += '</div>';
                 }
                 document.getElementById('detailDownloads').innerHTML = dlHtml;
@@ -3987,14 +3981,17 @@
                     html += '<div style="font-size:18px;font-weight:800;color:' + scoreColor + ';margin-left:12px;">' + score + '</div>';
                     html += '</div>';
 
-                    // Download buttons — always show if resume was generated
+                    // Download buttons with smart filenames
                     if (j.has_resume || (j.files && j.files.length > 0)) {
+                        var pTitle = (j.job_title || 'Resume').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_').substring(0, 30);
+                        var pCo = (j.company || '').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_').substring(0, 20);
+                        var pPrefix = pTitle + (pCo ? '_' + pCo : '');
                         var dlBtnStyle = 'padding:4px 10px;background:var(--primary-bg);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;color:var(--primary);text-decoration:none;transition:all 0.2s;';
                         html += '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">';
                         ['Modern', 'Executive', 'Minimal'].forEach(function(tpl) {
-                            html += '<a href="/api/download/' + j.id + '/' + tpl + '.pdf" style="' + dlBtnStyle + '">' + tpl + '</a>';
+                            html += '<a href="/api/download/' + j.id + '/' + pPrefix + '_' + tpl + '.pdf" style="' + dlBtnStyle + '">' + tpl + '</a>';
                         });
-                        html += '<a href="/api/download/' + j.id + '/Resume.docx" style="' + dlBtnStyle + '">DOCX</a>';
+                        html += '<a href="/api/download/' + j.id + '/' + pPrefix + '_Resume.docx" style="' + dlBtnStyle + '">DOCX</a>';
                         html += '</div>';
                     }
                     html += '</div>';
