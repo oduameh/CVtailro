@@ -187,6 +187,10 @@ class GapReport(BaseModel):
         default_factory=list,
         description="Skills reordered by priority for this specific job",
     )
+    section_scores: dict[str, float] = Field(
+        default_factory=dict,
+        description="Per-section match scores: summary, experience, skills, education",
+    )
 
 
 # ─── Agent 4: Bullet Optimiser ──────────────────────────────────────────────────
@@ -205,6 +209,8 @@ class OptimisedBullet(BaseModel):
         default=False,
         description="True if the change might add unverifiable claims",
     )
+    quality_score: int = Field(default=5, description="Quality score 1-10 for the optimised bullet")
+    improvements: list[str] = Field(default_factory=list, description="List of improvement tags applied: 'stronger_verb', 'added_metrics', 'keyword_injected', 'shortened', 'reframed'")
 
 
 class OptimisedBullets(BaseModel):

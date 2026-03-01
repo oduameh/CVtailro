@@ -26,6 +26,78 @@ from similarity import keyword_frequency_analysis, resume_job_similarity
 logger = logging.getLogger(__name__)
 
 
+def _compute_section_scores(
+    resume_data: ResumeData, job_analysis: JobAnalysis
+) -> dict[str, float]:
+    """Compute per-section keyword overlap scores.
+
+    For each resume section (summary, experience, skills, education),
+    counts how many of the JD's keywords appear in that section's text
+    and returns a percentage score.
+
+    Args:
+        resume_data: Parsed resume data.
+        job_analysis: Parsed job description analysis.
+
+    Returns:
+        Dict mapping section name to a match score (0-100).
+    """
+    # Build the full keyword set from the JD
+    all_keywords = set()
+    for kw in job_analysis.required_skills + job_analysis.preferred_skills + job_analysis.tools:
+        stripped = kw.strip()
+        if stripped:
+            all_keywords.add(stripped)
+
+    if not all_keywords:
+        return {"summary": 0.0, "experience": 0.0, "skills": 0.0, "education": 0.0}
+
+    # Extract text for each section
+    summary_text = resume_data.summary or ""
+
+    experience_parts: list[str] = []
+    for role in resume_data.roles:
+        experience_parts.append(role.title)
+        experience_parts.append(role.company)
+        for bullet in role.bullets:
+            experience_parts.append(bullet.original_text)
+    experience_text = " ".join(experience_parts)
+
+    skills_text = " ".join(resume_data.global_skills)
+
+    education_parts: list[str] = []
+    for edu in resume_data.education:
+        education_parts.append(edu.institution)
+        education_parts.append(edu.degree)
+        education_parts.append(edu.field)
+        education_parts.extend(edu.highlights)
+    education_text = " ".join(education_parts)
+
+    total_keywords = len(all_keywords)
+
+    def section_score(text: str) -> float:
+        if not text:
+            return 0.0
+        text_lower = text.lower()
+        found = 0
+        for kw in all_keywords:
+            kw_lower = kw.lower()
+            # Word-boundary match
+            if re.search(r"\b" + re.escape(kw_lower) + r"\b", text_lower):
+                found += 1
+            # Substring fallback for multi-word skills
+            elif len(kw_lower.split()) > 1 and kw_lower in text_lower:
+                found += 1
+        return round((found / total_keywords) * 100, 1)
+
+    return {
+        "summary": section_score(summary_text),
+        "experience": section_score(experience_text),
+        "skills": section_score(skills_text),
+        "education": section_score(education_text),
+    }
+
+
 class GapAnalysisAgent:
     """Analyses gaps between job requirements and resume content.
 
@@ -35,6 +107,7 @@ class GapAnalysisAgent:
     - Keyword frequency via regex counting
     - Match score derived from cosine similarity and keyword overlap
     - Prioritised skill recommendations
+    - Per-section keyword match scores
     """
 
     AGENT_NAME = "Gap Analysis Agent"
@@ -169,6 +242,10 @@ class GapAnalysisAgent:
                 f"{job_analysis.inferred_seniority.value} level"
             )
 
+        # ── Per-section scores ──
+        section_scores = _compute_section_scores(resume_data, job_analysis)
+        logger.info(f"[{self.AGENT_NAME}] Section scores: {section_scores}")
+
         gap_report = GapReport(
             match_score=match_score,
             cosine_similarity=round(cos_sim, 4),
@@ -179,6 +256,7 @@ class GapAnalysisAgent:
             optimisation_priority=priority_list,
             seniority_calibration=seniority_cal,
             recommended_skill_order=[p.skill for p in priority_list],
+            section_scores=section_scores,
         )
 
         logger.info(

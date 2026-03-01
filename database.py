@@ -117,3 +117,28 @@ class JobFile(db.Model):
     )
 
     job = db.relationship("TailoringJob", back_populates="files")
+
+
+class SavedResume(db.Model):
+    """User's saved master resumes for reuse across multiple tailoring jobs."""
+    __tablename__ = "saved_resumes"
+
+    id = db.Column(db.String(32), primary_key=True, default=_uuid)
+    user_id = db.Column(
+        db.String(32), db.ForeignKey("users.id"), nullable=False, index=True
+    )
+    name = db.Column(db.String(255), nullable=False, default="My Resume")
+    resume_text = db.Column(db.Text, nullable=False)
+    file_hash = db.Column(db.String(64), nullable=True)  # SHA-256 of original file
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    user = db.relationship("User", backref=db.backref("saved_resumes", lazy="dynamic"))

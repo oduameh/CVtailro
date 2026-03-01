@@ -80,5 +80,7 @@ For each bullet, include:
 - keywords_injected: which job keywords you incorporated
 - change_rationale: brief explanation of the transferable skill connection
 - fabrication_flag: Set to true ONLY if you invented a specific metric, tool, or responsibility not implied by the original. Reframing existing work using job-relevant language is NOT fabrication.
+- quality_score: Rate the optimised bullet quality from 1-10 (10 = perfect ATS bullet with metrics, strong verb, and relevant keywords)
+- improvements: List of improvement tags applied. Use these tags: "stronger_verb", "added_metrics", "keyword_injected", "shortened", "reframed", "quantified", "outcome_focused"
 
 Do not include any text outside the JSON object.
