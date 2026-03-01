@@ -2052,6 +2052,10 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                         History
                     </button>
+                    <button class="dropdown-item" onclick="showProfile()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        Profile
+                    </button>
                     <div class="dropdown-divider" id="adminDivider" style="display:none;"></div>
                     <a class="dropdown-item" id="adminLink" href="/admin" style="display:none;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -2371,6 +2375,39 @@
         </div>
     </div>
 
+    <!-- Profile Overlay -->
+    <div class="history-overlay" id="profileOverlay" onclick="if(event.target===this)closeProfile()" role="dialog" aria-modal="true">
+        <div class="history-panel">
+            <div class="history-header">
+                <h2>My Profile</h2>
+                <button class="history-close" onclick="closeProfile()" aria-label="Close profile">&times;</button>
+            </div>
+            <div class="history-body" id="profileBody" style="padding:20px;">
+                <div style="text-align:center;margin-bottom:24px;">
+                    <div id="profileAvatar" style="width:80px;height:80px;border-radius:50%;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;margin:0 auto 12px;"></div>
+                    <div id="profileName" style="font-size:20px;font-weight:700;"></div>
+                    <div id="profileEmail" style="font-size:14px;color:var(--text-secondary);margin-top:4px;"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;">
+                    <div style="text-align:center;padding:16px;background:var(--primary-bg);border-radius:12px;">
+                        <div id="profileJobCount" style="font-size:24px;font-weight:800;color:var(--primary);">--</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">TOTAL JOBS</div>
+                    </div>
+                    <div style="text-align:center;padding:16px;background:var(--primary-bg);border-radius:12px;">
+                        <div id="profileAvgScore" style="font-size:24px;font-weight:800;color:var(--primary);">--</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">AVG SCORE</div>
+                    </div>
+                    <div style="text-align:center;padding:16px;background:var(--primary-bg);border-radius:12px;">
+                        <div id="profileMemberSince" style="font-size:14px;font-weight:700;color:var(--primary);">--</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">MEMBER SINCE</div>
+                    </div>
+                </div>
+                <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;">Recent Tailoring Jobs</h3>
+                <div id="profileJobs" style="max-height:300px;overflow-y:auto;"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div class="toast" id="toastNotification" role="alert"></div>
 
@@ -2675,9 +2712,12 @@
         document.body.style.overflow = '';
     }
 
-    // Close history on Escape key
+    // Close overlays on Escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
+            if (document.getElementById('profileOverlay').classList.contains('active')) {
+                closeProfile();
+            }
             var overlay = document.getElementById('historyOverlay');
             if (overlay.classList.contains('active')) {
                 closeHistory();
@@ -3853,12 +3893,30 @@
 
                 showDetailTab('tailored');
 
-                // Build download buttons
+                // Download buttons from files list
                 var dlHtml = '';
                 if (data.files && data.files.length > 0) {
+                    dlHtml += '<div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Download</div>';
+                    dlHtml += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
                     data.files.forEach(function(f) {
-                        dlHtml += '<a href="/api/download/' + jobId + '/' + f.filename + '" class="detail-tab" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;">' + f.filename.split('.').pop().toUpperCase() + '</a>';
+                        var fname = typeof f === 'string' ? f : f.filename;
+                        var ext = fname.split('.').pop().toUpperCase();
+                        // Skip non-user files like .md and .json
+                        if (ext === 'JSON' || ext === 'MD') return;
+                        // Build a friendly label from filename
+                        var label = ext;
+                        var lowerName = fname.toLowerCase();
+                        if (ext === 'PDF') {
+                            if (lowerName.indexOf('modern') !== -1) label = 'Modern PDF';
+                            else if (lowerName.indexOf('executive') !== -1) label = 'Executive PDF';
+                            else if (lowerName.indexOf('minimal') !== -1) label = 'Minimal PDF';
+                            else label = 'PDF';
+                        } else if (ext === 'DOCX') {
+                            label = 'DOCX';
+                        }
+                        dlHtml += '<a href="/api/download/' + jobId + '/' + fname + '" style="padding:8px 14px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;color:var(--text);text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:4px;" onmouseover="this.style.borderColor=\'var(--primary)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' + label + '</a>';
                     });
+                    dlHtml += '</div>';
                 }
                 document.getElementById('detailDownloads').innerHTML = dlHtml;
             })
@@ -3890,6 +3948,90 @@
         document.getElementById('historyJobDetail').style.display = 'none';
         document.querySelector('.history-body').style.display = 'block';
         currentDetailJob = null;
+    }
+
+    // ─── Profile ───
+    function showProfile() {
+        document.getElementById('userMenuWrap').classList.remove('open');
+        var overlay = document.getElementById('profileOverlay');
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+
+        // Populate from current user data
+        var name = document.getElementById('userNameText').textContent || '';
+        var email = document.getElementById('dropdownUserEmail').textContent || '';
+        document.getElementById('profileName').textContent = name;
+        document.getElementById('profileEmail').textContent = email;
+        document.getElementById('profileAvatar').textContent = (name || email || '?').substring(0, 2).toUpperCase();
+
+        // Load history for stats
+        fetch('/api/history?per_page=50')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                var jobs = d.jobs || [];
+                document.getElementById('profileJobCount').textContent = d.total || jobs.length;
+
+                // Calculate average score
+                var scores = jobs.filter(function(j) { return j.match_score; }).map(function(j) { return j.match_score; });
+                var avg = scores.length ? Math.round(scores.reduce(function(a, b) { return a + b; }, 0) / scores.length) : 0;
+                document.getElementById('profileAvgScore').textContent = avg ? avg + '%' : '--';
+
+                // Member since
+                if (jobs.length > 0) {
+                    var oldest = jobs[jobs.length - 1];
+                    if (oldest.created_at) {
+                        document.getElementById('profileMemberSince').textContent = new Date(oldest.created_at).toLocaleDateString('en-US', {month: 'short', year: 'numeric'});
+                    }
+                }
+
+                // Recent jobs with download buttons
+                var html = '';
+                jobs.slice(0, 10).forEach(function(j) {
+                    var score = j.match_score ? Math.round(j.match_score) + '%' : '--';
+                    var scoreColor = j.match_score >= 80 ? 'var(--score-high)' : j.match_score >= 50 ? 'var(--score-mid)' : 'var(--score-low)';
+                    var date = j.created_at ? new Date(j.created_at).toLocaleDateString() : '';
+
+                    html += '<div style="padding:12px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;">';
+                    html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+                    html += '<div style="flex:1;min-width:0;">';
+                    html += '<div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (j.job_title || 'Untitled') + '</div>';
+                    html += '<div style="font-size:12px;color:var(--text-secondary);">' + (j.company || '') + (j.company && date ? ' \u00b7 ' : '') + date + '</div>';
+                    html += '</div>';
+                    html += '<div style="font-size:18px;font-weight:800;color:' + scoreColor + ';margin-left:12px;">' + score + '</div>';
+                    html += '</div>';
+
+                    // Download buttons
+                    if (j.files && j.files.length > 0) {
+                        html += '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">';
+                        j.files.forEach(function(f) {
+                            var fname = typeof f === 'string' ? f : f.filename;
+                            var ext = fname.split('.').pop().toUpperCase();
+                            if (ext === 'JSON' || ext === 'MD') return; // skip non-user files
+                            var label = ext;
+                            var lowerName = fname.toLowerCase();
+                            if (ext === 'PDF') {
+                                if (lowerName.indexOf('modern') !== -1) label = 'Modern';
+                                else if (lowerName.indexOf('executive') !== -1) label = 'Executive';
+                                else if (lowerName.indexOf('minimal') !== -1) label = 'Minimal';
+                            }
+                            html += '<a href="/api/download/' + j.id + '/' + fname + '" style="padding:4px 10px;background:var(--primary-bg);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;color:var(--primary);text-decoration:none;transition:all 0.2s;" onmouseover="this.style.borderColor=\'var(--primary)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' + label + '</a>';
+                        });
+                        html += '</div>';
+                    }
+                    html += '</div>';
+                });
+
+                if (!html) html = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">No tailoring jobs yet.</div>';
+                document.getElementById('profileJobs').innerHTML = html;
+            })
+            .catch(function(e) {
+                document.getElementById('profileJobs').innerHTML = '<div style="color:var(--text-secondary);">Failed to load profile data.</div>';
+            });
+    }
+
+    function closeProfile() {
+        document.getElementById('profileOverlay').classList.remove('active');
+        document.body.style.overflow = '';
     }
     </script>
 </body>

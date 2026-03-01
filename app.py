@@ -1042,18 +1042,6 @@ def api_status():
 # ─── Routes ─────────────────────────────────────────────────────────────────────
 
 
-@app.route("/api/extract-jd", methods=["POST"])
-def extract_jd():
-    """Extract job description text from a URL."""
-    data = request.get_json(force=True)
-    url = data.get("url", "").strip()
-    if not url:
-        return jsonify({"error": "URL is required"}), 400
-    from jd_extractor import extract_jd_from_url
-    result = extract_jd_from_url(url)
-    return jsonify(result)
-
-
 @app.route("/")
 def index():
     """Serve the main UI."""
