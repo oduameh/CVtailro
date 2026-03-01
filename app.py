@@ -486,16 +486,18 @@ def run_pipeline_job(
         )
 
         # Build smart filenames from job title + company
-        # Single unified resume (use "Resume" suffix instead of "ATS"/"Recruiter")
-        resume_pdf_name = _safe_filename(job_analysis.job_title, job_analysis.company, "Resume.pdf")
         resume_docx_name = _safe_filename(job_analysis.job_title, job_analysis.company, "Resume.docx")
         resume_md_name = _safe_filename(job_analysis.job_title, job_analysis.company, "Resume.md")
         report_name = _safe_filename(job_analysis.job_title, job_analysis.company, "Match_Report.json")
         tp_name = _safe_filename(job_analysis.job_title, job_analysis.company, "Talking_Points.md")
 
-        # Write artifacts (single unified resume)
+        # Write artifacts — generate ALL template PDFs so user can pick after tailoring
         save_markdown(ats_resume.markdown_content, output_dir / resume_md_name)
-        generate_resume_pdf(ats_resume.markdown_content, output_dir / resume_pdf_name, template=template)
+        template_pdf_names = []
+        for tpl_name in ["modern", "executive", "minimal"]:
+            pdf_name = _safe_filename(job_analysis.job_title, job_analysis.company, f"{tpl_name.title()}.pdf")
+            generate_resume_pdf(ats_resume.markdown_content, output_dir / pdf_name, template=tpl_name)
+            template_pdf_names.append(pdf_name)
         generate_resume_docx(ats_resume.markdown_content, output_dir / resume_docx_name)
         save_json(match_report.model_dump(), output_dir / report_name)
         save_markdown(format_talking_points(talking_points), output_dir / tp_name)
@@ -516,8 +518,7 @@ def run_pipeline_job(
             )
 
         # Persist results to database and upload files to R2
-        files_list = [
-            resume_pdf_name,
+        files_list = template_pdf_names + [
             resume_docx_name,
             resume_md_name,
             report_name,
@@ -946,6 +947,8 @@ def start_tailoring():
     resume_file = request.files["resume"]
     job_text = request.form.get("job_description", "").strip()
     mode = request.form.get("mode", "conservative")
+    # Template parameter kept for backward compatibility (DB storage)
+    # All templates are now generated; user picks when downloading
     template = request.form.get("template", "modern")
 
     if not resume_file.filename:
@@ -1226,7 +1229,13 @@ def download_file(job_id: str, filename: str):
     # PDF files — regenerate from stored markdown
     if safe_name.endswith(".pdf"):
         source_md = None
-        if "ats" in safe_name or "recruiter" in safe_name or "resume" in safe_name.lower():
+        lower_safe = safe_name.lower()
+        is_resume_pdf = (
+            "ats" in lower_safe or "recruiter" in lower_safe
+            or "resume" in lower_safe
+            or "modern" in lower_safe or "executive" in lower_safe or "minimal" in lower_safe
+        )
+        if is_resume_pdf:
             source_md = db_job.ats_resume_md
 
         if not source_md:
@@ -1237,7 +1246,16 @@ def download_file(job_id: str, filename: str):
             import tempfile
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
                 tmp_path = tmp.name
-            template = db_job.template or "modern"
+            # Extract template from filename (e.g. "..._Modern.pdf" -> "modern")
+            # Fall back to stored template preference or "modern"
+            template = "modern"
+            lower_name = safe_name.lower()
+            for tpl in ("executive", "modern", "minimal"):
+                if tpl in lower_name:
+                    template = tpl
+                    break
+            else:
+                template = db_job.template or "modern"
             logger.info(f"[Download] Regenerating PDF from DB markdown: {safe_name} template={template}")
             generate_resume_pdf(source_md, tmp_path, template=template)
             pdf_data = open(tmp_path, "rb").read()

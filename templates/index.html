@@ -682,82 +682,36 @@
             margin-bottom: 20px;
         }
 
-        .dl-cards {
+        .template-grid {
             display: grid;
-            grid-template-columns: 1fr;
-            gap: 16px;
-            margin-bottom: 16px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 16px 0;
         }
-
-        .dl-card {
-            display: block;
-            text-decoration: none;
-            background: #FAFBFE;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 20px;
-            transition: border-color 0.2s, box-shadow 0.2s;
+        .template-card {
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-
-        .dl-card:hover {
+        .template-card:hover {
             border-color: var(--accent);
-            box-shadow: 0 2px 8px rgba(0, 179, 126, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
-
-        .dl-card-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 12px;
+        .template-name { font-weight: 600; font-size: 14px; margin-top: 8px; }
+        .template-desc { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+        .template-preview {
+            height: 80px;
+            border-radius: 4px;
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
         }
-
-        .dl-card-icon.ats {
-            background: var(--accent-light);
-            color: var(--accent);
-        }
-
-        .dl-card-icon.rec {
-            background: #EDE9FE;
-            color: #7C3AED;
-        }
-
-        .dl-card-icon svg {
-            width: 20px;
-            height: 20px;
-        }
-
-        .dl-card-title {
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--text);
-            margin-bottom: 4px;
-        }
-
-        .dl-card-desc {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 12px;
-            line-height: 1.5;
-        }
-
-        .dl-card-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 14px;
-            background: var(--accent);
-            color: #fff;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 600;
-        }
-
-        .dl-card.rec-card .dl-card-btn {
-            background: #7C3AED;
-        }
+        .modern-preview { border-left: 3px solid #1a3a5c; }
+        .exec-preview { border-bottom: 1px solid #888; }
+        .min-preview { background: #fafafa; }
 
         .dl-usage-hint {
             font-size: 12px;
@@ -1062,13 +1016,9 @@
             /* Textarea: shorter on mobile */
             textarea { min-height: 140px; }
 
-            /* Download cards: stack */
-            .dl-cards {
+            /* Template cards: stack on mobile */
+            .template-grid {
                 grid-template-columns: 1fr;
-            }
-
-            .dl-card {
-                width: 100%;
             }
 
             /* Controls: stack vertically */
@@ -1647,7 +1597,7 @@
             .toggle-group label { flex: 1 1 auto; min-width: 80px; }
             .card { padding: 12px; }
             .container { padding: 12px 8px 24px; }
-            .dl-card { padding: 14px; }
+            .template-card { padding: 12px; }
             .tab-content { font-size: 12px; padding: 10px; }
         }
 
@@ -1833,14 +1783,6 @@
                     <input type="radio" name="mode" id="modeA" value="aggressive">
                     <label for="modeA">Aggressive</label>
                 </div>
-                <div class="toggle-group">
-                    <input type="radio" name="template" id="tplExec" value="executive">
-                    <label for="tplExec">Executive</label>
-                    <input type="radio" name="template" id="tplModern" value="modern" checked>
-                    <label for="tplModern">Modern</label>
-                    <input type="radio" name="template" id="tplMin" value="minimal">
-                    <label for="tplMin">Minimal</label>
-                </div>
             </div>
 
             <!-- Model Selector (shown only when admin enables it) -->
@@ -1906,24 +1848,31 @@
 
             <!-- Downloads -->
             <div class="card">
-                <div class="downloads-heading">Your Tailored Resume</div>
+                <div class="downloads-heading">Download Your Resume</div>
 
-                <div class="dl-cards" id="dlCards">
-                    <div class="dl-card" id="dlCardResume">
-                        <div class="dl-card-icon ats">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                        </div>
-                        <div class="dl-card-title">Tailored Resume</div>
-                        <div class="dl-card-desc">ATS-optimised and recruiter-ready</div>
-                        <span class="dl-card-btn" id="dlBtnResume">Download PDF</span>
+                <div class="template-grid" id="templateGrid">
+                    <div class="template-card" onclick="downloadTemplate('modern')">
+                        <div class="template-preview modern-preview"></div>
+                        <div class="template-name">Modern</div>
+                        <div class="template-desc">Clean sans-serif, navy accents</div>
+                    </div>
+                    <div class="template-card" onclick="downloadTemplate('executive')">
+                        <div class="template-preview exec-preview"></div>
+                        <div class="template-name">Executive</div>
+                        <div class="template-desc">Classic serif, elegant</div>
+                    </div>
+                    <div class="template-card" onclick="downloadTemplate('minimal')">
+                        <div class="template-preview min-preview"></div>
+                        <div class="template-name">Minimal</div>
+                        <div class="template-desc">Typography-focused, zero color</div>
                     </div>
                 </div>
 
-                <div class="dl-usage-hint">Your resume has been optimised for both ATS screening and recruiter appeal.</div>
+                <div class="dl-usage-hint">Your resume has been optimised for both ATS screening and recruiter appeal. Pick any template above to download as PDF.</div>
 
                 <button class="additional-toggle" id="additionalToggle" onclick="toggleAdditional()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                    Additional files
+                    Additional files (DOCX, Markdown, Report)
                 </button>
                 <div class="additional-files" id="additionalFiles">
                     <div class="additional-files-grid" id="dlGridSecondary"></div>
@@ -2426,9 +2375,12 @@
             }
 
             // --- Downloads ---
-            var resumeLink = '', resumeFname = '', secondaryHtml = '';
+            var secondaryHtml = '';
             var seenCats = {};
             var effectiveJobId = jobId || s.job_id || s.id || '';
+
+            // Store for template download function
+            currentJobId = effectiveJobId;
 
             // Always generate standard download links (DB fallback regenerates PDFs/DOCX)
             var fileList = (s.files && s.files.length > 0) ? s.files : [
@@ -2437,27 +2389,22 @@
                 "tailored_resume_ats.md",
                 "match_report.json", "interview_talking_points.md"
             ];
+            currentFileList = fileList;
+
             if (effectiveJobId) {
                 fileList.forEach(function(f) {
                     var fname = typeof f === 'string' ? f : f.filename;
                     var m = getFileInfo(fname);
                     if (m.cat === 'resume_dup') return;
+                    // Template PDFs are handled by the template grid cards
+                    if (m.cat === 'template_pdf') return;
                     var catKey = m.cat + '_' + m.b;
                     if (seenCats[catKey]) return;
                     seenCats[catKey] = true;
                     var link = '/api/download/' + effectiveJobId + '/' + fname;
-                    if (m.primary && !resumeLink) {
-                        resumeLink = link; resumeFname = fname;
-                    } else {
-                        secondaryHtml += '<a class="dl-btn-secondary" href="#" onclick="safeDownload(\'' + link + '\',\'' + fname + '\',event); return false;"><span class="label">' + escapeHtml(m.l) + '</span><span class="badge">' + m.b + '</span></a>';
-                    }
+                    secondaryHtml += '<a class="dl-btn-secondary" href="#" onclick="safeDownload(\'' + link + '\',\'' + fname + '\',event); return false;"><span class="label">' + escapeHtml(m.l) + '</span><span class="badge">' + m.b + '</span></a>';
                 });
             }
-
-            // Reset download card with click handler
-            var dlCards = document.getElementById("dlCards");
-            dlCards.innerHTML =
-                '<div class="dl-card" id="dlCardResume" style="cursor:pointer" onclick="' + (resumeLink ? 'safeDownload(\'' + resumeLink + '\',\'' + resumeFname + '\',event)' : '') + '"><div class="dl-card-icon ats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div><div class="dl-card-title">Tailored Resume</div><div class="dl-card-desc">ATS-optimised and recruiter-ready</div><span class="dl-card-btn" id="dlBtnResume">Download PDF</span></div>';
 
             document.getElementById("dlGridSecondary").innerHTML = secondaryHtml;
 
@@ -2552,17 +2499,29 @@
 
     // Map filenames to display info. Supports dynamic smart filenames
     // (e.g. "Software_Engineer_Google_ATS.pdf") by pattern matching.
+    // Store current file list for template downloads
+    var currentFileList = [];
+    var currentJobId = '';
+
     function getFileInfo(fname) {
         var ext = fname.split('.').pop().toUpperCase();
         var lower = fname.toLowerCase();
+        // Template-based PDFs (new pipeline): Modern.pdf, Executive.pdf, Minimal.pdf
+        var isModern = lower.indexOf('modern') !== -1;
+        var isExec = lower.indexOf('executive') !== -1;
+        var isMinimal = lower.indexOf('minimal') !== -1;
+        var isTemplatePdf = (isModern || isExec || isMinimal) && ext === 'PDF';
+        if (isTemplatePdf) {
+            var tplName = isModern ? 'Modern' : isExec ? 'Executive' : 'Minimal';
+            return {l: tplName + " PDF", b: "PDF", cat: "template_pdf", primary: false, template: tplName.toLowerCase()};
+        }
         // Unified resume (new pipeline) — check for "resume" but not "ats"/"recruiter"
         var isResume = lower.indexOf('resume') !== -1;
         var isAts = lower.indexOf('ats') !== -1;
         var isRec = lower.indexOf('recruiter') !== -1;
-        // Primary: PDF resume is the main download
+        // Legacy: single PDF resume (primary download — kept for old pipeline runs)
         if (isResume && !isAts && !isRec && ext === 'PDF')
             return {l:"Tailored Resume", b:"PDF", cat:"resume", primary:true};
-        // Legacy: ATS/Recruiter PDF from old pipeline runs
         if (isAts && ext === 'PDF')
             return {l:"Tailored Resume", b:"PDF", cat:"resume", primary:true};
         if (isRec && ext === 'PDF')
@@ -2585,6 +2544,34 @@
         if (lower.indexOf('talking') !== -1 && ext === 'MD')
             return {l:"Talking Points", b:"MD", cat:"other", primary:false};
         return {l: fname, b: ext, cat: "other", primary: false};
+    }
+
+    function downloadTemplate(tpl) {
+        if (!currentFileList || !currentJobId) return;
+        var pdfFile = null;
+        // Look for a PDF matching the template name (new pipeline)
+        for (var i = 0; i < currentFileList.length; i++) {
+            var f = typeof currentFileList[i] === 'string' ? currentFileList[i] : currentFileList[i].filename;
+            if (f.toLowerCase().indexOf(tpl) !== -1 && f.toLowerCase().endsWith('.pdf')) {
+                pdfFile = f;
+                break;
+            }
+        }
+        // Fallback for legacy jobs: find any PDF resume file
+        if (!pdfFile) {
+            for (var j = 0; j < currentFileList.length; j++) {
+                var ff = typeof currentFileList[j] === 'string' ? currentFileList[j] : currentFileList[j].filename;
+                if (ff.toLowerCase().endsWith('.pdf')) {
+                    pdfFile = ff;
+                    break;
+                }
+            }
+        }
+        if (pdfFile) {
+            safeDownload('/api/download/' + currentJobId + '/' + pdfFile, pdfFile);
+        } else {
+            showError('Could not find the ' + tpl + ' template PDF. Try the additional files below.');
+        }
     }
 
     // --- Mobile detection for upload label ---
@@ -2781,7 +2768,6 @@
         if (!serviceConfigured) { showError("Service is temporarily unavailable. Please try again later."); return; }
         var file = fileInput.files[0], jd = jdTA.value.trim();
         var mode = document.querySelector('input[name="mode"]:checked').value;
-        var template = document.querySelector('input[name="template"]:checked').value;
         var model = getSelectedModel();
 
         if (!file) { showError("Please upload your resume first."); return; }
@@ -2815,7 +2801,6 @@
         fd.append("resume", file);
         fd.append("job_description", jd);
         fd.append("mode", mode);
-        fd.append("template", template);
         if (model) fd.append("model", model);
 
         try {
@@ -3028,10 +3013,11 @@
         }
 
         // --- Downloads ---
-        var resumeLink = '';
-        var resumeFname = '';
         var secondaryHtml = '';
         var seenCats = {};
+
+        // Store for template download function
+        currentJobId = jobId;
 
         // Use file list from result, or fallback to standard files (DB fallback has empty files[])
         var fileList = (s.files && s.files.length > 0) ? s.files : [
@@ -3040,29 +3026,23 @@
             "tailored_resume_ats.md",
             "match_report.json", "interview_talking_points.md"
         ];
+        currentFileList = fileList;
+
         fileList.forEach(function(f) {
             var fname = typeof f === 'string' ? f : f.filename;
             var m = getFileInfo(fname);
             // Skip duplicate resume files (e.g. recruiter variants from old runs)
             if (m.cat === 'resume_dup') return;
+            // Template PDFs are handled by the template grid cards
+            if (m.cat === 'template_pdf') return;
             var catKey = m.cat + '_' + m.b;
             if (seenCats[catKey]) return;
             seenCats[catKey] = true;
             var link = '/api/download/' + jobId + '/' + fname;
-            if (m.primary && !resumeLink) {
-                resumeLink = link;
-                resumeFname = fname;
-            } else {
-                secondaryHtml += '<a class="dl-btn-secondary" href="#" onclick="safeDownload(\'' + link + '\',\'' + fname + '\',event); return false;">' +
-                    '<span class="label">' + escapeHtml(m.l) + '</span>' +
-                    '<span class="badge">' + m.b + '</span></a>';
-            }
+            secondaryHtml += '<a class="dl-btn-secondary" href="#" onclick="safeDownload(\'' + link + '\',\'' + fname + '\',event); return false;">' +
+                '<span class="label">' + escapeHtml(m.l) + '</span>' +
+                '<span class="badge">' + m.b + '</span></a>';
         });
-
-        // Wire up single download card
-        var dlCards = document.getElementById("dlCards");
-        dlCards.innerHTML =
-            '<div class="dl-card" id="dlCardResume" style="cursor:pointer"' + (resumeLink ? ' onclick="safeDownload(\'' + resumeLink + '\',\'' + resumeFname + '\',event)"' : '') + '><div class="dl-card-icon ats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div><div class="dl-card-title">Tailored Resume</div><div class="dl-card-desc">ATS-optimised and recruiter-ready</div><span class="dl-card-btn" id="dlBtnResume">Download PDF</span></div>';
 
         document.getElementById("dlGridSecondary").innerHTML = secondaryHtml;
 
@@ -3211,17 +3191,30 @@
             ring.style.strokeDashoffset = 376.99;
         }
 
-        // Reset download card to initial state
-        var dlCards = document.getElementById("dlCards");
-        if (dlCards) {
-            dlCards.innerHTML =
-                '<div class="dl-card" id="dlCardResume">' +
-                    '<div class="dl-card-icon ats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>' +
-                    '<div class="dl-card-title">Tailored Resume</div>' +
-                    '<div class="dl-card-desc">ATS-optimised and recruiter-ready</div>' +
-                    '<span class="dl-card-btn" id="dlBtnResume">Download PDF</span>' +
+        // Reset template grid to initial state
+        var templateGrid = document.getElementById("templateGrid");
+        if (templateGrid) {
+            templateGrid.innerHTML =
+                '<div class="template-card" onclick="downloadTemplate(\'modern\')">' +
+                    '<div class="template-preview modern-preview"></div>' +
+                    '<div class="template-name">Modern</div>' +
+                    '<div class="template-desc">Clean sans-serif, navy accents</div>' +
+                '</div>' +
+                '<div class="template-card" onclick="downloadTemplate(\'executive\')">' +
+                    '<div class="template-preview exec-preview"></div>' +
+                    '<div class="template-name">Executive</div>' +
+                    '<div class="template-desc">Classic serif, elegant</div>' +
+                '</div>' +
+                '<div class="template-card" onclick="downloadTemplate(\'minimal\')">' +
+                    '<div class="template-preview min-preview"></div>' +
+                    '<div class="template-name">Minimal</div>' +
+                    '<div class="template-desc">Typography-focused, zero color</div>' +
                 '</div>';
         }
+
+        // Clear stored file/job references
+        currentFileList = [];
+        currentJobId = '';
 
         // Close additional files
         document.getElementById("additionalToggle").classList.remove("open");
