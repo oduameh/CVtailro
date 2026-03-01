@@ -76,6 +76,12 @@ class TailoringJob(db.Model):
     ats_resume_md = db.Column(db.Text, nullable=True)
     recruiter_resume_md = db.Column(db.Text, nullable=True)
     talking_points_md = db.Column(db.Text, nullable=True)
+    cover_letter_md = db.Column(db.Text, nullable=True)
+    section_scores = db.Column(db.JSON, nullable=True)
+    resume_quality_json = db.Column(db.JSON, nullable=True)
+    ats_check_json = db.Column(db.JSON, nullable=True)
+    email_templates_md = db.Column(db.Text, nullable=True)
+    keyword_density_json = db.Column(db.JSON, nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

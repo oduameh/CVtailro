@@ -135,6 +135,8 @@ migrate = Migrate(app, db)
 login_manager.init_app(app)
 init_oauth(app)
 app.register_blueprint(auth_bp)
+from saved_resumes_api import saved_resumes_bp
+app.register_blueprint(saved_resumes_bp)
 r2_storage.init_app(app)
 
 # Thread-safe job storage
@@ -529,6 +531,81 @@ def run_pipeline_job(
         emit(6, 6, "Final Assembly", "done",
              f"{len(talking_points)} talking points generated")
 
+        # ── Post-pipeline enrichment (non-blocking, zero API cost) ──
+        # These run after the core pipeline and add bonus insights
+        cover_letter_md = ""
+        resume_quality_data = None
+        email_templates_md = ""
+        keyword_density_data = None
+
+        try:
+            # Resume Quality Analysis (pure Python, instant)
+            from resume_quality import analyze_resume, extract_bullets_from_markdown
+            original_bullets = extract_bullets_from_markdown(resume_text)
+            tailored_bullets = extract_bullets_from_markdown(ats_resume.markdown_content)
+            quality_before = analyze_resume(original_bullets)
+            quality_after = analyze_resume(tailored_bullets)
+            resume_quality_data = {
+                "before": {"score": quality_before.overall_score, "metrics_pct": quality_before.metrics_percentage,
+                           "weak_verbs": quality_before.weak_verbs_used, "filler_words": quality_before.filler_words_found},
+                "after": {"score": quality_after.overall_score, "metrics_pct": quality_after.metrics_percentage,
+                          "weak_verbs": quality_after.weak_verbs_used, "filler_words": quality_after.filler_words_found},
+                "improvement": quality_after.overall_score - quality_before.overall_score,
+            }
+            logger.info(f"[Pipeline] Resume quality: {quality_before.overall_score} -> {quality_after.overall_score}")
+        except Exception as e:
+            logger.warning(f"[Pipeline] Resume quality analysis failed: {e}")
+
+        try:
+            # Email Follow-Up Templates (pure Python, instant)
+            from email_templates import generate_follow_up_templates, format_templates_as_markdown
+            templates = generate_follow_up_templates(
+                candidate_name=resume_data.name if hasattr(resume_data, 'name') else "",
+                job_title=job_analysis.job_title,
+                company=job_analysis.company,
+                key_skills=job_analysis.required_skills[:3] if job_analysis.required_skills else [],
+            )
+            email_templates_md = format_templates_as_markdown(templates)
+        except Exception as e:
+            logger.warning(f"[Pipeline] Email templates generation failed: {e}")
+
+        try:
+            # Keyword Density Analysis (pure Python, instant)
+            from keyword_density import analyze_keyword_density
+            kd_report = analyze_keyword_density(
+                job_description=job_text,
+                original_resume=resume_text,
+                tailored_resume=ats_resume.markdown_content,
+                required_skills=job_analysis.required_skills,
+                preferred_skills=job_analysis.preferred_skills,
+                tools=job_analysis.tools,
+            )
+            keyword_density_data = {
+                "total": kd_report.total_jd_keywords,
+                "matched_before": kd_report.matched_before,
+                "matched_after": kd_report.matched_after,
+                "improvement": kd_report.improvement,
+                "keywords": [{"keyword": k.keyword, "jd": k.jd_count, "before": k.resume_before_count,
+                              "after": k.resume_after_count, "status": k.status} for k in kd_report.keywords[:30]],
+            }
+            logger.info(f"[Pipeline] Keyword density: {kd_report.matched_before} -> {kd_report.matched_after} keywords matched")
+        except Exception as e:
+            logger.warning(f"[Pipeline] Keyword density analysis failed: {e}")
+
+        try:
+            # Cover Letter Generation (LLM call — runs last as it's optional)
+            from agents.cover_letter import CoverLetterAgent
+            cover_agent = CoverLetterAgent(config)
+            cover_result = cover_agent.run({
+                "job_analysis": job_analysis,
+                "resume_md": ats_resume.markdown_content,
+                "candidate_name": resume_data.name if hasattr(resume_data, 'name') else "",
+            })
+            cover_letter_md = cover_result.cover_letter_md
+            logger.info(f"[Pipeline] Cover letter generated ({len(cover_letter_md)} chars)")
+        except Exception as e:
+            logger.warning(f"[Pipeline] Cover letter generation failed (non-critical): {e}")
+
         total_elapsed = time.time() - pipeline_start
         logger.info(f"[Pipeline] Total pipeline completed in {total_elapsed:.1f}s")
 
@@ -561,6 +638,11 @@ def run_pipeline_job(
                 db_job.ats_resume_md = ats_resume.markdown_content
                 db_job.recruiter_resume_md = ats_resume.markdown_content  # Unified resume for backward compat
                 db_job.talking_points_md = format_talking_points(talking_points)
+                db_job.cover_letter_md = cover_letter_md or None
+                db_job.section_scores = gap_report.section_scores if hasattr(gap_report, 'section_scores') else None
+                db_job.resume_quality_json = resume_quality_data
+                db_job.email_templates_md = email_templates_md or None
+                db_job.keyword_density_json = keyword_density_data
                 db_job.job_description_snippet = job_text[:500] if job_text else None
                 db_job.completed_at = datetime.now(timezone.utc)
                 db_job.duration_seconds = total_elapsed
@@ -616,6 +698,11 @@ def run_pipeline_job(
                 "ats_resume_md": ats_resume.markdown_content,
                 "recruiter_resume_md": ats_resume.markdown_content,  # Unified resume for backward compat
                 "talking_points_md": format_talking_points(talking_points),
+                "cover_letter_md": cover_letter_md,
+                "section_scores": gap_report.section_scores if hasattr(gap_report, 'section_scores') else {},
+                "resume_quality": resume_quality_data,
+                "email_templates_md": email_templates_md,
+                "keyword_density": keyword_density_data,
                 "files": files_list,
             }
         progress_queue.put({"status": "complete"})
@@ -955,6 +1042,18 @@ def api_status():
 # ─── Routes ─────────────────────────────────────────────────────────────────────
 
 
+@app.route("/api/extract-jd", methods=["POST"])
+def extract_jd():
+    """Extract job description text from a URL."""
+    data = request.get_json(force=True)
+    url = data.get("url", "").strip()
+    if not url:
+        return jsonify({"error": "URL is required"}), 400
+    from jd_extractor import extract_jd_from_url
+    result = extract_jd_from_url(url)
+    return jsonify(result)
+
+
 @app.route("/")
 def index():
     """Serve the main UI."""
@@ -1207,6 +1306,11 @@ def get_result(job_id: str):
         "ats_resume_md": db_job.ats_resume_md,
         "recruiter_resume_md": db_job.recruiter_resume_md,
         "talking_points_md": db_job.talking_points_md,
+        "cover_letter_md": db_job.cover_letter_md,
+        "section_scores": db_job.section_scores,
+        "resume_quality": db_job.resume_quality_json,
+        "email_templates_md": db_job.email_templates_md,
+        "keyword_density": db_job.keyword_density_json,
         "files": [f.filename for f in db_job.files],
     }
     if db_job.original_match_score is not None:
@@ -1556,6 +1660,16 @@ def _run_migrations():
             db.session.execute(text("ALTER TABLE tailoring_jobs ADD COLUMN original_resume_text TEXT"))
             db.session.commit()
             logger.info("Added original_resume_text column to tailoring_jobs")
+        for col_name in ["cover_letter_md", "email_templates_md"]:
+            if col_name not in columns:
+                db.session.execute(text(f"ALTER TABLE tailoring_jobs ADD COLUMN {col_name} TEXT"))
+                db.session.commit()
+                logger.info(f"Added {col_name} column to tailoring_jobs")
+        for col_name in ["section_scores", "resume_quality_json", "ats_check_json", "keyword_density_json"]:
+            if col_name not in columns:
+                db.session.execute(text(f"ALTER TABLE tailoring_jobs ADD COLUMN {col_name} JSON"))
+                db.session.commit()
+                logger.info(f"Added {col_name} column to tailoring_jobs")
 
         # Add composite indexes for query performance
         existing_indexes = {idx["name"] for idx in insp.get_indexes("tailoring_jobs")}
