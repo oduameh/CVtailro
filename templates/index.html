@@ -3893,29 +3893,16 @@
 
                 showDetailTab('tailored');
 
-                // Download buttons from files list
+                // Download buttons — always show if resume exists (backend regenerates from markdown)
                 var dlHtml = '';
-                if (data.files && data.files.length > 0) {
+                if (data.ats_resume_md) {
                     dlHtml += '<div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Download</div>';
                     dlHtml += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
-                    data.files.forEach(function(f) {
-                        var fname = typeof f === 'string' ? f : f.filename;
-                        var ext = fname.split('.').pop().toUpperCase();
-                        // Skip non-user files like .md and .json
-                        if (ext === 'JSON' || ext === 'MD') return;
-                        // Build a friendly label from filename
-                        var label = ext;
-                        var lowerName = fname.toLowerCase();
-                        if (ext === 'PDF') {
-                            if (lowerName.indexOf('modern') !== -1) label = 'Modern PDF';
-                            else if (lowerName.indexOf('executive') !== -1) label = 'Executive PDF';
-                            else if (lowerName.indexOf('minimal') !== -1) label = 'Minimal PDF';
-                            else label = 'PDF';
-                        } else if (ext === 'DOCX') {
-                            label = 'DOCX';
-                        }
-                        dlHtml += '<a href="/api/download/' + jobId + '/' + fname + '" style="padding:8px 14px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;color:var(--text);text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:4px;" onmouseover="this.style.borderColor=\'var(--primary)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' + label + '</a>';
+                    var btnStyle = 'padding:8px 14px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;color:var(--text);text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:4px;';
+                    ['Modern', 'Executive', 'Minimal'].forEach(function(tpl) {
+                        dlHtml += '<a href="/api/download/' + jobId + '/' + tpl + '.pdf" style="' + btnStyle + '" onmouseover="this.style.borderColor=\'var(--primary)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' + tpl + ' PDF</a>';
                     });
+                    dlHtml += '<a href="/api/download/' + jobId + '/Resume.docx" style="' + btnStyle + '" onmouseover="this.style.borderColor=\'var(--primary)\'" onmouseout="this.style.borderColor=\'var(--border)\'">DOCX</a>';
                     dlHtml += '</div>';
                 }
                 document.getElementById('detailDownloads').innerHTML = dlHtml;
@@ -4000,22 +3987,14 @@
                     html += '<div style="font-size:18px;font-weight:800;color:' + scoreColor + ';margin-left:12px;">' + score + '</div>';
                     html += '</div>';
 
-                    // Download buttons
-                    if (j.files && j.files.length > 0) {
+                    // Download buttons — always show if resume was generated
+                    if (j.has_resume || (j.files && j.files.length > 0)) {
+                        var dlBtnStyle = 'padding:4px 10px;background:var(--primary-bg);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;color:var(--primary);text-decoration:none;transition:all 0.2s;';
                         html += '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">';
-                        j.files.forEach(function(f) {
-                            var fname = typeof f === 'string' ? f : f.filename;
-                            var ext = fname.split('.').pop().toUpperCase();
-                            if (ext === 'JSON' || ext === 'MD') return; // skip non-user files
-                            var label = ext;
-                            var lowerName = fname.toLowerCase();
-                            if (ext === 'PDF') {
-                                if (lowerName.indexOf('modern') !== -1) label = 'Modern';
-                                else if (lowerName.indexOf('executive') !== -1) label = 'Executive';
-                                else if (lowerName.indexOf('minimal') !== -1) label = 'Minimal';
-                            }
-                            html += '<a href="/api/download/' + j.id + '/' + fname + '" style="padding:4px 10px;background:var(--primary-bg);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;color:var(--primary);text-decoration:none;transition:all 0.2s;" onmouseover="this.style.borderColor=\'var(--primary)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' + label + '</a>';
+                        ['Modern', 'Executive', 'Minimal'].forEach(function(tpl) {
+                            html += '<a href="/api/download/' + j.id + '/' + tpl + '.pdf" style="' + dlBtnStyle + '">' + tpl + '</a>';
                         });
+                        html += '<a href="/api/download/' + j.id + '/Resume.docx" style="' + dlBtnStyle + '">DOCX</a>';
                         html += '</div>';
                     }
                     html += '</div>';

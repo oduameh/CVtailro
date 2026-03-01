@@ -1579,6 +1579,7 @@ def get_history():
             "model_used": j.model_used,
             "job_description_snippet": j.job_description_snippet,
             "created_at": j.created_at.isoformat() if j.created_at else None,
+            "has_resume": bool(j.ats_resume_md),
             "files": [
                 {"filename": f.filename, "size_bytes": f.size_bytes}
                 for f in j.files
