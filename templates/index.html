@@ -2151,6 +2151,17 @@
                 <!-- Job Description Card -->
                 <div class="card">
                     <h2>Paste the Job Description</h2>
+                    <div style="display:flex;gap:8px;margin-bottom:12px;">
+                        <button class="detail-tab active" id="jdTextBtn" onclick="toggleJdMode('text')" style="font-size:12px;padding:6px 12px;">Paste Text</button>
+                        <button class="detail-tab" id="jdUrlBtn" onclick="toggleJdMode('url')" style="font-size:12px;padding:6px 12px;">Paste URL</button>
+                    </div>
+                    <div id="jdUrlInput" style="display:none;margin-bottom:12px;">
+                        <div style="display:flex;gap:8px;">
+                            <input type="text" id="jdUrlField" placeholder="https://linkedin.com/jobs/..." style="flex:1;padding:12px 16px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;outline:none;">
+                            <button onclick="extractJdFromUrl()" style="padding:12px 20px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius);font-weight:600;cursor:pointer;font-size:13px;">Extract</button>
+                        </div>
+                        <div id="jdUrlStatus" style="font-size:12px;margin-top:6px;color:var(--text-secondary);"></div>
+                    </div>
                     <textarea id="jobDescription" placeholder="Paste the full job description here..."></textarea>
                     <div class="inline-error" id="jdError">Job description is too short. Please paste at least 50 characters.</div>
                     <div class="char-count"><span id="charCount">0</span> characters &middot; <span id="wordCount">0</span> words</div>
@@ -2265,6 +2276,21 @@
             <div class="card talking-points-card" id="talkingPointsCard" style="display:none">
                 <h2>Interview Talking Points</h2>
                 <div class="talking-points-content" id="talkingPointsContent"></div>
+            </div>
+
+            <!-- Cover Letter -->
+            <div class="card talking-points-card" id="coverLetterCard" style="display:none">
+                <h2 style="font-size:16px;font-weight:700;margin-bottom:12px;">Cover Letter</h2>
+                <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+                    <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('coverLetterContent').textContent).then(function(){var b=event.target;b.textContent='Copied!';setTimeout(function(){b.textContent='Copy';},2000);})">Copy</button>
+                </div>
+                <div id="coverLetterContent" class="talking-points-content"></div>
+            </div>
+
+            <!-- Email Templates -->
+            <div class="card talking-points-card" id="emailTemplatesCard" style="display:none">
+                <h2 style="font-size:16px;font-weight:700;margin-bottom:12px;">Email Follow-Up Templates</h2>
+                <div class="talking-points-content" id="emailTemplatesContent"></div>
             </div>
 
             <!-- Preview -->
@@ -2764,6 +2790,12 @@
             document.getElementById('formSection').style.display = 'none';
             document.getElementById('progressSection').classList.remove('active');
 
+            // Clean up dynamically inserted elements from previous render
+            var prevSectionScores = document.querySelector('.score-section > div[style*="border-top"]');
+            if (prevSectionScores) prevSectionScores.remove();
+            var prevQuality = document.querySelector('.score-section + .card[style*="margin-top:20px"]');
+            if (prevQuality) prevQuality.remove();
+
             // --- Circular Score ---
             var scoreVal = (s.match_score || 0).toFixed(0);
             var scoreNum = parseFloat(scoreVal);
@@ -2793,6 +2825,43 @@
                 }).join("");
             } else {
                 document.getElementById("kwSection").style.display = "none";
+            }
+
+            // Section scores (if available)
+            if (s.section_scores && Object.keys(s.section_scores).length > 0) {
+                var ssHtml = '<div style="margin-top:24px;padding-top:24px;border-top:1px solid var(--border);">';
+                ssHtml += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-secondary);margin-bottom:12px;">Section Match Breakdown</div>';
+                ssHtml += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">';
+                var sectionNames = {summary:'Summary',experience:'Experience',skills:'Skills',education:'Education'};
+                for (var sec in sectionNames) {
+                    var pct = Math.round(s.section_scores[sec] || 0);
+                    var barColor = pct >= 70 ? 'var(--score-high)' : pct >= 40 ? 'var(--score-mid)' : 'var(--score-low)';
+                    ssHtml += '<div style="text-align:center;padding:12px 8px;background:var(--primary-bg);border-radius:12px;">';
+                    ssHtml += '<div style="font-size:20px;font-weight:800;color:' + barColor + ';">' + pct + '%</div>';
+                    ssHtml += '<div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">' + sectionNames[sec] + '</div>';
+                    ssHtml += '</div>';
+                }
+                ssHtml += '</div></div>';
+                document.querySelector('.score-section').insertAdjacentHTML('beforeend', ssHtml);
+            }
+
+            // Resume quality (if available)
+            if (s.resume_quality) {
+                var rq = s.resume_quality;
+                var qualityHtml = '<div class="card" style="margin-top:20px;">';
+                qualityHtml += '<h2 style="font-size:16px;font-weight:700;margin-bottom:16px;">Resume Quality Analysis</h2>';
+                qualityHtml += '<div style="display:flex;gap:16px;flex-wrap:wrap;">';
+                qualityHtml += '<div style="flex:1;min-width:120px;text-align:center;padding:16px;background:var(--primary-bg);border-radius:12px;">';
+                qualityHtml += '<div style="font-size:28px;font-weight:800;color:var(--text-secondary);">' + (rq.before ? rq.before.score : '--') + '</div>';
+                qualityHtml += '<div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">BEFORE</div></div>';
+                qualityHtml += '<div style="flex:1;min-width:120px;text-align:center;padding:16px;background:var(--primary-bg);border-radius:12px;">';
+                qualityHtml += '<div style="font-size:28px;font-weight:800;color:var(--primary);">' + (rq.after ? rq.after.score : '--') + '</div>';
+                qualityHtml += '<div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">AFTER</div></div>';
+                qualityHtml += '<div style="flex:1;min-width:120px;text-align:center;padding:16px;background:rgba(0,184,148,0.08);border-radius:12px;">';
+                qualityHtml += '<div style="font-size:28px;font-weight:800;color:var(--score-high);">+' + (rq.improvement || 0) + '</div>';
+                qualityHtml += '<div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">IMPROVEMENT</div></div>';
+                qualityHtml += '</div></div>';
+                document.querySelector('.score-section').insertAdjacentHTML('afterend', qualityHtml);
             }
 
             // --- Downloads ---
@@ -2835,6 +2904,24 @@
                 document.getElementById("talkingPointsContent").innerHTML = renderMarkdown(s.talking_points_md);
             } else {
                 document.getElementById("talkingPointsCard").style.display = "none";
+            }
+
+            // --- Cover Letter ---
+            var clContainer = document.getElementById("coverLetterCard");
+            if (s.cover_letter_md) {
+                clContainer.style.display = "block";
+                document.getElementById("coverLetterContent").innerHTML = renderMarkdown(s.cover_letter_md);
+            } else {
+                clContainer.style.display = "none";
+            }
+
+            // --- Email Templates ---
+            var etContainer = document.getElementById("emailTemplatesCard");
+            if (s.email_templates_md) {
+                etContainer.style.display = "block";
+                document.getElementById("emailTemplatesContent").innerHTML = renderMarkdown(s.email_templates_md);
+            } else {
+                etContainer.style.display = "none";
             }
 
             // --- Preview tabs ---
@@ -3045,6 +3132,35 @@
     document.addEventListener("keydown", function(e) {
         if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !document.getElementById("btnRun").disabled) startTailoring();
     });
+
+    function toggleJdMode(mode) {
+        document.getElementById('jdTextBtn').classList.toggle('active', mode === 'text');
+        document.getElementById('jdUrlBtn').classList.toggle('active', mode === 'url');
+        document.getElementById('jobDescription').style.display = mode === 'text' ? '' : 'none';
+        document.getElementById('jdUrlInput').style.display = mode === 'url' ? '' : 'none';
+    }
+
+    async function extractJdFromUrl() {
+        var url = document.getElementById('jdUrlField').value.trim();
+        var status = document.getElementById('jdUrlStatus');
+        if (!url) { status.textContent = 'Please enter a URL.'; status.style.color = 'var(--error)'; return; }
+        status.textContent = 'Extracting job description...'; status.style.color = 'var(--text-secondary)';
+        try {
+            var r = await fetch('/api/extract-jd', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:url})});
+            var d = await r.json();
+            if (d.success) {
+                document.getElementById('jobDescription').value = d.text;
+                toggleJdMode('text');
+                status.textContent = 'Extracted! Switched to text view.'; status.style.color = 'var(--score-high)';
+                // Update char/word count
+                var jd = document.getElementById('jobDescription');
+                document.getElementById('charCount').textContent = jd.value.length;
+                document.getElementById('wordCount').textContent = jd.value.split(/\s+/).filter(function(w) { return w; }).length;
+            } else {
+                status.textContent = d.error || 'Failed to extract.'; status.style.color = 'var(--error)';
+            }
+        } catch(e) { status.textContent = 'Network error.'; status.style.color = 'var(--error)'; }
+    }
 
     function showError(msg) {
         var b = document.getElementById("errorBanner");
@@ -3393,6 +3509,12 @@
         }
         var s = d.result;
         try {
+        // Clean up dynamically inserted elements from previous render
+        var prevSectionScores = document.querySelector('.score-section > div[style*="border-top"]');
+        if (prevSectionScores) prevSectionScores.remove();
+        var prevQuality = document.querySelector('.score-section + .card[style*="margin-top:20px"]');
+        if (prevQuality) prevQuality.remove();
+
         // --- Circular Score ---
         var scoreVal = s.match_score.toFixed(0);
         var scoreNum = parseFloat(scoreVal);
@@ -3431,6 +3553,43 @@
             document.getElementById("kwList").innerHTML = s.missing_keywords.map(function(k) {
                 return '<span class="kw kw-missing">' + escapeHtml(k) + '</span>';
             }).join("");
+        }
+
+        // Section scores (if available)
+        if (s.section_scores && Object.keys(s.section_scores).length > 0) {
+            var ssHtml = '<div style="margin-top:24px;padding-top:24px;border-top:1px solid var(--border);">';
+            ssHtml += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-secondary);margin-bottom:12px;">Section Match Breakdown</div>';
+            ssHtml += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">';
+            var sectionNames = {summary:'Summary',experience:'Experience',skills:'Skills',education:'Education'};
+            for (var sec in sectionNames) {
+                var pct = Math.round(s.section_scores[sec] || 0);
+                var barColor = pct >= 70 ? 'var(--score-high)' : pct >= 40 ? 'var(--score-mid)' : 'var(--score-low)';
+                ssHtml += '<div style="text-align:center;padding:12px 8px;background:var(--primary-bg);border-radius:12px;">';
+                ssHtml += '<div style="font-size:20px;font-weight:800;color:' + barColor + ';">' + pct + '%</div>';
+                ssHtml += '<div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">' + sectionNames[sec] + '</div>';
+                ssHtml += '</div>';
+            }
+            ssHtml += '</div></div>';
+            document.querySelector('.score-section').insertAdjacentHTML('beforeend', ssHtml);
+        }
+
+        // Resume quality (if available)
+        if (s.resume_quality) {
+            var rq = s.resume_quality;
+            var qualityHtml = '<div class="card" style="margin-top:20px;">';
+            qualityHtml += '<h2 style="font-size:16px;font-weight:700;margin-bottom:16px;">Resume Quality Analysis</h2>';
+            qualityHtml += '<div style="display:flex;gap:16px;flex-wrap:wrap;">';
+            qualityHtml += '<div style="flex:1;min-width:120px;text-align:center;padding:16px;background:var(--primary-bg);border-radius:12px;">';
+            qualityHtml += '<div style="font-size:28px;font-weight:800;color:var(--text-secondary);">' + (rq.before ? rq.before.score : '--') + '</div>';
+            qualityHtml += '<div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">BEFORE</div></div>';
+            qualityHtml += '<div style="flex:1;min-width:120px;text-align:center;padding:16px;background:var(--primary-bg);border-radius:12px;">';
+            qualityHtml += '<div style="font-size:28px;font-weight:800;color:var(--primary);">' + (rq.after ? rq.after.score : '--') + '</div>';
+            qualityHtml += '<div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">AFTER</div></div>';
+            qualityHtml += '<div style="flex:1;min-width:120px;text-align:center;padding:16px;background:rgba(0,184,148,0.08);border-radius:12px;">';
+            qualityHtml += '<div style="font-size:28px;font-weight:800;color:var(--score-high);">+' + (rq.improvement || 0) + '</div>';
+            qualityHtml += '<div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">IMPROVEMENT</div></div>';
+            qualityHtml += '</div></div>';
+            document.querySelector('.score-section').insertAdjacentHTML('afterend', qualityHtml);
         }
 
         // --- Downloads ---
@@ -3473,6 +3632,24 @@
             document.getElementById("talkingPointsContent").innerHTML = renderMarkdown(s.talking_points_md);
         } else {
             document.getElementById("talkingPointsCard").style.display = "none";
+        }
+
+        // --- Cover Letter ---
+        var clContainer = document.getElementById("coverLetterCard");
+        if (s.cover_letter_md) {
+            clContainer.style.display = "block";
+            document.getElementById("coverLetterContent").innerHTML = renderMarkdown(s.cover_letter_md);
+        } else {
+            clContainer.style.display = "none";
+        }
+
+        // --- Email Templates ---
+        var etContainer = document.getElementById("emailTemplatesCard");
+        if (s.email_templates_md) {
+            etContainer.style.display = "block";
+            document.getElementById("emailTemplatesContent").innerHTML = renderMarkdown(s.email_templates_md);
+        } else {
+            etContainer.style.display = "none";
         }
 
         // --- Preview tabs ---
