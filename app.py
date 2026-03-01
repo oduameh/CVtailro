@@ -331,6 +331,14 @@ def run_pipeline_job(
 
         resume_text = load_resume(resume_path)
 
+        # Store original inputs for admin review and user profile
+        with app.app_context():
+            db_job = db.session.get(TailoringJob, job_id)
+            if db_job:
+                db_job.original_resume_text = resume_text
+                db_job.job_description_full = job_text
+                db.session.commit()
+
         # ── Stages 1 + 2 in PARALLEL (independent) ──
         emit(1, 6, "Job Intelligence", "running", "Analysing job description...")
         emit(2, 6, "Resume Parser", "running", "Parsing your resume...")
@@ -881,6 +889,8 @@ def admin_user_jobs(user_id: str):
             "rewrite_mode": j.rewrite_mode,
             "model_used": j.model_used,
             "job_description_snippet": j.job_description_snippet,
+            "job_description_full": j.job_description_full,
+            "original_resume_text": j.original_resume_text,
             "ats_resume_md": j.ats_resume_md,
             "talking_points_md": j.talking_points_md,
             "created_at": j.created_at.isoformat() if j.created_at else None,
@@ -1509,10 +1519,13 @@ def get_history_job(job_id):
         "template": job.template,
         "model_used": job.model_used,
         "job_description_snippet": job.job_description_snippet,
+        "job_description_full": job.job_description_full,
+        "original_resume_text": job.original_resume_text,
         "ats_resume_md": job.ats_resume_md,
         "recruiter_resume_md": job.recruiter_resume_md,
         "talking_points_md": job.talking_points_md,
         "created_at": job.created_at.isoformat() if job.created_at else None,
+        "duration_seconds": job.duration_seconds,
         "files": [
             {"filename": f.filename, "size_bytes": f.size_bytes}
             for f in job.files
@@ -1535,6 +1548,14 @@ def _run_migrations():
             db.session.execute(text("ALTER TABLE tailoring_jobs ADD COLUMN job_description_snippet VARCHAR(500)"))
             db.session.commit()
             logger.info("Added job_description_snippet column to tailoring_jobs")
+        if "job_description_full" not in columns:
+            db.session.execute(text("ALTER TABLE tailoring_jobs ADD COLUMN job_description_full TEXT"))
+            db.session.commit()
+            logger.info("Added job_description_full column to tailoring_jobs")
+        if "original_resume_text" not in columns:
+            db.session.execute(text("ALTER TABLE tailoring_jobs ADD COLUMN original_resume_text TEXT"))
+            db.session.commit()
+            logger.info("Added original_resume_text column to tailoring_jobs")
 
         # Add composite indexes for query performance
         existing_indexes = {idx["name"] for idx in insp.get_indexes("tailoring_jobs")}

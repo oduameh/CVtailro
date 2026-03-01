@@ -933,6 +933,8 @@
                     <div class="resume-tabs">
                         <button class="resume-tab-btn active" id="btnViewTailored" onclick="showResumeTab('tailored')">Tailored Resume</button>
                         <button class="resume-tab-btn" id="btnViewTalking" onclick="showResumeTab('talking')">Talking Points</button>
+                        <button class="resume-tab-btn" id="btnViewOriginal" onclick="showResumeTab('original')">Original Resume</button>
+                        <button class="resume-tab-btn" id="btnViewJD" onclick="showResumeTab('jd')">Job Description</button>
                     </div>
                     <div id="resumeContent" style="max-height:600px;overflow-y:auto;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:20px;font-size:13px;line-height:1.7;white-space:pre-wrap;font-family:'Inter',monospace;"></div>
                 </div>
@@ -1590,16 +1592,22 @@
         if (!currentJobsData || !currentJobsData.jobs[idx]) return;
         var job = currentJobsData.jobs[idx];
         var content = document.getElementById('resumeContent');
-        var btnTailored = document.getElementById('btnViewTailored');
-        var btnTalking = document.getElementById('btnViewTalking');
+        // Reset all tab buttons
+        var btns = document.querySelectorAll('.resume-tab-btn');
+        for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+
         if (tab === 'tailored') {
             content.textContent = job.ats_resume_md || 'No resume content available.';
-            btnTailored.classList.add('active');
-            btnTalking.classList.remove('active');
-        } else {
+            document.getElementById('btnViewTailored').classList.add('active');
+        } else if (tab === 'talking') {
             content.textContent = job.talking_points_md || 'No talking points available.';
-            btnTalking.classList.add('active');
-            btnTailored.classList.remove('active');
+            document.getElementById('btnViewTalking').classList.add('active');
+        } else if (tab === 'original') {
+            content.textContent = job.original_resume_text || 'Original resume not stored for this job.';
+            document.getElementById('btnViewOriginal').classList.add('active');
+        } else if (tab === 'jd') {
+            content.textContent = job.job_description_full || 'Full job description not stored for this job.';
+            document.getElementById('btnViewJD').classList.add('active');
         }
     }
 

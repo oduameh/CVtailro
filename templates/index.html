@@ -1812,6 +1812,29 @@
             50% { opacity: 0.3; }
         }
 
+        /* --- Job Detail Tabs --- */
+        .detail-tab {
+            padding: 8px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: #fff;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            color: var(--text-secondary);
+        }
+        .detail-tab.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+        .detail-tab:hover:not(.active) {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
         /* --- Small phones (iPhone SE, older Androids) --- */
         @media (max-width: 375px) {
             .hero h1 { font-size: 26px; }
@@ -2223,6 +2246,44 @@
             <div class="history-body" id="historyBody">
                 <div class="history-loading">Loading your history...</div>
             </div>
+            <!-- Job Detail View (replaces history list when viewing a specific job) -->
+            <div id="historyJobDetail" style="display:none;padding:20px;">
+                <button onclick="closeJobDetail()" style="background:none;border:none;color:var(--primary);font-size:14px;font-weight:600;cursor:pointer;padding:0;margin-bottom:16px;font-family:inherit;">&larr; Back to History</button>
+
+                <div style="margin-bottom:20px;">
+                    <h3 id="detailJobTitle" style="font-size:18px;font-weight:700;margin-bottom:4px;"></h3>
+                    <div id="detailJobMeta" style="font-size:13px;color:var(--text-secondary);"></div>
+                </div>
+
+                <!-- Score Summary -->
+                <div id="detailScoreSection" style="display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:120px;text-align:center;padding:16px;background:var(--primary-bg);border-radius:12px;">
+                        <div id="detailOrigScore" style="font-size:24px;font-weight:800;color:var(--text-secondary);">--</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">BEFORE</div>
+                    </div>
+                    <div style="flex:1;min-width:120px;text-align:center;padding:16px;background:var(--primary-bg);border-radius:12px;">
+                        <div id="detailNewScore" style="font-size:24px;font-weight:800;color:var(--primary);">--</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">AFTER</div>
+                    </div>
+                    <div style="flex:1;min-width:120px;text-align:center;padding:16px;background:var(--primary-bg);border-radius:12px;">
+                        <div id="detailDuration" style="font-size:24px;font-weight:800;color:var(--primary);">--</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">DURATION</div>
+                    </div>
+                </div>
+
+                <!-- Content Tabs -->
+                <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;" id="detailTabs">
+                    <button class="detail-tab active" onclick="showDetailTab('tailored')">Tailored Resume</button>
+                    <button class="detail-tab" onclick="showDetailTab('original')">Original Resume</button>
+                    <button class="detail-tab" onclick="showDetailTab('jd')">Job Description</button>
+                    <button class="detail-tab" onclick="showDetailTab('talking')">Talking Points</button>
+                </div>
+
+                <div id="detailContent" style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;max-height:400px;overflow-y:auto;font-size:13px;line-height:1.8;white-space:pre-wrap;font-family:inherit;"></div>
+
+                <!-- Download buttons -->
+                <div id="detailDownloads" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;"></div>
+            </div>
         </div>
     </div>
 
@@ -2525,6 +2586,7 @@
     }
 
     function closeHistory() {
+        closeJobDetail();
         document.getElementById('historyOverlay').classList.remove('active');
         document.body.style.overflow = '';
     }
@@ -2578,7 +2640,7 @@
                 var rwMode = job.rewrite_mode || '';
                 var rwLabel = rwMode ? rwMode.charAt(0).toUpperCase() + rwMode.slice(1) : '';
                 var rwClass = rwMode === 'aggressive' ? 'mode-aggressive' : 'mode-conservative';
-                html += '<div class="history-card" onclick="loadHistoryJob(\'' + escapeAttr(job.id || job.job_id) + '\')">' +
+                html += '<div class="history-card" onclick="viewJobDetail(\'' + escapeAttr(job.id || job.job_id) + '\')">' +
                     '<div class="history-card-score ' + scoreClass + '">' + Math.round(score) + '%</div>' +
                     '<div class="history-card-info">' +
                         '<div class="history-card-title">' + escapeHtml(title) + escapeHtml(company) + '</div>' +
@@ -3525,6 +3587,74 @@
         btn.disabled = false;
         btn.textContent = "Tailor My Resume";
         document.querySelector(".site-header").scrollIntoView({behavior: "smooth"});
+    }
+
+    // ─── Job Detail View ───
+    var currentDetailJob = null;
+
+    function viewJobDetail(jobId) {
+        fetch('/api/history/' + jobId)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                currentDetailJob = data;
+                document.getElementById('historyJobDetail').style.display = 'block';
+                document.querySelector('.history-body').style.display = 'none';
+
+                document.getElementById('detailJobTitle').textContent =
+                    (data.job_title || 'Untitled') + (data.company ? ' at ' + data.company : '');
+
+                var meta = [];
+                if (data.created_at) meta.push(new Date(data.created_at).toLocaleDateString());
+                if (data.model_used) meta.push(data.model_used.split('/').pop());
+                if (data.rewrite_mode) meta.push(data.rewrite_mode);
+                document.getElementById('detailJobMeta').textContent = meta.join(' \u00b7 ');
+
+                document.getElementById('detailOrigScore').textContent =
+                    data.original_match_score ? Math.round(data.original_match_score) + '%' : '--';
+                document.getElementById('detailNewScore').textContent =
+                    data.match_score ? Math.round(data.match_score) + '%' : '--';
+                document.getElementById('detailDuration').textContent =
+                    data.duration_seconds ? Math.round(data.duration_seconds) + 's' : '--';
+
+                showDetailTab('tailored');
+
+                // Build download buttons
+                var dlHtml = '';
+                if (data.files && data.files.length > 0) {
+                    data.files.forEach(function(f) {
+                        dlHtml += '<a href="/api/download/' + jobId + '/' + f.filename + '" class="detail-tab" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;">' + f.filename.split('.').pop().toUpperCase() + '</a>';
+                    });
+                }
+                document.getElementById('detailDownloads').innerHTML = dlHtml;
+            })
+            .catch(function(e) { console.error('Failed to load job detail:', e); });
+    }
+
+    function showDetailTab(tab) {
+        if (!currentDetailJob) return;
+        var content = document.getElementById('detailContent');
+        var tabs = document.querySelectorAll('#detailTabs .detail-tab');
+        for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+
+        if (tab === 'tailored') {
+            content.textContent = currentDetailJob.ats_resume_md || 'No tailored resume available.';
+            tabs[0].classList.add('active');
+        } else if (tab === 'original') {
+            content.textContent = currentDetailJob.original_resume_text || 'Original resume not stored for this job (only available for new jobs).';
+            tabs[1].classList.add('active');
+        } else if (tab === 'jd') {
+            content.textContent = currentDetailJob.job_description_full || 'Full job description not stored (only available for new jobs).';
+            tabs[2].classList.add('active');
+        } else if (tab === 'talking') {
+            content.textContent = currentDetailJob.talking_points_md || 'No talking points available.';
+            tabs[3].classList.add('active');
+        }
+    }
+
+    function closeJobDetail() {
+        document.getElementById('historyJobDetail').style.display = 'none';
+        document.querySelector('.history-body').style.display = 'block';
+        currentDetailJob = null;
     }
     </script>
 </body>

@@ -70,6 +70,8 @@ class TailoringJob(db.Model):
     template = db.Column(db.String(20), nullable=False, default="modern")
     model_used = db.Column(db.String(255), nullable=True)
     job_description_snippet = db.Column(db.String(500), nullable=True)
+    job_description_full = db.Column(db.Text, nullable=True)
+    original_resume_text = db.Column(db.Text, nullable=True)
     error_message = db.Column(db.Text, nullable=True)
     ats_resume_md = db.Column(db.Text, nullable=True)
     recruiter_resume_md = db.Column(db.Text, nullable=True)
