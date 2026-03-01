@@ -46,12 +46,11 @@ from flask_migrate import Migrate
 
 from admin_config import AdminConfigManager
 from analytics import pipeline_analytics
-from agents.ats_optimiser import ATSOptimiserAgent
 from agents.bullet_optimiser import BulletOptimiserAgent
 from agents.final_assembly import FinalAssemblyAgent
 from agents.gap_analysis import GapAnalysisAgent
 from agents.job_intelligence import JobIntelligenceAgent
-from agents.recruiter_optimiser import RecruiterOptimiserAgent
+from agents.resume_optimiser import ResumeOptimiserAgent
 from agents.resume_parser import ResumeParserAgent
 from config import AppConfig, DEFAULT_MODEL, RECOMMENDED_MODELS
 from models import RewriteMode
@@ -280,7 +279,7 @@ def run_pipeline_job(
     # Queue management: increment depth, emit queued status, acquire semaphore
     with pipeline_queue_lock:
         pipeline_queue_depth += 1
-    emit(0, 7, "Pipeline", "queued", "Waiting for available slot...")
+    emit(0, 6, "Pipeline", "queued", "Waiting for available slot...")
     pipeline_semaphore.acquire()
     with pipeline_queue_lock:
         pipeline_queue_depth -= 1
@@ -317,8 +316,8 @@ def run_pipeline_job(
         resume_text = load_resume(resume_path)
 
         # ── Stages 1 + 2 in PARALLEL (independent) ──
-        emit(1, 7, "Job Intelligence", "running", "Analysing job description...")
-        emit(2, 7, "Resume Parser", "running", "Parsing your resume...")
+        emit(1, 6, "Job Intelligence", "running", "Analysing job description...")
+        emit(2, 6, "Resume Parser", "running", "Parsing your resume...")
 
         job_analysis = None
         resume_data = None
@@ -330,12 +329,12 @@ def run_pipeline_job(
                 agent1 = JobIntelligenceAgent(config)
                 job_analysis = agent1.run(job_text)
                 save_json(job_analysis.model_dump(), output_dir / "01_job_analysis.json")
-                emit(1, 7, "Job Intelligence", "done",
+                emit(1, 6, "Job Intelligence", "done",
                      f"{len(job_analysis.required_skills)} required skills, "
                      f"{len(job_analysis.tools)} tools detected")
             except Exception as e:
                 stage_errors.append(e)
-                emit(1, 7, "Job Intelligence", "error", str(e))
+                emit(1, 6, "Job Intelligence", "error", str(e))
 
         def run_stage2():
             nonlocal resume_data
@@ -344,12 +343,12 @@ def run_pipeline_job(
                 resume_data = agent2.run(resume_text)
                 save_json(resume_data.model_dump(), output_dir / "02_resume_data.json")
                 total_bullets = sum(len(r.bullets) for r in resume_data.roles)
-                emit(2, 7, "Resume Parser", "done",
+                emit(2, 6, "Resume Parser", "done",
                      f"{len(resume_data.roles)} roles, {total_bullets} bullets, "
                      f"{resume_data.total_years_estimate:.0f} years experience")
             except Exception as e:
                 stage_errors.append(e)
-                emit(2, 7, "Resume Parser", "error", str(e))
+                emit(2, 6, "Resume Parser", "error", str(e))
 
         t1 = threading.Thread(target=run_stage1)
         t2 = threading.Thread(target=run_stage2)
@@ -364,11 +363,11 @@ def run_pipeline_job(
         logger.info(f"[Pipeline] Stages 1+2 completed in {time.time() - pipeline_start:.1f}s")
 
         # ── Stage 3 (needs both 1 + 2) ──
-        emit(3, 7, "Gap Analysis", "running", "Comparing resume against job...")
+        emit(3, 6, "Gap Analysis", "running", "Comparing resume against job...")
         agent3 = GapAnalysisAgent(config)
         gap_report = agent3.run({"job_analysis": job_analysis, "resume_data": resume_data})
         save_json(gap_report.model_dump(), output_dir / "03_gap_report.json")
-        emit(3, 7, "Gap Analysis", "done",
+        emit(3, 6, "Gap Analysis", "done",
              f"Match: {gap_report.match_score:.0f}% | "
              f"Cosine: {gap_report.cosine_similarity:.2f} | "
              f"{len(gap_report.missing_keywords)} missing keywords")
@@ -376,7 +375,7 @@ def run_pipeline_job(
         logger.info(f"[Pipeline] Stage 3 completed at {time.time() - pipeline_start:.1f}s elapsed")
 
         # ── Stage 4 (needs 2 + 3) ──
-        emit(4, 7, "Bullet Optimiser", "running", f"Rewriting bullets ({mode} mode)...")
+        emit(4, 6, "Bullet Optimiser", "running", f"Rewriting bullets ({mode} mode)...")
         agent4 = BulletOptimiserAgent(config)
         optimised_bullets = agent4.run(
             {"resume_data": resume_data, "gap_report": gap_report},
@@ -391,62 +390,42 @@ def run_pipeline_job(
         detail = f"{len(optimised_bullets.bullets)} bullets optimised"
         if fab_count:
             detail += f" ({fab_count} flagged)"
-        emit(4, 7, "Bullet Optimiser", "done", detail)
+        emit(4, 6, "Bullet Optimiser", "done", detail)
 
         logger.info(f"[Pipeline] Stage 4 completed at {time.time() - pipeline_start:.1f}s elapsed")
 
-        # ── Stages 5 + 6 + 7 in PARALLEL ──
-        # ATS, Recruiter, and Talking Points all run concurrently.
-        # Talking points use optimised_bullets (available now) instead of
-        # waiting for the ATS resume, saving ~60s of wall-clock time.
-        emit(5, 7, "ATS Optimiser", "running", "Building ATS-friendly resume...")
-        emit(6, 7, "Recruiter Optimiser", "running", "Enhancing for recruiter appeal...")
-        emit(7, 7, "Final Assembly", "running", "Generating talking points...")
+        # ── Stages 5 + 6 in PARALLEL ──
+        # Unified Resume Optimiser and Talking Points run concurrently.
+        emit(5, 6, "Resume Optimiser", "running", "Building your optimised resume...")
+        emit(6, 6, "Final Assembly", "running", "Generating talking points...")
 
         ats_resume = None
-        recruiter_resume = None
         talking_points = []
         stage_errors.clear()
 
         def run_stage5():
             nonlocal ats_resume
             try:
-                agent5 = ATSOptimiserAgent(config)
+                agent5 = ResumeOptimiserAgent(config)
                 ats_resume = agent5.run({
-                    "optimised_bullets": optimised_bullets,
-                    "job_analysis": job_analysis,
-                    "resume_data": resume_data,
-                })
-                save_json(ats_resume.model_dump(), output_dir / "05_ats_resume.json")
-                checks_passed = sum(1 for c in ats_resume.ats_checks if c.passed)
-                emit(5, 7, "ATS Optimiser", "done",
-                     f"ATS checks: {checks_passed}/{len(ats_resume.ats_checks)} passed")
-            except Exception as e:
-                stage_errors.append(e)
-                emit(5, 7, "ATS Optimiser", "error", str(e))
-
-        def run_stage6():
-            nonlocal recruiter_resume
-            try:
-                agent6 = RecruiterOptimiserAgent(config)
-                recruiter_resume = agent6.run({
                     "optimised_bullets": optimised_bullets,
                     "job_analysis": job_analysis,
                     "gap_report": gap_report,
                     "resume_data": resume_data,
                 })
-                save_json(recruiter_resume.model_dump(), output_dir / "06_recruiter_resume.json")
-                emit(6, 7, "Recruiter Optimiser", "done",
-                     f"{len(recruiter_resume.narrative_improvements)} improvements applied")
+                save_json(ats_resume.model_dump(), output_dir / "05_ats_resume.json")
+                checks_passed = sum(1 for c in ats_resume.ats_checks if c.passed)
+                emit(5, 6, "Resume Optimiser", "done",
+                     f"ATS checks: {checks_passed}/{len(ats_resume.ats_checks)} passed")
             except Exception as e:
                 stage_errors.append(e)
-                emit(6, 7, "Recruiter Optimiser", "error", str(e))
+                emit(5, 6, "Resume Optimiser", "error", str(e))
 
-        def run_stage7_talking_points():
+        def run_stage6_talking_points():
             nonlocal talking_points
             try:
-                agent7 = FinalAssemblyAgent(config)
-                talking_points = agent7._generate_talking_points({
+                agent6 = FinalAssemblyAgent(config)
+                talking_points = agent6._generate_talking_points({
                     "gap_report": gap_report,
                     "job_analysis": job_analysis,
                     "optimised_bullets": optimised_bullets,
@@ -457,19 +436,16 @@ def run_pipeline_job(
                 talking_points = []
 
         t5 = threading.Thread(target=run_stage5)
-        t6 = threading.Thread(target=run_stage6)
-        t7 = threading.Thread(target=run_stage7_talking_points)
+        t6 = threading.Thread(target=run_stage6_talking_points)
         t5.start()
         t6.start()
-        t7.start()
         t5.join()
         t6.join()
-        t7.join()
 
         if stage_errors:
             raise stage_errors[0]
 
-        logger.info(f"[Pipeline] Stages 5+6+7 completed at {time.time() - pipeline_start:.1f}s elapsed")
+        logger.info(f"[Pipeline] Stages 5+6 completed at {time.time() - pipeline_start:.1f}s elapsed")
 
         # ── Re-compute match score on the tailored ATS resume ──
         tailored_cos_sim = resume_job_similarity(
@@ -510,26 +486,21 @@ def run_pipeline_job(
         )
 
         # Build smart filenames from job title + company
-        ats_pdf_name = _safe_filename(job_analysis.job_title, job_analysis.company, "ATS.pdf")
-        rec_pdf_name = _safe_filename(job_analysis.job_title, job_analysis.company, "Recruiter.pdf")
-        ats_docx_name = _safe_filename(job_analysis.job_title, job_analysis.company, "ATS.docx")
-        rec_docx_name = _safe_filename(job_analysis.job_title, job_analysis.company, "Recruiter.docx")
-        ats_md_name = _safe_filename(job_analysis.job_title, job_analysis.company, "ATS.md")
-        rec_md_name = _safe_filename(job_analysis.job_title, job_analysis.company, "Recruiter.md")
+        # Single unified resume (use "Resume" suffix instead of "ATS"/"Recruiter")
+        resume_pdf_name = _safe_filename(job_analysis.job_title, job_analysis.company, "Resume.pdf")
+        resume_docx_name = _safe_filename(job_analysis.job_title, job_analysis.company, "Resume.docx")
+        resume_md_name = _safe_filename(job_analysis.job_title, job_analysis.company, "Resume.md")
         report_name = _safe_filename(job_analysis.job_title, job_analysis.company, "Match_Report.json")
         tp_name = _safe_filename(job_analysis.job_title, job_analysis.company, "Talking_Points.md")
 
-        # Write artifacts
-        save_markdown(ats_resume.markdown_content, output_dir / ats_md_name)
-        save_markdown(recruiter_resume.markdown_content, output_dir / rec_md_name)
-        generate_resume_pdf(ats_resume.markdown_content, output_dir / ats_pdf_name, template=template)
-        generate_resume_pdf(recruiter_resume.markdown_content, output_dir / rec_pdf_name, template=template)
-        generate_resume_docx(ats_resume.markdown_content, output_dir / ats_docx_name)
-        generate_resume_docx(recruiter_resume.markdown_content, output_dir / rec_docx_name)
+        # Write artifacts (single unified resume)
+        save_markdown(ats_resume.markdown_content, output_dir / resume_md_name)
+        generate_resume_pdf(ats_resume.markdown_content, output_dir / resume_pdf_name, template=template)
+        generate_resume_docx(ats_resume.markdown_content, output_dir / resume_docx_name)
         save_json(match_report.model_dump(), output_dir / report_name)
         save_markdown(format_talking_points(talking_points), output_dir / tp_name)
 
-        emit(7, 7, "Final Assembly", "done",
+        emit(6, 6, "Final Assembly", "done",
              f"{len(talking_points)} talking points generated")
 
         total_elapsed = time.time() - pipeline_start
@@ -546,12 +517,9 @@ def run_pipeline_job(
 
         # Persist results to database and upload files to R2
         files_list = [
-            ats_pdf_name,
-            rec_pdf_name,
-            ats_docx_name,
-            rec_docx_name,
-            ats_md_name,
-            rec_md_name,
+            resume_pdf_name,
+            resume_docx_name,
+            resume_md_name,
             report_name,
             tp_name,
         ]
@@ -566,7 +534,7 @@ def run_pipeline_job(
                 db_job.job_title = job_analysis.job_title
                 db_job.company = job_analysis.company
                 db_job.ats_resume_md = ats_resume.markdown_content
-                db_job.recruiter_resume_md = recruiter_resume.markdown_content
+                db_job.recruiter_resume_md = ats_resume.markdown_content  # Unified resume for backward compat
                 db_job.talking_points_md = format_talking_points(talking_points)
                 db_job.job_description_snippet = job_text[:500] if job_text else None
                 db_job.completed_at = datetime.now(timezone.utc)
@@ -621,7 +589,7 @@ def run_pipeline_job(
                 "company": job_analysis.company,
                 "bullets_rewritten": len(optimised_bullets.bullets),
                 "ats_resume_md": ats_resume.markdown_content,
-                "recruiter_resume_md": recruiter_resume.markdown_content,
+                "recruiter_resume_md": ats_resume.markdown_content,  # Unified resume for backward compat
                 "talking_points_md": format_talking_points(talking_points),
                 "files": files_list,
             }
@@ -1239,10 +1207,9 @@ def download_file(job_id: str, filename: str):
 
     # Markdown files — serve directly from DB
     md_content = None
-    if "ats" in safe_name and safe_name.endswith(".md"):
+    is_resume_file = "ats" in safe_name or "recruiter" in safe_name or ("resume" in safe_name.lower() and "talking" not in safe_name.lower())
+    if is_resume_file and safe_name.endswith(".md"):
         md_content = db_job.ats_resume_md
-    elif "recruiter" in safe_name and safe_name.endswith(".md"):
-        md_content = db_job.recruiter_resume_md
     elif "talking" in safe_name and safe_name.endswith(".md"):
         md_content = db_job.talking_points_md
 
@@ -1259,10 +1226,8 @@ def download_file(job_id: str, filename: str):
     # PDF files — regenerate from stored markdown
     if safe_name.endswith(".pdf"):
         source_md = None
-        if "ats" in safe_name:
+        if "ats" in safe_name or "recruiter" in safe_name or "resume" in safe_name.lower():
             source_md = db_job.ats_resume_md
-        elif "recruiter" in safe_name:
-            source_md = db_job.recruiter_resume_md
 
         if not source_md:
             logger.warning(f"[Download] PDF requested but source markdown is NULL for {safe_name}")
@@ -1288,10 +1253,8 @@ def download_file(job_id: str, filename: str):
     # DOCX files — regenerate from stored markdown
     if safe_name.endswith(".docx"):
         source_md = None
-        if "ats" in safe_name:
+        if "ats" in safe_name or "recruiter" in safe_name or "resume" in safe_name.lower():
             source_md = db_job.ats_resume_md
-        elif "recruiter" in safe_name:
-            source_md = db_job.recruiter_resume_md
 
         if not source_md:
             logger.warning(f"[Download] DOCX requested but source markdown is NULL for {safe_name}")

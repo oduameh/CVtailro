@@ -3,9 +3,8 @@
 CVtailro: Multi-Agent Resume Tailoring System
 
 A production-grade, multi-agent system that analyses job descriptions,
-compares them against a master resume, and produces ATS-optimised and
-recruiter-optimised resume versions (both PDF and markdown) with match
-reports and interview talking points.
+compares them against a master resume, and produces an optimised resume
+(both PDF and markdown) with match reports and interview talking points.
 
 Powered by the OpenRouter API — supports 100+ LLM models.
 
@@ -25,12 +24,11 @@ import sys
 import time
 from pathlib import Path
 
-from agents.ats_optimiser import ATSOptimiserAgent
 from agents.bullet_optimiser import BulletOptimiserAgent
 from agents.final_assembly import FinalAssemblyAgent
 from agents.gap_analysis import GapAnalysisAgent
 from agents.job_intelligence import JobIntelligenceAgent
-from agents.recruiter_optimiser import RecruiterOptimiserAgent
+from agents.resume_optimiser import ResumeOptimiserAgent
 from agents.resume_parser import ResumeParserAgent
 from config import AppConfig, DEFAULT_MODEL
 from models import (
@@ -38,7 +36,6 @@ from models import (
     GapReport,
     JobAnalysis,
     OptimisedBullets,
-    RecruiterResume,
     ResumeData,
     RewriteMode,
 )
@@ -57,8 +54,7 @@ STAGE_ORDER = [
     "resume_parser",
     "gap_analysis",
     "bullet_optimiser",
-    "ats_optimiser",
-    "recruiter_optimiser",
+    "resume_optimiser",
     "final_assembly",
 ]
 
@@ -68,8 +64,7 @@ STAGE_ARTIFACTS = {
     "resume_parser": ("02_resume_data.json", ResumeData),
     "gap_analysis": ("03_gap_report.json", GapReport),
     "bullet_optimiser": ("04_optimised_bullets.json", OptimisedBullets),
-    "ats_optimiser": ("05_ats_resume.json", ATSResume),
-    "recruiter_optimiser": ("06_recruiter_resume.json", RecruiterResume),
+    "resume_optimiser": ("05_ats_resume.json", ATSResume),
 }
 
 
@@ -213,7 +208,6 @@ def run_pipeline(args: argparse.Namespace) -> None:
     gap_report: GapReport | None = None
     optimised_bullets: OptimisedBullets | None = None
     ats_resume: ATSResume | None = None
-    recruiter_resume: RecruiterResume | None = None
 
     if start_idx > 0:
         logger.info("Loading prior artifacts...")
@@ -226,15 +220,13 @@ def run_pipeline(args: argparse.Namespace) -> None:
         if start_idx > 3:
             optimised_bullets = load_artifact(output_dir, "bullet_optimiser")
         if start_idx > 4:
-            ats_resume = load_artifact(output_dir, "ats_optimiser")
-        if start_idx > 5:
-            recruiter_resume = load_artifact(output_dir, "recruiter_optimiser")
+            ats_resume = load_artifact(output_dir, "resume_optimiser")
 
     # ── STAGE 1: Job Intelligence ─────────────────────────────
     if start_idx <= 0:
         logger.info("")
         logger.info("=" * 60)
-        logger.info("STAGE 1/7: Job Intelligence Agent")
+        logger.info("STAGE 1/6: Job Intelligence Agent")
         logger.info("=" * 60)
         stage_start = time.time()
 
@@ -254,7 +246,7 @@ def run_pipeline(args: argparse.Namespace) -> None:
     if start_idx <= 1:
         logger.info("")
         logger.info("=" * 60)
-        logger.info("STAGE 2/7: Resume Parser Agent")
+        logger.info("STAGE 2/6: Resume Parser Agent")
         logger.info("=" * 60)
         stage_start = time.time()
 
@@ -277,7 +269,7 @@ def run_pipeline(args: argparse.Namespace) -> None:
     if start_idx <= 2:
         logger.info("")
         logger.info("=" * 60)
-        logger.info("STAGE 3/7: Gap Analysis Agent")
+        logger.info("STAGE 3/6: Gap Analysis Agent")
         logger.info("=" * 60)
         stage_start = time.time()
 
@@ -301,7 +293,7 @@ def run_pipeline(args: argparse.Namespace) -> None:
     if start_idx <= 3:
         logger.info("")
         logger.info("=" * 60)
-        logger.info("STAGE 4/7: Bullet Optimiser Agent")
+        logger.info("STAGE 4/6: Bullet Optimiser Agent")
         logger.info(f"  Mode: {config.rewrite_mode.value}")
         logger.info("=" * 60)
         stage_start = time.time()
@@ -332,19 +324,20 @@ def run_pipeline(args: argparse.Namespace) -> None:
             )
         logger.info(f"  -> Completed in {time.time() - stage_start:.1f}s")
 
-    # ── STAGE 5: ATS Optimiser ────────────────────────────────
+    # ── STAGE 5: Resume Optimiser (unified ATS + Recruiter) ──
     if start_idx <= 4:
         logger.info("")
         logger.info("=" * 60)
-        logger.info("STAGE 5/7: ATS Optimiser Agent")
+        logger.info("STAGE 5/6: Resume Optimiser Agent")
         logger.info("=" * 60)
         stage_start = time.time()
 
-        agent5 = ATSOptimiserAgent(config)
+        agent5 = ResumeOptimiserAgent(config)
         ats_resume = agent5.run(
             {
                 "optimised_bullets": optimised_bullets,
                 "job_analysis": job_analysis,
+                "gap_report": gap_report,
                 "resume_data": resume_data,
             }
         )
@@ -359,86 +352,68 @@ def run_pipeline(args: argparse.Namespace) -> None:
         )
         logger.info(f"  -> Completed in {time.time() - stage_start:.1f}s")
 
-    # ── STAGE 6: Recruiter Optimiser ──────────────────────────
-    if start_idx <= 5:
-        logger.info("")
-        logger.info("=" * 60)
-        logger.info("STAGE 6/7: Recruiter Optimiser Agent")
-        logger.info("=" * 60)
-        stage_start = time.time()
-
-        agent6 = RecruiterOptimiserAgent(config)
-        recruiter_resume = agent6.run(
-            {
-                "optimised_bullets": optimised_bullets,
-                "job_analysis": job_analysis,
-                "gap_report": gap_report,
-                "resume_data": resume_data,
-            }
-        )
-        save_json(
-            recruiter_resume.model_dump(),
-            output_dir / "06_recruiter_resume.json",
-        )
-
-        logger.info(
-            f"  -> Narrative improvements: {len(recruiter_resume.narrative_improvements)}"
-        )
-        logger.info(
-            f"  -> Leadership signals: {len(recruiter_resume.leadership_signals_added)}"
-        )
-        logger.info(f"  -> Completed in {time.time() - stage_start:.1f}s")
-
-    # ── STAGE 7: Final Assembly ───────────────────────────────
+    # ── STAGE 6: Final Assembly (talking points) ──────────────
     logger.info("")
     logger.info("=" * 60)
-    logger.info("STAGE 7/7: Final Assembly Agent")
+    logger.info("STAGE 6/6: Final Assembly Agent")
     logger.info("=" * 60)
     stage_start = time.time()
 
-    agent7 = FinalAssemblyAgent(config)
-    final_output = agent7.run(
+    from models import MatchReport
+
+    # Generate talking points via LLM
+    agent6 = FinalAssemblyAgent(config)
+    talking_points = agent6._generate_talking_points(
         {
-            "ats_resume": ats_resume,
-            "recruiter_resume": recruiter_resume,
             "gap_report": gap_report,
             "job_analysis": job_analysis,
+            "optimised_bullets": optimised_bullets,
+            "resume_data": resume_data,
         }
+    )
+
+    # Assemble match report deterministically
+    match_report = MatchReport(
+        job_title=job_analysis.job_title,
+        company=job_analysis.company,
+        overall_match_score=gap_report.match_score,
+        cosine_similarity=gap_report.cosine_similarity,
+        missing_keywords=gap_report.missing_keywords,
+        keyword_frequency=gap_report.keyword_frequency,
+        seniority_calibration=gap_report.seniority_calibration,
+        ats_checks=ats_resume.ats_checks,
+        rewrite_mode=config.rewrite_mode.value,
+        optimisation_summary=(
+            f"Match score: {gap_report.match_score:.1f}% | "
+            f"Cosine similarity: {gap_report.cosine_similarity:.4f} | "
+            f"Missing keywords: {len(gap_report.missing_keywords)} | "
+            f"Weak alignments: {len(gap_report.weak_alignment)}"
+        ),
     )
 
     # ── Write final artifacts ─────────────────────────────────
 
-    # Markdown versions
+    # Unified resume (markdown, PDF)
     save_markdown(
-        final_output.ats_resume_md, output_dir / "tailored_resume_ats.md"
-    )
-    save_markdown(
-        final_output.recruiter_resume_md,
-        output_dir / "tailored_resume_recruiter.md",
-    )
-
-    # PDF versions
-    generate_resume_pdf(
-        final_output.ats_resume_md,
-        output_dir / "tailored_resume_ats.pdf",
+        ats_resume.markdown_content, output_dir / "tailored_resume.md"
     )
     generate_resume_pdf(
-        final_output.recruiter_resume_md,
-        output_dir / "tailored_resume_recruiter.pdf",
+        ats_resume.markdown_content,
+        output_dir / "tailored_resume.pdf",
     )
 
     # Reports
     save_json(
-        final_output.match_report.model_dump(),
+        match_report.model_dump(),
         output_dir / "match_report.json",
     )
     save_markdown(
-        format_talking_points(final_output.talking_points),
+        format_talking_points(talking_points),
         output_dir / "interview_talking_points.md",
     )
 
     total_time = time.time() - pipeline_start
-    logger.info(f"  -> Generated {len(final_output.talking_points)} talking points")
+    logger.info(f"  -> Generated {len(talking_points)} talking points")
     logger.info(f"  -> Completed in {time.time() - stage_start:.1f}s")
 
     # ── Summary ───────────────────────────────────────────────
@@ -448,18 +423,16 @@ def run_pipeline(args: argparse.Namespace) -> None:
     logger.info("=" * 60)
     logger.info(f"Total time: {total_time:.1f}s")
     logger.info(
-        f"Overall match score: {final_output.match_report.overall_match_score:.1f}%"
+        f"Overall match score: {match_report.overall_match_score:.1f}%"
     )
     logger.info(
-        f"Cosine similarity: {final_output.match_report.cosine_similarity:.4f}"
+        f"Cosine similarity: {match_report.cosine_similarity:.4f}"
     )
-    logger.info(f"Rewrite mode: {final_output.match_report.rewrite_mode}")
+    logger.info(f"Rewrite mode: {match_report.rewrite_mode}")
     logger.info("")
     logger.info("Output files:")
-    logger.info(f"  {output_dir / 'tailored_resume_ats.pdf'}")
-    logger.info(f"  {output_dir / 'tailored_resume_recruiter.pdf'}")
-    logger.info(f"  {output_dir / 'tailored_resume_ats.md'}")
-    logger.info(f"  {output_dir / 'tailored_resume_recruiter.md'}")
+    logger.info(f"  {output_dir / 'tailored_resume.pdf'}")
+    logger.info(f"  {output_dir / 'tailored_resume.md'}")
     logger.info(f"  {output_dir / 'match_report.json'}")
     logger.info(f"  {output_dir / 'interview_talking_points.md'}")
     logger.info(f"  {output_dir / 'pipeline.log'}")

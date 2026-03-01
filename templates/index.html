@@ -684,7 +684,7 @@
 
         .dl-cards {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
             gap: 16px;
             margin-bottom: 16px;
         }
@@ -1906,28 +1906,20 @@
 
             <!-- Downloads -->
             <div class="card">
-                <div class="downloads-heading">Your Tailored Resumes</div>
+                <div class="downloads-heading">Your Tailored Resume</div>
 
                 <div class="dl-cards" id="dlCards">
-                    <div class="dl-card" id="dlCardAts">
+                    <div class="dl-card" id="dlCardResume">
                         <div class="dl-card-icon ats">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                         </div>
-                        <div class="dl-card-title">ATS Resume</div>
-                        <div class="dl-card-desc">Optimized for automated screening systems</div>
-                        <span class="dl-card-btn" id="dlBtnAts">Download PDF</span>
-                    </div>
-                    <div class="dl-card rec-card" id="dlCardRec">
-                        <div class="dl-card-icon rec">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-                        </div>
-                        <div class="dl-card-title">Recruiter Resume</div>
-                        <div class="dl-card-desc">Enhanced for human readability</div>
-                        <span class="dl-card-btn" id="dlBtnRec">Download PDF</span>
+                        <div class="dl-card-title">Tailored Resume</div>
+                        <div class="dl-card-desc">ATS-optimised and recruiter-ready</div>
+                        <span class="dl-card-btn" id="dlBtnResume">Download PDF</span>
                     </div>
                 </div>
 
-                <div class="dl-usage-hint">Use the ATS version for online applications. Use the Recruiter version when emailing directly.</div>
+                <div class="dl-usage-hint">Your resume has been optimised for both ATS screening and recruiter appeal.</div>
 
                 <button class="additional-toggle" id="additionalToggle" onclick="toggleAdditional()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -1994,8 +1986,7 @@
         "Resume Parser",
         "Gap Analysis",
         "Bullet Optimiser",
-        "ATS Optimiser",
-        "Recruiter Optimiser",
+        "Resume Optimiser",
         "Final Assembly"
     ];
     var STAGE_LABELS = {
@@ -2003,8 +1994,7 @@
         "Resume Parser": "Analyzing your resume",
         "Gap Analysis": "Identifying skill gaps",
         "Bullet Optimiser": "Rewriting your bullet points",
-        "ATS Optimiser": "Building your ATS-optimized resume",
-        "Recruiter Optimiser": "Enhancing for recruiter appeal",
+        "Resume Optimiser": "Building your optimised resume",
         "Final Assembly": "Generating interview prep & final documents"
     };
 
@@ -2436,35 +2426,38 @@
             }
 
             // --- Downloads ---
-            var atsLink = '', recLink = '', atsFname = '', recFname = '', secondaryHtml = '';
+            var resumeLink = '', resumeFname = '', secondaryHtml = '';
+            var seenCats = {};
             var effectiveJobId = jobId || s.job_id || s.id || '';
 
             // Always generate standard download links (DB fallback regenerates PDFs/DOCX)
             var fileList = (s.files && s.files.length > 0) ? s.files : [
-                "tailored_resume_ats.pdf", "tailored_resume_recruiter.pdf",
-                "tailored_resume_ats.docx", "tailored_resume_recruiter.docx",
-                "tailored_resume_ats.md", "tailored_resume_recruiter.md",
+                "tailored_resume_ats.pdf",
+                "tailored_resume_ats.docx",
+                "tailored_resume_ats.md",
                 "match_report.json", "interview_talking_points.md"
             ];
             if (effectiveJobId) {
                 fileList.forEach(function(f) {
                     var fname = typeof f === 'string' ? f : f.filename;
                     var m = getFileInfo(fname);
+                    if (m.cat === 'resume_dup') return;
+                    var catKey = m.cat + '_' + m.b;
+                    if (seenCats[catKey]) return;
+                    seenCats[catKey] = true;
                     var link = '/api/download/' + effectiveJobId + '/' + fname;
-                    if (m.primary) {
-                        if (m.cat === 'ats') { atsLink = link; atsFname = fname; }
-                        else if (m.cat === 'rec') { recLink = link; recFname = fname; }
+                    if (m.primary && !resumeLink) {
+                        resumeLink = link; resumeFname = fname;
                     } else {
                         secondaryHtml += '<a class="dl-btn-secondary" href="#" onclick="safeDownload(\'' + link + '\',\'' + fname + '\',event); return false;"><span class="label">' + escapeHtml(m.l) + '</span><span class="badge">' + m.b + '</span></a>';
                     }
                 });
             }
 
-            // Reset download cards with click handlers that use safeDownload
+            // Reset download card with click handler
             var dlCards = document.getElementById("dlCards");
             dlCards.innerHTML =
-                '<div class="dl-card" id="dlCardAts" style="cursor:pointer" onclick="' + (atsLink ? 'safeDownload(\'' + atsLink + '\',\'' + atsFname + '\',event)' : '') + '"><div class="dl-card-icon ats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div><div class="dl-card-title">ATS Resume</div><div class="dl-card-desc">Optimized for automated screening systems</div><span class="dl-card-btn" id="dlBtnAts">Download PDF</span></div>' +
-                '<div class="dl-card rec-card" id="dlCardRec" style="cursor:pointer" onclick="' + (recLink ? 'safeDownload(\'' + recLink + '\',\'' + recFname + '\',event)' : '') + '"><div class="dl-card-icon rec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div><div class="dl-card-title">Recruiter Resume</div><div class="dl-card-desc">Enhanced for human readability</div><span class="dl-card-btn" id="dlBtnRec">Download PDF</span></div>';
+                '<div class="dl-card" id="dlCardResume" style="cursor:pointer" onclick="' + (resumeLink ? 'safeDownload(\'' + resumeLink + '\',\'' + resumeFname + '\',event)' : '') + '"><div class="dl-card-icon ats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div><div class="dl-card-title">Tailored Resume</div><div class="dl-card-desc">ATS-optimised and recruiter-ready</div><span class="dl-card-btn" id="dlBtnResume">Download PDF</span></div>';
 
             document.getElementById("dlGridSecondary").innerHTML = secondaryHtml;
 
@@ -2478,8 +2471,7 @@
 
             // --- Preview tabs ---
             var previews = [
-                {id: "ats", l: "ATS Resume", c: s.ats_resume_md},
-                {id: "rec", l: "Recruiter Resume", c: s.recruiter_resume_md},
+                {id: "resume", l: "Resume", c: s.ats_resume_md},
                 {id: "changes", l: "What Changed", c: null}
             ];
             document.getElementById("tabs").innerHTML = previews.map(function(p, i) {
@@ -2563,18 +2555,31 @@
     function getFileInfo(fname) {
         var ext = fname.split('.').pop().toUpperCase();
         var lower = fname.toLowerCase();
-        if (lower.indexOf('ats') !== -1 && ext === 'PDF')
-            return {l:"ATS Resume", b:"PDF", cat:"ats", primary:true};
-        if (lower.indexOf('recruiter') !== -1 && ext === 'PDF')
-            return {l:"Recruiter Resume", b:"PDF", cat:"rec", primary:true};
-        if (lower.indexOf('ats') !== -1 && ext === 'DOCX')
-            return {l:"ATS Resume", b:"DOCX", cat:"ats", primary:false};
-        if (lower.indexOf('recruiter') !== -1 && ext === 'DOCX')
-            return {l:"Recruiter Resume", b:"DOCX", cat:"rec", primary:false};
-        if (lower.indexOf('ats') !== -1 && ext === 'MD')
-            return {l:"ATS Resume", b:"MD", cat:"ats", primary:false};
-        if (lower.indexOf('recruiter') !== -1 && ext === 'MD')
-            return {l:"Recruiter Resume", b:"MD", cat:"rec", primary:false};
+        // Unified resume (new pipeline) — check for "resume" but not "ats"/"recruiter"
+        var isResume = lower.indexOf('resume') !== -1;
+        var isAts = lower.indexOf('ats') !== -1;
+        var isRec = lower.indexOf('recruiter') !== -1;
+        // Primary: PDF resume is the main download
+        if (isResume && !isAts && !isRec && ext === 'PDF')
+            return {l:"Tailored Resume", b:"PDF", cat:"resume", primary:true};
+        // Legacy: ATS/Recruiter PDF from old pipeline runs
+        if (isAts && ext === 'PDF')
+            return {l:"Tailored Resume", b:"PDF", cat:"resume", primary:true};
+        if (isRec && ext === 'PDF')
+            return {l:"Tailored Resume", b:"PDF", cat:"resume", primary:false};
+        // Secondary formats
+        if (isResume && !isAts && !isRec && ext === 'DOCX')
+            return {l:"Tailored Resume", b:"DOCX", cat:"resume", primary:false};
+        if (isAts && ext === 'DOCX')
+            return {l:"Tailored Resume", b:"DOCX", cat:"resume", primary:false};
+        if (isRec && ext === 'DOCX')
+            return {l:"Tailored Resume", b:"DOCX", cat:"resume_dup", primary:false};
+        if (isResume && !isAts && !isRec && ext === 'MD')
+            return {l:"Tailored Resume", b:"MD", cat:"resume", primary:false};
+        if (isAts && ext === 'MD')
+            return {l:"Tailored Resume", b:"MD", cat:"resume", primary:false};
+        if (isRec && ext === 'MD')
+            return {l:"Tailored Resume", b:"MD", cat:"resume_dup", primary:false};
         if (lower.indexOf('match') !== -1 && ext === 'JSON')
             return {l:"Match Report", b:"JSON", cat:"other", primary:false};
         if (lower.indexOf('talking') !== -1 && ext === 'MD')
@@ -3023,26 +3028,30 @@
         }
 
         // --- Downloads ---
-        var atsLink = '';
-        var recLink = '';
-        var atsFname = '';
-        var recFname = '';
+        var resumeLink = '';
+        var resumeFname = '';
         var secondaryHtml = '';
+        var seenCats = {};
 
         // Use file list from result, or fallback to standard files (DB fallback has empty files[])
         var fileList = (s.files && s.files.length > 0) ? s.files : [
-            "tailored_resume_ats.pdf", "tailored_resume_recruiter.pdf",
-            "tailored_resume_ats.docx", "tailored_resume_recruiter.docx",
-            "tailored_resume_ats.md", "tailored_resume_recruiter.md",
+            "tailored_resume_ats.pdf",
+            "tailored_resume_ats.docx",
+            "tailored_resume_ats.md",
             "match_report.json", "interview_talking_points.md"
         ];
         fileList.forEach(function(f) {
             var fname = typeof f === 'string' ? f : f.filename;
             var m = getFileInfo(fname);
+            // Skip duplicate resume files (e.g. recruiter variants from old runs)
+            if (m.cat === 'resume_dup') return;
+            var catKey = m.cat + '_' + m.b;
+            if (seenCats[catKey]) return;
+            seenCats[catKey] = true;
             var link = '/api/download/' + jobId + '/' + fname;
-            if (m.primary) {
-                if (m.cat === 'ats') { atsLink = link; atsFname = fname; }
-                else if (m.cat === 'rec') { recLink = link; recFname = fname; }
+            if (m.primary && !resumeLink) {
+                resumeLink = link;
+                resumeFname = fname;
             } else {
                 secondaryHtml += '<a class="dl-btn-secondary" href="#" onclick="safeDownload(\'' + link + '\',\'' + fname + '\',event); return false;">' +
                     '<span class="label">' + escapeHtml(m.l) + '</span>' +
@@ -3050,11 +3059,10 @@
             }
         });
 
-        // Wire up download cards with safeDownload click handlers
+        // Wire up single download card
         var dlCards = document.getElementById("dlCards");
         dlCards.innerHTML =
-            '<div class="dl-card" id="dlCardAts" style="cursor:pointer"' + (atsLink ? ' onclick="safeDownload(\'' + atsLink + '\',\'' + atsFname + '\',event)"' : '') + '><div class="dl-card-icon ats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div><div class="dl-card-title">ATS Resume</div><div class="dl-card-desc">Optimized for automated screening systems</div><span class="dl-card-btn" id="dlBtnAts">Download PDF</span></div>' +
-            '<div class="dl-card rec-card" id="dlCardRec" style="cursor:pointer"' + (recLink ? ' onclick="safeDownload(\'' + recLink + '\',\'' + recFname + '\',event)"' : '') + '><div class="dl-card-icon rec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div><div class="dl-card-title">Recruiter Resume</div><div class="dl-card-desc">Enhanced for human readability</div><span class="dl-card-btn" id="dlBtnRec">Download PDF</span></div>';
+            '<div class="dl-card" id="dlCardResume" style="cursor:pointer"' + (resumeLink ? ' onclick="safeDownload(\'' + resumeLink + '\',\'' + resumeFname + '\',event)"' : '') + '><div class="dl-card-icon ats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div><div class="dl-card-title">Tailored Resume</div><div class="dl-card-desc">ATS-optimised and recruiter-ready</div><span class="dl-card-btn" id="dlBtnResume">Download PDF</span></div>';
 
         document.getElementById("dlGridSecondary").innerHTML = secondaryHtml;
 
@@ -3068,8 +3076,7 @@
 
         // --- Preview tabs ---
         var previews = [
-            {id: "ats", l: "ATS Resume", c: s.ats_resume_md},
-            {id: "rec", l: "Recruiter Resume", c: s.recruiter_resume_md},
+            {id: "resume", l: "Resume", c: s.ats_resume_md},
             {id: "changes", l: "What Changed", c: null}
         ];
         document.getElementById("tabs").innerHTML = previews.map(function(p, i) {
@@ -3204,21 +3211,15 @@
             ring.style.strokeDashoffset = 376.99;
         }
 
-        // Reset download cards to divs (in case they became <a> tags)
+        // Reset download card to initial state
         var dlCards = document.getElementById("dlCards");
         if (dlCards) {
             dlCards.innerHTML =
-                '<div class="dl-card" id="dlCardAts">' +
+                '<div class="dl-card" id="dlCardResume">' +
                     '<div class="dl-card-icon ats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>' +
-                    '<div class="dl-card-title">ATS Resume</div>' +
-                    '<div class="dl-card-desc">Optimized for automated screening systems</div>' +
-                    '<span class="dl-card-btn" id="dlBtnAts">Download PDF</span>' +
-                '</div>' +
-                '<div class="dl-card rec-card" id="dlCardRec">' +
-                    '<div class="dl-card-icon rec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div>' +
-                    '<div class="dl-card-title">Recruiter Resume</div>' +
-                    '<div class="dl-card-desc">Enhanced for human readability</div>' +
-                    '<span class="dl-card-btn" id="dlBtnRec">Download PDF</span>' +
+                    '<div class="dl-card-title">Tailored Resume</div>' +
+                    '<div class="dl-card-desc">ATS-optimised and recruiter-ready</div>' +
+                    '<span class="dl-card-btn" id="dlBtnResume">Download PDF</span>' +
                 '</div>';
         }
 
