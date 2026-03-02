@@ -1670,12 +1670,42 @@
         html.dark .history-overlay {
             background: rgba(0,0,0,0.6);
         }
+        /* Profile/history overlay dark mode — explicit styles when overlay has .dark (synced on open) */
+        .history-overlay.dark .history-panel {
+            background: #1e293b;
+            color: #f8fafc;
+            border-color: #334155;
+        }
+        .history-overlay.dark .history-header {
+            border-bottom-color: #334155;
+        }
+        .history-overlay.dark .history-body,
+        .history-overlay.dark .profile-name,
+        .history-overlay.dark .profile-stat-value { color: #f8fafc; }
+        .history-overlay.dark .profile-email,
+        .history-overlay.dark .profile-stat-label,
+        .history-overlay.dark .profile-section-title { color: #94a3b8; }
+        .history-overlay.dark .profile-stat { background: rgba(37,99,235,0.15); border-color: #334155; }
+        .history-overlay.dark .profile-avatar { background: rgba(37,99,235,0.2) !important; color: #93c5fd !important; }
+        .history-overlay.dark .profile-job-card { background: #0f172a; border-color: #334155; }
+        .history-overlay.dark .profile-job-card .profile-job-title { color: #f8fafc; }
+        .history-overlay.dark .profile-job-card .profile-job-meta { color: #94a3b8; }
+        .history-overlay.dark .profile-job-card a { color: #93c5fd; border-color: #334155; }
+        .history-overlay.dark .history-card { background: #0f172a; }
+        .history-overlay.dark .history-card:hover { background: rgba(37,99,235,0.15); }
+        .history-overlay.dark .history-empty { color: #94a3b8; }
+        .history-overlay.dark .history-empty h3 { color: #f8fafc; }
+        .history-overlay.dark .history-loading { color: #94a3b8; }
 
         .history-overlay.active {
             display: flex;
             justify-content: center;
             align-items: flex-start;
             padding: 80px 24px 24px;
+            padding-top: max(80px, env(safe-area-inset-top));
+            padding-bottom: max(24px, env(safe-area-inset-bottom));
+            padding-left: max(24px, env(safe-area-inset-left));
+            padding-right: max(24px, env(safe-area-inset-right));
         }
 
         .history-panel {
@@ -1910,12 +1940,23 @@
             color: var(--text);
             margin-bottom: 12px;
         }
+        .profile-empty {
+            text-align: center;
+            padding: 24px 16px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
         .profile-job-card {
-            padding: 12px;
+            padding: 14px;
             border: 1px solid var(--border);
             border-radius: 12px;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             background: var(--bg);
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .profile-job-card:hover {
+            border-color: var(--primary);
+            background: var(--primary-bg);
         }
         .profile-job-card .profile-job-title { font-size: 14px; font-weight: 600; color: var(--text); }
         .profile-job-card .profile-job-meta { font-size: 12px; color: var(--text-secondary); }
@@ -1993,7 +2034,7 @@
             padding: 8px 16px;
             border-radius: 10px;
             border: 1px solid var(--border);
-            background: #fff;
+            background: var(--card);
             font-size: 12px;
             font-weight: 600;
             cursor: pointer;
@@ -2057,9 +2098,15 @@
                 right: -8px;
                 min-width: 220px;
             }
+            .dropdown-item {
+                min-height: 44px;
+                padding: 12px 16px;
+            }
 
             .history-overlay.active {
                 padding: 0;
+                padding-top: env(safe-area-inset-top);
+                padding-bottom: env(safe-area-inset-bottom);
                 align-items: stretch;
             }
 
@@ -2072,10 +2119,47 @@
 
             .history-header {
                 padding: 16px;
+                padding-top: max(16px, env(safe-area-inset-top));
+            }
+            .history-close {
+                min-width: 44px;
+                min-height: 44px;
             }
 
             .history-body {
                 padding: 12px 16px;
+            }
+
+            /* Profile mobile: stack stats, larger touch targets */
+            .profile-stats {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            .profile-stats .profile-stat:last-child {
+                grid-column: 1 / -1;
+            }
+            .profile-stat {
+                padding: 18px;
+            }
+            .profile-header {
+                margin-bottom: 20px;
+            }
+            .profile-avatar {
+                width: 72px;
+                height: 72px;
+                font-size: 24px;
+            }
+            .profile-name { font-size: 18px; }
+            .profile-email { font-size: 13px; }
+            .profile-job-card {
+                padding: 14px;
+                margin-bottom: 10px;
+            }
+            .profile-job-card a {
+                min-height: 44px;
+                display: inline-flex;
+                align-items: center;
+                padding: 10px 14px;
             }
 
             .toast {
@@ -2675,7 +2759,16 @@
         var isDark = html.classList.toggle('dark');
         localStorage.setItem('cvtailro-theme', isDark ? 'dark' : 'light');
         var meta = document.getElementById('theme-color-meta');
-        if (meta) meta.content = isDark ? '#0f0d15' : '#F5F3FF';
+        if (meta) meta.content = isDark ? '#0f172a' : '#f8fafc';
+        // Sync overlays if open
+        var profileOl = document.getElementById('profileOverlay');
+        var historyOl = document.getElementById('historyOverlay');
+        if (profileOl && profileOl.classList.contains('active')) {
+            profileOl.classList.toggle('dark', isDark);
+        }
+        if (historyOl && historyOl.classList.contains('active')) {
+            historyOl.classList.toggle('dark', isDark);
+        }
     }
     window.toggleDarkMode = toggleDarkMode;
 
@@ -2851,13 +2944,19 @@
         document.getElementById('userMenuWrap').classList.remove('open');
         var overlay = document.getElementById('historyOverlay');
         overlay.classList.add('active');
+        if (document.documentElement.classList.contains('dark')) {
+            overlay.classList.add('dark');
+        } else {
+            overlay.classList.remove('dark');
+        }
         document.body.style.overflow = 'hidden';
         loadHistory();
     }
 
     function closeHistory() {
         closeJobDetail();
-        document.getElementById('historyOverlay').classList.remove('active');
+        var overlay = document.getElementById('historyOverlay');
+        overlay.classList.remove('active', 'dark');
         document.body.style.overflow = '';
     }
 
@@ -4117,6 +4216,12 @@
         document.getElementById('userMenuWrap').classList.remove('open');
         var overlay = document.getElementById('profileOverlay');
         overlay.classList.add('active');
+        // Sync dark mode to overlay (ensures profile respects theme)
+        if (document.documentElement.classList.contains('dark')) {
+            overlay.classList.add('dark');
+        } else {
+            overlay.classList.remove('dark');
+        }
         document.body.style.overflow = 'hidden';
 
         // Populate from current user data
@@ -4187,7 +4292,8 @@
     }
 
     function closeProfile() {
-        document.getElementById('profileOverlay').classList.remove('active');
+        var overlay = document.getElementById('profileOverlay');
+        overlay.classList.remove('active', 'dark');
         document.body.style.overflow = '';
     }
     </script>
