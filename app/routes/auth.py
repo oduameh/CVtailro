@@ -85,3 +85,29 @@ def me():
             "is_admin": current_user.is_admin,
         }
     )
+
+
+@auth_bp.route("/dev-login")
+def dev_login():
+    if os.environ.get("DEV_AUTH_BYPASS") != "1":
+        return redirect("/")
+
+    email = os.environ.get("DEV_AUTH_EMAIL", "dev@example.com").lower()
+    name = os.environ.get("DEV_AUTH_NAME", "Dev User").strip() or "Dev User"
+    google_id = f"dev-{email}"
+    user = User.query.filter_by(email=email).first()
+    if user is None:
+        user = User(google_id=google_id, email=email, name=name, picture_url="")
+        db.session.add(user)
+    else:
+        user.google_id = user.google_id or google_id
+        user.name = name
+        user.email = email
+
+    if os.environ.get("DEV_AUTH_ADMIN") == "1":
+        user.is_admin = True
+
+    user.last_login_at = datetime.now(timezone.utc)
+    db.session.commit()
+    login_user(user, remember=True)
+    return redirect("/")
