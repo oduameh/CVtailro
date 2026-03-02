@@ -139,6 +139,26 @@ def _apply_column_migrations() -> None:
     from sqlalchemy import inspect, text
 
     insp = inspect(db.engine)
+
+    # Ensure admin_settings table exists (added in app factory refactor)
+    if not insp.has_table("admin_settings"):
+        try:
+            db.session.execute(text(
+                "CREATE TABLE admin_settings ("
+                "id VARCHAR(32) PRIMARY KEY, "
+                "key VARCHAR(255) UNIQUE NOT NULL, "
+                "value TEXT, "
+                "updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW())"
+            ))
+            db.session.execute(text(
+                "CREATE INDEX idx_admin_settings_key ON admin_settings(key)"
+            ))
+            db.session.commit()
+            logger.info("Created admin_settings table")
+        except Exception as e:
+            db.session.rollback()
+            logger.warning(f"Failed to create admin_settings table: {e}")
+
     if not insp.has_table("tailoring_jobs"):
         return
 

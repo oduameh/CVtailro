@@ -118,7 +118,11 @@ def admin_save_config():
     if "rate_limit_per_hour" in data:
         config.rate_limit_per_hour = int(data["rate_limit_per_hour"])
 
-    AdminConfigManager.save(config)
+    try:
+        AdminConfigManager.save(config)
+    except Exception as e:
+        logger.exception("Failed to save admin config")
+        return jsonify({"error": f"Save failed: {e}"}), 500
     return jsonify({"ok": True, "updated_at": config.updated_at})
 
 

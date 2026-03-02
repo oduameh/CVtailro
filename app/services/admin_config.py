@@ -17,7 +17,10 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 logger = logging.getLogger(__name__)
 
-CONFIG_FILE = Path(__file__).resolve().parent.parent.parent / "admin_config.json"
+# Use the output directory (writable in Docker) for file fallback
+_app_root = Path(__file__).resolve().parent.parent.parent
+_output_dir = _app_root / "output"
+CONFIG_FILE = _output_dir / "admin_config.json" if _output_dir.is_dir() else _app_root / "admin_config.json"
 
 _SETTING_KEYS = [
     "api_key",
