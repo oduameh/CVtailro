@@ -2395,6 +2395,14 @@
         .auth-btn:hover { background: var(--primary-hover); }
         .auth-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
+        .password-strength { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+        .strength-bar { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+        .strength-fill { height: 100%; border-radius: 2px; transition: width 0.3s ease, background 0.3s ease; width: 0; }
+        .strength-label { font-size: 11px; font-weight: 600; min-width: 48px; }
+        .password-match { font-size: 12px; margin-top: 4px; font-weight: 500; transition: opacity 0.2s; }
+        .password-match.match { color: #10B981; }
+        .password-match.no-match { color: #EF4444; }
+
         .auth-divider {
             display: flex;
             align-items: center;
@@ -2738,7 +2746,7 @@
             <!-- CTA -->
             <div class="cta-row">
                 <button class="btn-run" id="btnRun" onclick="startTailoring()">Tailor My Resume</button>
-                <div class="cta-hint" id="ctaHint">Takes about 2 minutes &middot; Sign in to save your results</div>
+                <div class="cta-hint" id="ctaHint">Takes about 2 minutes &middot; Sign in with Google to get started</div>
             </div>
         </div>
 
@@ -2876,9 +2884,9 @@
     <footer class="site-footer">
         <div class="footer-brand">CVtailro &middot; AI-powered resume optimization</div>
         <div class="footer-links">
-            <a href="#">Privacy</a>
-            <a href="#">Terms</a>
-            <a href="#">Contact</a>
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
+            <a href="/contact">Contact</a>
         </div>
         <div class="footer-copy">&copy; 2026 CVtailro. All rights reserved.</div>
     </footer>
@@ -3044,7 +3052,16 @@
                     </div>
                     <div class="auth-field">
                         <label for="regPassword">Password</label>
-                        <input type="password" id="regPassword" placeholder="At least 8 characters" autocomplete="new-password">
+                        <input type="password" id="regPassword" placeholder="At least 8 characters" autocomplete="new-password" oninput="updatePasswordStrength()">
+                        <div class="password-strength" id="passwordStrength" style="display:none;">
+                            <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+                            <span class="strength-label" id="strengthLabel"></span>
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label for="regPasswordConfirm">Confirm Password</label>
+                        <input type="password" id="regPasswordConfirm" placeholder="Re-enter your password" autocomplete="new-password" oninput="checkPasswordMatch()">
+                        <div class="password-match" id="passwordMatch" style="display:none;"></div>
                     </div>
                     <button class="auth-btn" id="btnRegister" onclick="doRegister()">Create Account</button>
                     <div class="auth-divider">or</div>
@@ -3280,6 +3297,15 @@
         var signinBtn = document.getElementById('btnGoogleSignin');
         var userMenuWrap = document.getElementById('userMenuWrap');
         var ctaHint = document.getElementById('ctaHint');
+        var btn = document.getElementById('btnRun');
+        var progressSection = document.getElementById('progressSection');
+        var isProcessing = false;
+        if (progressSection && progressSection.classList.contains('active')) {
+            isProcessing = true;
+        }
+        if (btn && btn.disabled && btn.textContent === 'Processing...') {
+            isProcessing = true;
+        }
 
         if (authUser && authUser.email) {
             // Logged in
@@ -3313,6 +3339,9 @@
             if (ctaHint) {
                 ctaHint.textContent = 'Takes about 2 minutes \u00b7 Results will be saved to your history';
             }
+            if (btn && !isProcessing) {
+                btn.textContent = 'Tailor My Resume';
+            }
         } else {
             // Not logged in
             signinBtn.style.display = 'inline-flex';
@@ -3320,7 +3349,10 @@
 
             // Update CTA hint for signed-out users
             if (ctaHint) {
-                ctaHint.textContent = 'Takes about 2 minutes \u00b7 Sign in to get started';
+                ctaHint.textContent = 'Takes about 2 minutes \u00b7 Sign in with Google to get started';
+            }
+            if (btn && !isProcessing) {
+                btn.textContent = 'Sign in to start';
             }
         }
     }
@@ -3452,12 +3484,57 @@
         btn.textContent = 'Sign In';
     }
 
+    function updatePasswordStrength() {
+        var pw = document.getElementById('regPassword').value;
+        var el = document.getElementById('passwordStrength');
+        var fill = document.getElementById('strengthFill');
+        var label = document.getElementById('strengthLabel');
+        if (!pw) { el.style.display = 'none'; return; }
+        el.style.display = 'flex';
+        var score = 0;
+        if (pw.length >= 8) score++;
+        if (pw.length >= 12) score++;
+        if (/[A-Z]/.test(pw)) score++;
+        if (/[0-9]/.test(pw)) score++;
+        if (/[^A-Za-z0-9]/.test(pw)) score++;
+        var levels = [
+            { w: '20%', color: '#EF4444', text: 'Weak' },
+            { w: '40%', color: '#F59E0B', text: 'Fair' },
+            { w: '60%', color: '#F59E0B', text: 'Good' },
+            { w: '80%', color: '#10B981', text: 'Strong' },
+            { w: '100%', color: '#10B981', text: 'Excellent' }
+        ];
+        var lvl = levels[Math.min(score, 4)];
+        fill.style.width = lvl.w;
+        fill.style.background = lvl.color;
+        label.textContent = lvl.text;
+        label.style.color = lvl.color;
+        checkPasswordMatch();
+    }
+
+    function checkPasswordMatch() {
+        var pw = document.getElementById('regPassword').value;
+        var confirm = document.getElementById('regPasswordConfirm').value;
+        var el = document.getElementById('passwordMatch');
+        if (!confirm) { el.style.display = 'none'; return; }
+        el.style.display = 'block';
+        if (pw === confirm) {
+            el.textContent = 'Passwords match';
+            el.className = 'password-match match';
+        } else {
+            el.textContent = 'Passwords do not match';
+            el.className = 'password-match no-match';
+        }
+    }
+
     async function doRegister() {
         var name = document.getElementById('regName').value.trim();
         var email = document.getElementById('regEmail').value.trim();
         var password = document.getElementById('regPassword').value;
+        var confirmPw = document.getElementById('regPasswordConfirm').value;
         if (!name || !email || !password) { _showAuthError('Please fill in all fields.'); return; }
         if (password.length < 8) { _showAuthError('Password must be at least 8 characters.'); return; }
+        if (password !== confirmPw) { _showAuthError('Passwords do not match.'); return; }
 
         var btn = document.getElementById('btnRegister');
         btn.disabled = true;

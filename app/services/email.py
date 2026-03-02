@@ -1,13 +1,12 @@
-"""Email service — verification and password-reset tokens, SMTP delivery."""
+"""Email service — verification and password-reset tokens, Resend HTTP API delivery."""
 
 from __future__ import annotations
 
+import json
 import logging
 import os
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 
+import requests as http_requests
 from flask import current_app, url_for
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
@@ -52,42 +51,57 @@ def confirm_reset_token(token: str, max_age: int = 3600) -> str | None:
 
 
 # ---------------------------------------------------------------------------
-# SMTP helpers
+# Email delivery via Resend HTTP API (reads env vars at call time)
 # ---------------------------------------------------------------------------
 
-_SMTP_HOST = os.environ.get("SMTP_HOST", "")
-_SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
-_SMTP_USER = os.environ.get("SMTP_USER", "")
-_SMTP_PASS = os.environ.get("SMTP_PASS", "")
-_MAIL_FROM = os.environ.get("MAIL_FROM", "")
-
-
-def _smtp_configured() -> bool:
-    return bool(_SMTP_HOST and _SMTP_USER and _SMTP_PASS and _MAIL_FROM)
+RESEND_API_URL = "https://api.resend.com/emails"
 
 
 def send_email(to: str, subject: str, html_body: str, text_body: str) -> bool:
-    """Send an email via SMTP.  Returns True on success, False on failure."""
-    if not _smtp_configured():
-        logger.warning("SMTP not configured — email to %s suppressed: %s", to, subject)
+    """Send an email via Resend HTTP API. Returns True on success."""
+    api_key = os.environ.get("RESEND_API_KEY") or os.environ.get("SMTP_PASS", "")
+    mail_from = os.environ.get("MAIL_FROM", "")
+
+    if not api_key or not mail_from:
+        logger.warning("Email not configured — email to %s suppressed: %s", to, subject)
         return False
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = _MAIL_FROM
-    msg["To"] = to
-    msg.attach(MIMEText(text_body, "plain"))
-    msg.attach(MIMEText(html_body, "html"))
-
     try:
-        with smtplib.SMTP(_SMTP_HOST, _SMTP_PORT, timeout=10) as server:
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
-            server.login(_SMTP_USER, _SMTP_PASS)
-            server.sendmail(_MAIL_FROM, [to], msg.as_string())
-        logger.info("Email sent to %s: %s", to, subject)
-        return True
+        resp = http_requests.post(
+            RESEND_API_URL,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": mail_from,
+                "to": [to],
+                "subject": subject,
+                "html": html_body,
+                "text": text_body,
+            },
+            timeout=10,
+        )
+
+        if resp.status_code == 200:
+            logger.info("Email sent to %s: %s", to, subject)
+            return True
+
+        # Log the error detail from Resend
+        try:
+            error_data = resp.json()
+            error_msg = error_data.get("message", resp.text[:200])
+        except (ValueError, json.JSONDecodeError):
+            error_msg = resp.text[:200]
+
+        logger.error(
+            "Resend API error %d sending to %s: %s",
+            resp.status_code,
+            to,
+            error_msg,
+        )
+        return False
+
     except Exception:
         logger.exception("Failed to send email to %s: %s", to, subject)
         return False
@@ -102,8 +116,8 @@ _BASE_STYLE = (
     "Roboto, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px;"
 )
 _BUTTON_STYLE = (
-    "display: inline-block; background: #2563eb; color: #ffffff; "
-    "padding: 12px 28px; border-radius: 8px; text-decoration: none; "
+    "display: inline-block; background: #6366F1; color: #ffffff; "
+    "padding: 14px 32px; border-radius: 10px; text-decoration: none; "
     "font-weight: 600; font-size: 15px; margin: 20px 0;"
 )
 
