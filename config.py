@@ -23,14 +23,20 @@ RECOMMENDED_MODELS: dict[str, str] = {
     "Gemma 3 27B (Free)": "google/gemma-3-27b-it:free",
     "Solar Pro 3 (Free)": "upstage/solar-pro-3:free",
     "Auto Router (Free)": "openrouter/free",
-    # ── Paid models (requires credits) ───────────────────────────
+    # ── Paid models — Best Value ─────────────────────────────────
     "GPT-4o Mini": "openai/gpt-4o-mini",
+    "DeepSeek V3.2": "deepseek/deepseek-chat-v3-0324",
+    "Gemini 2.5 Flash": "google/gemini-2.5-flash",
+    # ── Paid models — High Quality ────────────────────────────────
+    "GPT-4.1": "openai/gpt-4.1",
     "GPT-4o": "openai/gpt-4o",
-    "Claude Sonnet 4": "anthropic/claude-sonnet-4",
+    "Claude Sonnet 4.5": "anthropic/claude-sonnet-4.5",
+    "Claude Sonnet 4.6": "anthropic/claude-sonnet-4.6",
     "Gemini 2.5 Pro": "google/gemini-2.5-pro-preview",
+    # ── Paid models — Frontier ────────────────────────────────────
+    "Claude Opus 4.6": "anthropic/claude-opus-4.6",
+    "o4-mini": "openai/o4-mini",
     "Grok 3": "x-ai/grok-3",
-    "DeepSeek V3": "deepseek/deepseek-chat-v3-0324",
-    "Llama 4 Maverick": "meta-llama/llama-4-maverick",
 }
 
 DEFAULT_MODEL = "openai/gpt-4o-mini"

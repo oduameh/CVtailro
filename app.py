@@ -519,12 +519,16 @@ def run_pipeline_job(
                 "skills": "",
                 "education": "",
             }
-            # Parse sections from the tailored markdown
+            # Parse sections from the tailored markdown (handle # and ## headings)
             current_section = ""
             for line in ats_resume.markdown_content.split("\n"):
                 stripped = line.strip().lower()
-                if stripped.startswith("##"):
-                    heading = stripped.lstrip("#").strip()
+                # Detect markdown headings (# or ##), skip the H1 name line
+                if stripped.startswith("#"):
+                    heading = stripped.lstrip("#").strip().strip("*").strip()
+                    # Skip the candidate name (first H1 heading)
+                    if not heading or "|" in line:
+                        continue
                     if "summary" in heading or "profile" in heading or "objective" in heading:
                         current_section = "summary"
                     elif "experience" in heading or "employment" in heading or "work" in heading:
@@ -545,7 +549,11 @@ def run_pipeline_job(
                     kw_lower = kw.lower().strip()
                     if not kw_lower:
                         continue
-                    if kw_lower in sec_lower:
+                    # Word-boundary match (consistent with gap_analysis.py)
+                    if re.search(r"\b" + re.escape(kw_lower) + r"\b", sec_lower):
+                        found += 1
+                    # Substring fallback for multi-word skills
+                    elif len(kw_lower.split()) > 1 and kw_lower in sec_lower:
                         found += 1
                 tailored_section_scores[sec_name] = round((found / total_skills) * 100, 1)
             # Override the gap_report section_scores with tailored ones

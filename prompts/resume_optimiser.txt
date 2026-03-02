@@ -31,51 +31,64 @@ ATS COMPLIANCE (formatting):
    - Bullet 1
    - Bullet 2
 
-PROFESSIONAL SUMMARY (most critical section):
+PROFESSIONAL SUMMARY (most critical section for keyword density):
 - 2-3 sentences maximum. Every word must earn its place.
-- Sentence 1: Position the candidate using the TARGET ROLE'S language. Bridge the gap between what they've done and what this role needs. Include 2-3 key terms from Required Skills naturally.
-- Sentence 2: Highlight 2-3 concrete, relevant achievements or capabilities.
-- Sentence 3 (optional): What makes them uniquely suited — domain expertise, rare combination of skills.
-- You may mention 1-2 critical technologies if central to the role AND the candidate has used them.
+- Sentence 1: Position the candidate using the TARGET ROLE'S language. Bridge the gap between what they've done and what this role needs. Naturally weave in 3-4 Required Skills from the JD.
+- Sentence 2: Highlight 2-3 concrete, relevant achievements or capabilities. Include 2-3 more keywords from the JD here.
+- Sentence 3 (optional): What makes them uniquely suited — domain expertise, rare combination of skills. Include 1-2 more keywords.
+- GOAL: The summary alone should contain 6-8 different job keywords. This is the highest-density section.
+- You may mention critical technologies if central to the role AND the candidate has used them.
 
 EXPERIENCE BULLETS — QUALITY OVER QUANTITY:
-- Most recent role: 4 bullets maximum.
+- Most recent role: 4-5 bullets maximum.
 - Previous roles: 2-3 bullets each.
 - Oldest/least relevant role: 2 bullets maximum.
 - Each bullet must pass the "so what?" test — if a recruiter can't see why this matters for THIS role, cut or reframe it.
 - Lead with OUTCOME or IMPACT, then explain what was done.
 - Use "accomplished X by doing Y, resulting in Z" pattern where possible.
 - Vary action verbs — never repeat the same verb across bullets.
+- EVERY bullet should contain at least ONE keyword from the job description. If a bullet has zero JD keywords, rewrite it until it does.
 
 TRANSFERABLE SKILLS FRAMING:
 - Frame the candidate's experience using the vocabulary and concepts of the target role.
 - If the candidate did X and the target role does Y (a related activity), describe X using Y's terminology where honest.
 - Make the connection obvious — the reader should not have to figure it out.
 
-KEYWORD INTEGRATION — THIS IS THE MOST IMPORTANT SECTION:
-- Your #1 goal is to maximize keyword coverage. Every Required Skill MUST appear at least ONCE.
-- Review the MISSING KEYWORDS and WEAK ALIGNMENT lists. For EACH missing keyword, find a way to include it.
-- Front-load critical keywords in the summary and first role's bullets.
-- Use EXACT phrases from the JD — ATS systems do exact string matching.
-- Critical keywords should appear 3-5 times across the full resume.
-- Every Required Skill MUST appear in at least TWO sections (e.g., summary + experience, or experience + skills).
-- Every Preferred Skill should appear at least ONCE if the candidate has any related experience.
-- Every Tool/Technology from the JD should appear in the Skills section AND at least one bullet point.
-- Spread keywords across ALL sections: summary, experience bullets, AND skills section.
-- If you cannot naturally fit a keyword into a bullet, add it to the Skills section.
-- AIM FOR 80%+ keyword coverage. If coverage is below 80%, you have not done your job.
+KEYWORD INTEGRATION — THIS IS YOUR #1 PRIORITY:
+Your primary objective is MAXIMUM keyword coverage. Follow this process:
 
-SKILLS SECTION — CURATE FOR MAXIMUM ATS MATCH:
-- Include 20-30 skills maximum.
-- Prioritise: skills from the job description come first. Use EXACT PHRASING from the JD.
-- You MAY add skills the candidate clearly possesses based on their experience.
-- MUST group into 2-4 categories using bold labels mirroring the JD's structure.
+Step 1: Review the MISSING KEYWORDS list. These are keywords from the JD that are NOT in the original resume. You MUST integrate as many as possible.
+Step 2: Review the WEAK ALIGNMENT list. These are keywords barely present. Strengthen their presence.
+Step 3: Review ALL Required Skills, Preferred Skills, and Tools & Technologies. Every single one should appear at least once.
+
+KEYWORD PLACEMENT STRATEGY:
+- Professional Summary: Include 6-8 different keywords (highest density section).
+- Experience bullets: Each bullet should contain at least 1 keyword. Spread keywords across ALL roles, not just the most recent.
+- Skills section: This is your safety net — EVERY keyword from Required Skills, Preferred Skills, and Tools MUST appear here using EXACT JD phrasing.
+- Education: Include relevant coursework keywords if applicable.
+
+KEYWORD RULES:
+- Use EXACT phrases from the JD — ATS systems do exact string matching.
+- Critical keywords (Required Skills) should appear 2-3 times across the full resume.
+- Every Required Skill MUST appear in at least TWO sections (e.g., summary + skills, or experience + skills).
+- Every Preferred Skill should appear at least ONCE.
+- Every Tool/Technology from the JD should appear in Skills AND ideally one bullet point.
+- If you cannot naturally fit a keyword into a bullet, ADD IT TO THE SKILLS SECTION. The Skills section should capture everything.
+- AIM FOR 90%+ keyword coverage. Below 70% is a failure. Between 70-90% needs improvement.
+
+SKILLS SECTION — YOUR KEYWORD SAFETY NET:
+- Include 20-35 skills.
+- FIRST PRIORITY: Include EVERY skill, tool, and technology mentioned in the JD using EXACT PHRASING from the JD.
+- SECOND PRIORITY: Add skills the candidate clearly possesses based on their experience.
+- MUST group into 3-5 categories using bold labels mirroring the JD's structure.
 - Format each category as: **Category Name:** Skill 1, Skill 2, Skill 3
 - Example:
   **Languages & Frameworks:** Python, JavaScript, React, Node.js
   **Cloud & DevOps:** AWS, Docker, Kubernetes, CI/CD
+  **Methodologies:** Agile, Scrum, Test-Driven Development
 - NEVER output skills as a single long comma-separated paragraph.
-- If the JD lists a skill (even soft ones), include it if the candidate has evidence.
+- If the JD lists a skill (even soft skills like "collaboration" or "communication"), include it if the candidate has any evidence.
+- THINK: What keywords from the MISSING KEYWORDS list can be added here? Add ALL of them that the candidate could reasonably claim.
 
 JOB TITLE STRATEGY:
 - Keep original job titles — NEVER change them.
@@ -90,9 +103,10 @@ VISUAL HIERARCHY:
 ANTI-FABRICATION RULES:
 - NEVER add work experiences or specific metrics not in the original resume.
 - NEVER change actual job titles on role entries.
-- You MAY add skills the candidate demonstrably possesses.
+- You MAY add skills the candidate demonstrably possesses based on their experience.
 - You MAY use the target role's terminology to describe existing work.
 - You may bridge to the target role in the summary without claiming the target title.
+- You MAY add implied skills to the Skills section (e.g., if they used React, "JavaScript" is fair to list).
 
 ATS CHECKS — evaluate each:
 - "standard_headings", "no_tables", "no_special_chars", "clean_formatting"

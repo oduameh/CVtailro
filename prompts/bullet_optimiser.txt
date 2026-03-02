@@ -13,6 +13,7 @@ The candidate may not have the exact job title or experience the target role ask
 2. Reframe the bullet to LEAD with the transferable skill, not the original task.
 3. Use the TARGET ROLE'S LANGUAGE and terminology, not the candidate's current field's jargon.
 4. Make the connection between what they DID and what the target role NEEDS feel obvious and natural.
+5. INJECT at least ONE keyword from the MUST-HAVE SKILLS into every bullet where possible.
 
 Example of good transferable framing:
 - Original: "Wrote API documentation for enterprise middleware products"
@@ -27,12 +28,14 @@ If mode is "conservative":
 - Preserve the factual core of every bullet
 - Subtle language shifts — swap field-specific jargon for target-role terminology
 - Do not add scope or impact not implied by the original
+- Still aim to include at least 1 keyword from the JD per bullet
 
 If mode is "aggressive":
 - Significantly restructure bullets to lead with the most relevant transferable skill
 - Elevate language to match the target role's seniority ("contributed to" -> "drove", "helped" -> "championed")
 - Reorder bullet content so the most job-relevant aspect comes first
 - You may combine related points from the same role for stronger impact
+- Aim to include 1-2 keywords from the JD in every bullet
 - Still NEVER fabricate experiences, metrics, or technologies
 
 WHAT IS FABRICATION (NEVER do this):
@@ -47,10 +50,17 @@ WHAT IS LEGITIMATE REFRAMING (DO this):
 - Adding implied skills to bullets (if they built APIs, "API development" is fair)
 - Quantifying scope: "managed team" -> "managed team of 5" ONLY if original implies a small team
 - Using industry-standard synonyms for what the candidate did
+- Adding implied context: "built web application" -> "built and deployed web application" if deployment is implied by the role
 
-ADDITIONAL RULES:
-- Every optimised bullet MUST be traceable to its original.
-- DO NOT just append keywords — weave them into the narrative naturally.
+KEYWORD INJECTION — CRITICAL:
+- For each bullet, actively look for opportunities to weave in keywords from the MUST-HAVE SKILLS list.
+- Prefer NATURAL integration over keyword stuffing. The keyword should feel like it belongs.
+- Examples of natural injection:
+  - Original: "Built a dashboard for internal teams" + JD keyword: "data visualization"
+  - Good: "Built an interactive data visualization dashboard serving internal teams"
+  - Original: "Automated testing processes" + JD keyword: "CI/CD"
+  - Good: "Automated testing processes within CI/CD pipelines, reducing deployment failures"
+- If a bullet has NO possible connection to any JD keyword, keep it short and factual.
 
 BULLET QUALITY STANDARDS:
 - Each bullet should be 1-2 lines maximum (15-25 words ideal, 35 words max).
@@ -60,7 +70,7 @@ BULLET QUALITY STANDARDS:
 - Use the "Accomplished X by doing Y, resulting in Z" pattern wherever possible.
 - Remove filler words ("various", "multiple", "effectively", "successfully", "responsible for").
 - If a bullet has no clear relevance to the target role, keep it short and factual.
-- Limit to 3-4 bullets per role (most recent role can have 4-5).
+- Limit to 3-5 bullets per role (most recent role can have 4-5).
 - Preserve ALL original metrics, numbers, and percentages — never change actual data.
 
 PROFESSIONAL SUMMARY:
@@ -68,6 +78,7 @@ PROFESSIONAL SUMMARY:
 - Open with a positioning statement that bridges current experience to the target role.
 - Mention total years of experience and 2-3 most relevant skill areas.
 - End with what makes this candidate uniquely suited for THIS specific role.
+- MUST include 4-6 keywords from the Required Skills naturally woven into the text.
 - You may mention 1-2 critical technologies if they appear in the Required Skills AND the candidate has used them.
 
 Respond with a single JSON object matching this schema:
@@ -80,7 +91,7 @@ For each bullet, include:
 - keywords_injected: which job keywords you incorporated
 - change_rationale: brief explanation of the transferable skill connection
 - fabrication_flag: Set to true ONLY if you invented a specific metric, tool, or responsibility not implied by the original. Reframing existing work using job-relevant language is NOT fabrication.
-- quality_score: Rate the optimised bullet quality from 1-10 (10 = perfect ATS bullet with metrics, strong verb, and relevant keywords)
+- quality_score: Rate the optimised bullet quality from 1-10 (7+ = good bullet with relevant keywords, strong verb, clear impact; 9-10 = has metrics AND keywords AND outcome)
 - improvements: List of improvement tags applied. Use these tags: "stronger_verb", "added_metrics", "keyword_injected", "shortened", "reframed", "quantified", "outcome_focused"
 
 Do not include any text outside the JSON object.
