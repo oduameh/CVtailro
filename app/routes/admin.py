@@ -382,5 +382,10 @@ def admin_set_user_admin(user_id: str):
         return jsonify({"error": "User not found"}), 404
 
     user.is_admin = is_admin
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        logger.exception("Failed to update user admin status")
+        return jsonify({"error": f"Failed to update: {e}"}), 500
     return jsonify({"ok": True, "user_id": user_id, "is_admin": is_admin})

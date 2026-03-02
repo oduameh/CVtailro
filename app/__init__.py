@@ -49,6 +49,7 @@ def create_app(config_name: str | None = None) -> Flask:
     _init_redis()
     register_blueprints(flask_app)
     _register_security_headers(flask_app)
+    _register_error_handlers(flask_app)
     init_request_id(flask_app)
     _run_migrations(flask_app)
 
@@ -92,6 +93,31 @@ def _init_oauth(flask_app: Flask) -> None:
         client_secret=os.environ.get("GOOGLE_CLIENT_SECRET", ""),
         client_kwargs={"scope": "openid email profile"},
     )
+
+
+def _register_error_handlers(flask_app: Flask) -> None:
+    """Return JSON errors for API routes instead of HTML error pages."""
+    from flask import jsonify as _jsonify
+
+    @flask_app.errorhandler(404)
+    def not_found(e):
+        if request.path.startswith("/api/") or request.path.startswith("/admin/api/"):
+            return _jsonify({"error": "Not found"}), 404
+        return e  # Let Flask render default HTML for non-API routes
+
+    @flask_app.errorhandler(500)
+    def internal_error(e):
+        logger.exception("Unhandled server error")
+        if request.path.startswith("/api/") or request.path.startswith("/admin/api/"):
+            return _jsonify({"error": "Internal server error"}), 500
+        return e
+
+    @flask_app.errorhandler(Exception)
+    def handle_exception(e):
+        logger.exception("Unhandled exception in %s %s", request.method, request.path)
+        if request.path.startswith("/api/") or request.path.startswith("/admin/api/"):
+            return _jsonify({"error": str(e) or "Internal server error"}), 500
+        return e
 
 
 def _register_security_headers(flask_app: Flask) -> None:

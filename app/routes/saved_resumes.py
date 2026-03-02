@@ -62,7 +62,11 @@ def save_resume():
         resume = SavedResume(user_id=current_user.id, name=name, resume_text=resume_text)
         db.session.add(resume)
 
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        return jsonify({"error": "Failed to save resume"}), 500
     return jsonify({"ok": True, "id": resume.id})
 
 
@@ -85,6 +89,10 @@ def delete_saved_resume(resume_id: str):
     resume = SavedResume.query.filter_by(
         id=resume_id, user_id=current_user.id
     ).first_or_404()
-    db.session.delete(resume)
-    db.session.commit()
+    try:
+        db.session.delete(resume)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        return jsonify({"error": "Failed to delete resume"}), 500
     return jsonify({"ok": True})
