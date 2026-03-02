@@ -3,8 +3,6 @@
 import pytest
 
 from keyword_density import (
-    KeywordDensityReport,
-    KeywordFrequency,
     analyze_keyword_density,
 )
 

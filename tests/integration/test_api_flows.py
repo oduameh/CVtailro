@@ -1,12 +1,11 @@
 """Integration tests for API flows — tailor, result, history, auth."""
 
 import io
-import threading
 from unittest.mock import patch
 
 import pytest
 
-from app.models import SavedResume, TailoringJob, User
+from app.models import TailoringJob, User
 
 
 @pytest.fixture

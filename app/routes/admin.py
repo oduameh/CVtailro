@@ -375,7 +375,6 @@ def admin_clear_errors():
 @_admin_required
 def admin_diagnostics():
     """Run health checks and return diagnostic info for troubleshooting."""
-    import platform
     import sys
 
     from app.services.cache import is_available as redis_available

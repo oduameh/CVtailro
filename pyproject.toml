@@ -19,6 +19,10 @@ ignore = [
     "SIM114", # combined or-conditions reduce readability
     "SIM117", # nested with statements sometimes needed for yield
     "UP017",  # datetime.UTC not available in Python 3.10
+    "UP042",  # str+Enum -> StrEnum: breaks Pydantic serialization
+    "UP046",  # Generic[T] -> type params: breaks Python <3.12 compat
+    "N806",   # XML element vars (pPr, pBdr) follow python-docx/lxml naming
+    "B904",   # raise from: adds noise in user-facing error messages
 ]
 
 [tool.ruff.lint.isort]

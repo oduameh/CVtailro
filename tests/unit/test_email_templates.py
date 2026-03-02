@@ -2,7 +2,7 @@
 
 import pytest
 
-from email_templates import EmailTemplate, format_templates_as_markdown, generate_follow_up_templates
+from email_templates import format_templates_as_markdown, generate_follow_up_templates
 
 
 @pytest.mark.unit

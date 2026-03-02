@@ -5,9 +5,9 @@ from __future__ import annotations
 import json
 import logging
 import sys
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from collections.abc import Callable
 from typing import Any
 
 import pdfplumber

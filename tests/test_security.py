@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import io
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -302,7 +301,6 @@ class TestIDORHistory:
         self, client, user, other_user, db
     ):
         """Getting a saved resume must require ownership."""
-        from app.models import SavedResume
         other_resume = SavedResume(
             user_id=other_user.id,
             name="Other Resume",
@@ -318,7 +316,6 @@ class TestIDORHistory:
         self, client, user, other_user, db
     ):
         """Deleting a saved resume must require ownership."""
-        from app.models import SavedResume
         other_resume = SavedResume(
             user_id=other_user.id,
             name="Other Resume",
