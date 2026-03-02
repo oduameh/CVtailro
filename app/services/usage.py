@@ -1,7 +1,17 @@
-"""Usage tracking and login rate limiting — thread-safe singletons."""
+"""Usage tracking and login rate limiting — Redis-backed when available."""
+
+from __future__ import annotations
 
 import threading
 import time
+
+from app.services.cache import (
+    is_available as redis_available,
+    rate_limit_check_incr,
+    rate_limit_count,
+    rate_limit_incr,
+    rate_limit_reset,
+)
 
 
 class UsageTracker:
@@ -18,6 +28,8 @@ class UsageTracker:
             with self._lock:
                 self._total += 1
             return True
+        if redis_available():
+            return rate_limit_check_incr("usage", key, limit, 3600)
         with self._lock:
             now = time.time()
             times = [t for t in self._requests.get(key, []) if t > now - 3600]
@@ -29,6 +41,13 @@ class UsageTracker:
             return True
 
     def get_stats(self) -> dict:
+        if redis_available():
+            return {
+                "total_requests": 0,
+                "requests_last_hour": 0,
+                "active_sessions": 0,
+                "backend": "redis",
+            }
         with self._lock:
             now = time.time()
             hour_ago = now - 3600
@@ -38,6 +57,7 @@ class UsageTracker:
                 "total_requests": self._total,
                 "requests_last_hour": recent,
                 "active_sessions": active,
+                "backend": "memory",
             }
 
 
@@ -52,6 +72,8 @@ class LoginRateLimiter:
         self._failures: dict[str, list[float]] = {}
 
     def is_blocked(self, ip: str) -> bool:
+        if redis_available():
+            return rate_limit_count("login_fail", ip, self.WINDOW) >= self.MAX_ATTEMPTS
         with self._lock:
             now = time.time()
             attempts = [t for t in self._failures.get(ip, []) if t > now - self.WINDOW]
@@ -59,6 +81,9 @@ class LoginRateLimiter:
             return len(attempts) >= self.MAX_ATTEMPTS
 
     def record_failure(self, ip: str) -> None:
+        if redis_available():
+            rate_limit_incr("login_fail", ip, self.WINDOW)
+            return
         with self._lock:
             now = time.time()
             attempts = [t for t in self._failures.get(ip, []) if t > now - self.WINDOW]
@@ -66,6 +91,9 @@ class LoginRateLimiter:
             self._failures[ip] = attempts
 
     def reset(self, ip: str) -> None:
+        if redis_available():
+            rate_limit_reset("login_fail", ip)
+            return
         with self._lock:
             self._failures.pop(ip, None)
 

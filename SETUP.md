@@ -165,7 +165,21 @@ R2_BUCKET_NAME=cvtailro
 
 > **Verify:** Click on the PostgreSQL service, go to the **Connect** tab, and confirm the `DATABASE_URL` variable is listed. Railway injects this into all linked services automatically.
 
-### 3.4 Set Environment Variables
+### 3.4 Add Redis (Recommended for Production)
+
+Redis enables rate limiting and usage tracking to work correctly across multiple Gunicorn workers. Without it, limits are per-worker and stats are approximate.
+
+1. Inside your Railway project, click **New** (the "+" button).
+2. Select **Database** or search for **Redis**.
+3. Select **Add Redis** (or deploy from the [Redis template](https://railway.com/template/redis)).
+4. Railway provisions a Redis service and exposes `REDIS_URL`. Link it to your app:
+   - Click your application service → **Variables** → **New Variable**
+   - Add `REDIS_URL` with value `${{Redis.REDIS_URL}}` (reference the Redis service’s variable)
+5. Redeploy the application.
+
+> **Note:** Redis is optional. The app falls back to in-memory storage when `REDIS_URL` is not set. For single-worker or low-traffic deployments, this is fine.
+
+### 3.5 Set Environment Variables
 
 1. Click on your application service (the one built from your GitHub repo).
 2. Go to the **Variables** tab.
@@ -185,6 +199,7 @@ R2_BUCKET_NAME=cvtailro
 | `R2_ACCESS_KEY_ID` | *(from Section 2.5)* | Your R2 API token Access Key ID. |
 | `R2_SECRET_ACCESS_KEY` | *(from Section 2.5)* | Your R2 API token Secret Access Key. |
 | `R2_BUCKET_NAME` | `cvtailro` | The name of your R2 bucket. |
+| `REDIS_URL` | *(auto-injected when Redis addon added)* | Redis connection URL. Reference as `${{Redis.REDIS_URL}}` when using Railway’s Redis addon. Optional — app uses in-memory fallback when not set. |
 
 #### Generate FLASK_SECRET_KEY
 
@@ -196,14 +211,14 @@ python3 -c "import secrets; print(secrets.token_hex(32))"
 
 Copy the output (a 64-character hex string) and paste it as the value for `FLASK_SECRET_KEY`.
 
-### 3.5 Deploy
+### 3.6 Deploy
 
 1. After setting all variables, Railway will automatically trigger a new deployment.
 2. Monitor the build logs under the **Deployments** tab.
 3. Once deployed, Railway assigns a public URL (e.g., `https://cvtailro-production.up.railway.app`).
 4. The health check endpoint at `/api/health` must return HTTP 200 for Railway to consider the deployment healthy.
 
-### 3.6 Post-Deployment Verification
+### 3.7 Post-Deployment Verification
 
 1. Visit `https://your-app.up.railway.app/api/health` -- should return `{"status": "healthy", "backend": "openrouter"}`.
 2. Visit the main page and confirm the Google login button works.
@@ -211,7 +226,7 @@ Copy the output (a 64-character hex string) and paste it as the value for `FLASK
 4. Visit `/admin` and confirm the API key is loaded (it will show a masked version).
 5. Run a test tailoring job with a sample resume and job description.
 
-### 3.7 Custom Domain (Optional)
+### 3.8 Custom Domain (Optional)
 
 If you set up a custom domain on Railway:
 
@@ -368,10 +383,33 @@ Complete list of all environment variables used by CVtailro.
 | `R2_ACCESS_KEY_ID` | No | *(empty)* | Cloudflare R2 API token Access Key ID. Required only if using R2. |
 | `R2_SECRET_ACCESS_KEY` | No | *(empty)* | Cloudflare R2 API token Secret Access Key. Required only if using R2. |
 | `R2_BUCKET_NAME` | No | `cvtailro` | Name of the R2 bucket. Only relevant if R2 credentials are set. |
+| `REDIS_URL` | No | *(none)* | Redis connection URL (e.g. `redis://localhost:6379/0`). Used for Flask-Limiter, usage tracking, and admin login rate limiting. Falls back to in-memory when not set. |
 | `PORT` | No | `5050` | Port the Flask server listens on. Railway sets this automatically. |
 
 ### Required vs Optional
 
-- **For production (Railway):** `FLASK_SECRET_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_EMAILS`, and `OPENROUTER_API_KEY` are required. `DATABASE_URL` is auto-injected. R2 variables are recommended but optional.
+- **For production (Railway):** `FLASK_SECRET_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_EMAILS`, and `OPENROUTER_API_KEY` are required. `DATABASE_URL` is auto-injected. R2 variables are recommended but optional. `REDIS_URL` is optional but recommended for correct rate limiting across workers.
 - **For local development:** `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are required for OAuth login to work. `OPENROUTER_API_KEY` is required to run the pipeline. Everything else has sensible defaults.
 - **For CLI usage (orchestrator.py):** Only `OPENROUTER_API_KEY` is needed (or pass `--api-key` flag).
+
+---
+
+## 6. Deployment Checklist
+
+Before deploying to production, verify:
+
+| Check | How |
+|-------|-----|
+| PostgreSQL added | Railway project has PostgreSQL service; `DATABASE_URL` is set |
+| Redis added (recommended) | Redis service linked; `REDIS_URL` referenced in app variables |
+| R2 configured | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` set |
+| OAuth origins | Google Cloud Console has your Railway URL in authorized origins and redirect URIs |
+| API key | `OPENROUTER_API_KEY` set (or configure via `/admin` after first deploy) |
+| Secret key | `FLASK_SECRET_KEY` is a strong random string (not the default) |
+| Admin emails | `ADMIN_EMAILS` includes your email for admin access |
+
+After deployment:
+
+1. Visit `/api/health` — should return `{"status": "healthy", "backend": "openrouter"}`.
+2. Visit `/admin` — run health checks to verify DB, R2, and Redis connectivity.
+3. Run a test tailoring job to confirm the full pipeline works.

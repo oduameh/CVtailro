@@ -20,6 +20,7 @@ CVtailro is a Flask-based SaaS that runs a 6-stage AI pipeline to tailor resumes
 2. **Pipeline** — `config.py` — `AppConfig`, `RECOMMENDED_MODELS`, `DEFAULT_MODEL`
 3. **Admin** — `app/services/admin_config.py` — API key, model, rate limit (DB + `admin_config.json` fallback)
 4. **Storage** — `storage.py` — R2 credentials from env
+5. **Redis** — `app/services/cache.py` — `REDIS_URL` for rate limiting, usage tracking; graceful fallback when unset
 
 ## Module Layout
 
