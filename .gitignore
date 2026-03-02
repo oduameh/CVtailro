@@ -9,3 +9,9 @@ dist/
 build/
 .pytest_cache/
 .claude/
+
+# Dev databases
+instance/
+*.db
+*.sqlite3
+cvtailro_dev.db

@@ -1,0 +1,32 @@
+[project]
+name = "cvtailro"
+version = "2.0.0"
+description = "AI-powered resume tailoring SaaS"
+requires-python = ">=3.11"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM"]
+ignore = [
+    "E501",   # line length handled by formatter
+    "B008",   # function call in default argument (Flask patterns)
+    "SIM102", # nested ifs are sometimes clearer
+    "SIM105", # contextlib.suppress less readable than try/except
+    "SIM108", # ternary operator
+    "SIM114", # combined or-conditions reduce readability
+    "SIM117", # nested with statements sometimes needed for yield
+    "UP017",  # datetime.UTC not available in Python 3.10
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"

@@ -6,6 +6,15 @@
     <title>CVtailro Admin</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%236C5CE7' width='100' height='100' rx='20'/><text x='50' y='68' font-size='60' font-weight='bold' text-anchor='middle' fill='white' font-family='system-ui'>CV</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+    (function() {
+        var saved = localStorage.getItem('cvtailro-theme');
+        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (saved === 'dark' || (!saved && prefersDark)) {
+            document.documentElement.classList.add('dark');
+        }
+    })();
+    </script>
     <style>
         :root {
             --bg: #f0f2f5;
@@ -26,6 +35,16 @@
             --sidebar-width: 240px;
             --header-height: 56px;
             --radius: 16px;
+        }
+        html.dark {
+            --bg: #0f0d15;
+            --card: #1e1a2e;
+            --border: #2d2640;
+            --text: #e8e0f5;
+            --text-secondary: #a89cc0;
+            --accent-light: rgba(108,92,231,0.2);
+            --accent-light-border: rgba(108,92,231,0.35);
+            --sidebar-bg: #0a0812;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -1485,11 +1504,11 @@
                 var pic = u.picture
                     ? '<img src="' + u.picture + '" style="width:36px;height:36px;border-radius:50%;object-fit:cover;" alt="">'
                     : '<div class="activity-avatar">' + initials + '</div>';
-                return '<div class="user-card" data-name="' + (u.name || '').toLowerCase() + '" data-email="' + (u.email || '').toLowerCase() + '" onclick="loadUserJobs(\'' + u.id + '\')">' +
+                return '<div class="user-card" data-name="' + (u.name || '').toLowerCase() + '" data-email="' + (u.email || '').toLowerCase() + '" data-user-id="' + escapeHtml(u.id) + '" onclick="loadUserJobs(this.dataset.userId)">' +
                     pic +
                     '<div style="flex:1;min-width:0;">' +
-                        '<div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (u.name || 'Unknown') + '</div>' +
-                        '<div style="font-size:12px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (u.email || '') + '</div>' +
+                        '<div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(u.name || 'Unknown') + '</div>' +
+                        '<div style="font-size:12px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(u.email || '') + '</div>' +
                     '</div>' +
                     '<div style="text-align:right;">' +
                         '<div style="font-size:18px;font-weight:800;color:var(--accent);">' + u.jobs_count + '</div>' +

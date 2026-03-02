@@ -9,8 +9,9 @@ services:
       - PYTHONUNBUFFERED=1
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
-      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-}
-      - DATABASE_URL=postgresql://cvtailro:cvtailro@postgres:5432/cvtailro
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-dev-secret-change-in-production}
+      - DATABASE_URL=postgresql://cvtailro:${POSTGRES_PASSWORD:-cvtailro}@postgres:5432/cvtailro
+      - REDIS_URL=redis://redis:6379/0
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
       - ADMIN_EMAILS=${ADMIN_EMAILS:-}
@@ -21,13 +22,20 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "2.0"
 
   postgres:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: cvtailro
-      POSTGRES_PASSWORD: cvtailro
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cvtailro}
       POSTGRES_DB: cvtailro
     ports:
       - "5432:5432"
@@ -39,6 +47,29 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
 volumes:
   pgdata:
+  redisdata:

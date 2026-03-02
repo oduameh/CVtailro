@@ -1,123 +1,127 @@
 # CVtailro — Project Context
 
 ## What This Is
+Production AI resume tailoring SaaS. Live at https://cvtailro-production.up.railway.app
+Users sign in with Google, upload a PDF resume + paste a job description, get back an AI-optimized resume in 3 PDF templates (Modern/Executive/Minimal) + DOCX + match report + interview talking points.
 
-A production-grade, multi-agent resume tailoring system with a web UI. Users upload a PDF resume, paste a job description, and get back ATS-optimised and recruiter-optimised resumes as professionally formatted PDFs, plus a match report and interview talking points.
-
-**Uses the OpenRouter API** as the LLM backend — supports 100+ models (Claude, GPT-4o, Gemini, Llama, etc.). Users provide their own API key via the web UI.
+**Business model**: Admin (Emmanuel) provides the OpenRouter API key. Users get the service for free. Admin pays API costs.
 
 ## Tech Stack
+- Python 3.13, Flask (app factory + blueprints), SQLAlchemy, Pydantic
+- PostgreSQL on Railway, Cloudflare R2 (file storage), Redis (optional)
+- Google OAuth (Authlib + Flask-Login)
+- OpenRouter API for LLM calls (default: GPT-4o-mini)
+- WeasyPrint (PDF), python-docx (DOCX)
+- Gunicorn (production WSGI), Docker + Railway deployment
+- CSRF (Flask-WTF), rate limiting (Flask-Limiter), Sentry (optional)
 
-- Python 3.13, Flask, Pydantic
-- WeasyPrint for PDF generation (requires system libs: cairo, pango, gdk-pixbuf)
-- pdfplumber for PDF text extraction
-- OpenRouter API for all LLM calls (via `requests` HTTP library)
-- Docker support + Railway deployment
-
-## Architecture
-
-7 agents in a sequential pipeline with parallelization:
-
+## Architecture — 6-Stage Pipeline
 ```
 Stages 1+2 PARALLEL: Job Intelligence + Resume Parser
-Stage 3: Gap Analysis (needs 1+2)
-Stage 4: Bullet Optimiser (needs 2+3) — slowest stage (~3-5 min)
-Stages 5+6 PARALLEL: ATS Optimiser + Recruiter Optimiser
-Stage 7: Final Assembly + talking points
+Stage 3: Gap Analysis (pure Python, instant)
+Stage 4: Bullet Optimiser (parallel per role if 3+ roles)
+Stages 5+6 PARALLEL: Resume Optimiser + Talking Points
+```
+One unified resume output (was two ATS+Recruiter, merged). All 3 PDF templates generated per job.
+
+## Project Structure
+```
+CVtailro/
+  app/                         # Flask application package
+    __init__.py                # create_app() factory, security headers, migrations
+    extensions.py              # db, login_manager, migrate, oauth, csrf, limiter
+    settings.py                # Dev/Prod/Testing config classes
+    middleware.py              # Structured logging, request IDs, Sentry
+    models/                    # SQLAlchemy ORM models
+      user.py                  # User (Google OAuth)
+      job.py                   # TailoringJob, JobFile
+      saved_resume.py          # SavedResume
+      admin_config.py          # AdminSetting (DB-backed config)
+    routes/                    # Flask blueprints
+      main.py                  # /, /api/health, /api/status, /api/models
+      api.py                   # /api/tailor, /api/result, /api/progress, /api/download
+      auth.py                  # Google OAuth login/logout/callback
+      admin.py                 # /admin panel and API
+      history.py               # /api/history
+      saved_resumes.py         # /api/saved-resumes CRUD
+    services/                  # Business logic
+      pipeline.py              # 6-stage pipeline orchestration, job storage, semaphore
+      file_service.py          # Download: local → R2 → DB fallback
+      admin_config.py          # AdminConfigManager (DB-first, file fallback)
+      usage.py                 # UsageTracker, LoginRateLimiter
+      cache.py                 # Redis wrapper with graceful fallback
+  agents/                      # Pipeline agents (unchanged)
+  prompts/                     # LLM prompt templates (unchanged)
+  config.py                    # Pipeline AppConfig, RECOMMENDED_MODELS
+  models.py                    # Pydantic schemas (JobAnalysis, ResumeData, etc.)
+  base_agent.py                # OpenRouter API calls, retries, JSON extraction
+  similarity.py                # TF-IDF cosine similarity
+  analytics.py                 # Token/cost tracking singleton
+  storage.py                   # Cloudflare R2 client
+  pdf_generator.py             # 3 CSS templates, markdown→HTML→PDF
+  docx_generator.py            # Markdown→DOCX (Calibri)
+  resume_quality.py            # Pure Python resume quality scoring
+  email_templates.py           # Follow-up email templates
+  keyword_density.py           # Keyword density analysis
+  templates/                   # Jinja2 templates (index.html, admin.html)
+  tests/                       # pytest suite (26 tests)
+  migrations/                  # Alembic (Flask-Migrate)
+  wsgi.py                      # Gunicorn entry point
+  .github/workflows/ci.yml     # GitHub Actions: lint + test
 ```
 
-Each agent: loads a prompt template from `prompts/`, calls OpenRouter API, parses JSON response, validates with Pydantic, runs optional post_process().
-
-## Key Files
-
+## Key Files (Pipeline)
 | File | Purpose |
 |------|---------|
-| `app.py` | Flask web server, SSE progress streaming, routes |
-| `orchestrator.py` | CLI entry point (alternative to web UI) |
-| `base_agent.py` | Abstract base class — OpenRouter API calls, JSON extraction, retries |
-| `models.py` | All Pydantic data contracts between agents |
-| `config.py` | AppConfig dataclass, RECOMMENDED_MODELS, DEFAULT_MODEL |
-| `pdf_generator.py` | Markdown→HTML→PDF with 3 templates (Executive/Modern/Minimal) |
-| `similarity.py` | Pure Python TF-IDF cosine similarity |
-| `utils.py` | File I/O, PDF extraction, logging |
-| `agents/*.py` | 7 agent implementations |
-| `prompts/*.txt` | Editable prompt templates with `{placeholder}` substitution |
-| `templates/index.html` | Single-page web UI with settings panel |
-| `railway.toml` | Railway deployment config |
+| `app/services/pipeline.py` | Pipeline orchestration, job state, semaphore |
+| `app/services/file_service.py` | Three-tier download (disk/R2/DB regeneration) |
+| `agents/resume_optimiser.py` | Stage 5: unified resume |
+| `agents/bullet_optimiser.py` | Stage 4: parallel per-role bullet rewriting |
+| `prompts/resume_optimiser.txt` | Unified ATS+Recruiter prompt |
+| `base_agent.py` | OpenRouter API calls, JSON fix, retries |
+| `config.py` | AppConfig, RECOMMENDED_MODELS, DEFAULT_MODEL |
 
 ## Running Locally
-
 ```bash
 cd /Users/emmanuel/Desktop/CVtailro
 source .venv/bin/activate
-python app.py
-# Open http://localhost:5050
-# Enter your OpenRouter API key in the Settings panel
+python app.py          # http://localhost:5050 (dev server)
+# or
+python wsgi.py         # same, via WSGI entry point
+# or
+gunicorn wsgi:application --bind 0.0.0.0:5050  # production mode
 ```
 
-## Running via CLI
-
+## Running Tests
 ```bash
-python orchestrator.py --job job.txt --resume resume.pdf --api-key sk-or-v1-...
-python orchestrator.py --job job.txt --resume resume.pdf --model openai/gpt-4o
-# Or set OPENROUTER_API_KEY env var instead of --api-key
+pytest tests/ -v       # 26 tests
+ruff check app/ tests/ # linting
 ```
 
-## Running via Docker
+## Deploying
+Push to GitHub → Railway auto-deploys via Dockerfile (Gunicorn).
+See SETUP.md for full infrastructure guide.
 
-```bash
-docker build -t cvtailro .
-docker run -p 5050:5050 cvtailro
-```
-
-## Deploying to Railway
-
-Push to GitHub and connect the repo to Railway. The `railway.toml` handles build config. No server-side environment variables needed — API keys come from the user's browser.
-
-## Known Issues & Current State
-
-### Working
-- Full pipeline end-to-end via web UI and CLI
-- PDF generation with 3 templates (Executive, Modern, Minimal)
-- Parallel stages 1+2 and 5+6
-- PDF resume input + text/markdown JD input
-- SSE real-time progress in browser
-- Template selector in UI (Executive/Modern/Minimal toggle)
-- Conservative vs Aggressive rewriting mode
-- Multi-model support via OpenRouter (Claude, GPT-4o, Gemini, etc.)
-- Settings panel with API key input + model selector (localStorage persistence)
-
-### Known Issues
-1. **Bullet Optimiser is slow** (~3-5 minutes). It's the most complex agent — rewrites every bullet with transferable skills framing. API timeout set to 600s.
-2. **PDF parser is fragile** — handles multiple markdown formats but agents sometimes produce new patterns. The parser in `pdf_generator.py` has grown complex with many regex branches for: `# Name`, `## Section`, `### Role | Company | Location | Date`, `**Title** | Company | Location`, `**Degree** — School | Date`, categorized skills (`**Category:** items`), horizontal rules, etc.
-3. **macOS port 5000** blocked by AirPlay — using port 5050 instead.
-4. **Flask binds to 0.0.0.0** for Docker/Railway compatibility.
-
-### Recent Improvements
-- Migrated from Claude Code CLI to OpenRouter API (supports 100+ models)
-- Added settings panel for API key and model selection
-- Slimmed Docker image (removed Node.js and Claude CLI)
-- Added Railway deployment support
-- Prompts rewritten for transferable skills framing (not just keyword stuffing)
-- Skills section capped at 20-30, grouped by category
-- 2-page resume limit enforced in prompts
-- QE fixes: thread safety, memory cleanup, file validation, SSE timeout, JSON regex
-- UI: gradient header, progress bar, copy button, favicon, mobile responsive, template selector
-
-## Prompt Engineering Notes
-
-The quality of the output depends entirely on the prompt templates in `prompts/`. Key design decisions:
-
-- **bullet_optimiser.txt**: Transferable skills strategy — reframes experience using target role's language. Includes good/bad rewrite examples. Anti-fabrication rules.
-- **ats_optimiser.txt**: Hard 2-page limit. Skills capped at 20-30, grouped by `**Category:** items`. Job titles kept authentic.
-- **recruiter_optimiser.txt**: Positions candidate for target role in summary without faking titles. "So what?" test on every bullet.
-- All prompts inject `{output_schema}` — the Pydantic model's JSON schema.
-- All prompts inject `{rewrite_mode}` for conservative/aggressive toggle.
+## Key Design Decisions
+1. Unified resume (not separate ATS/Recruiter) — one great resume > two decent ones
+2. All 3 templates generated per job — user picks when downloading
+3. Gap Analysis is pure Python (no LLM) — instant, saves API costs
+4. Bullet Optimiser splits by role (parallel) — 5min → 10sec
+5. Pipeline semaphore: max 5 concurrent, queue 50
+6. DB fallback: PDFs regenerated from stored markdown on demand
+7. Smart filenames: `Software_Engineer_Google_Modern.pdf`
+8. Post-tailoring score: shows before/after improvement
+9. Conservative mode: no longer auto-reverts flagged bullets (reframing ≠ fabrication)
+10. Free models unreliable — GPT-4o-mini is the default for reliability
+11. App factory pattern — `create_app()` for testability and clean config
+12. Admin config DB-backed — works across multiple instances/containers
+13. Structured JSON logging in production — request IDs for tracing
+14. Dark mode — CSS variables, localStorage persistence, system preference
 
 ## How to Extend
-
-1. Add a new agent: create model in `models.py`, prompt in `prompts/`, agent in `agents/`, wire into `app.py` pipeline.
-2. Modify agent behavior: edit the `.txt` file in `prompts/` — no code changes needed.
-3. Add a PDF template: add CSS constant in `pdf_generator.py`, add to `TEMPLATES` dict, add option in `templates/index.html`.
-4. Add a new model: add to `RECOMMENDED_MODELS` dict in `config.py` — the UI auto-populates from `/api/models`.
-5. The `base_agent.py` handles all OpenRouter API interaction — agents just implement `prepare_user_message()` and optionally `post_process()`.
+1. Modify prompts: edit `.txt` files in `prompts/` — no code changes
+2. Add PDF template: add CSS in `pdf_generator.py`, add to TEMPLATES dict
+3. Add new model: add to RECOMMENDED_MODELS in `config.py`
+4. New DB column: add to model in `app/models/`, run `flask db migrate`
+5. New route: create blueprint in `app/routes/`, register in `app/routes/__init__.py`
+6. New service: add to `app/services/`, import where needed

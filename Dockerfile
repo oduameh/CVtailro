@@ -44,4 +44,12 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
 # Use tini for proper signal handling (graceful shutdown)
 ENTRYPOINT ["tini", "--"]
 
-CMD ["python", "app.py"]
+# Gunicorn with 2 workers, 4 threads each for pipeline concurrency
+CMD ["gunicorn", "wsgi:application", \
+     "--bind", "0.0.0.0:5050", \
+     "--workers", "2", \
+     "--threads", "4", \
+     "--timeout", "300", \
+     "--keep-alive", "65", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-"]
