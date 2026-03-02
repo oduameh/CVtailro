@@ -281,8 +281,10 @@ class BaseAgent(ABC, Generic[T]):
                 else:
                     break
 
+        # Include the actual error so users/admins can diagnose the issue
+        cause = str(last_error) if last_error else "Unknown error"
         raise AgentError(
-            f"We couldn't complete this step after {self.MAX_RETRIES} attempts. Please try again in a moment."
+            f"We couldn't complete this step after {self.MAX_RETRIES} attempts. Last error: {cause}"
         ) from last_error
 
     @staticmethod
