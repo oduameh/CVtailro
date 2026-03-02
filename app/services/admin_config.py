@@ -57,7 +57,9 @@ def _try_load_from_db() -> AdminConfig | None:
             data[row.key] = row.value
         config = AdminConfig()
         if "api_key" in data and data["api_key"]:
-            config.api_key = data["api_key"]
+            # Reject masked/corrupted keys that were accidentally saved
+            if "..." not in data["api_key"]:
+                config.api_key = data["api_key"]
         if "default_model" in data and data["default_model"]:
             config.default_model = data["default_model"]
         if "allow_user_model_selection" in data:

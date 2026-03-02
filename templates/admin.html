@@ -1388,8 +1388,14 @@
         document.getElementById('authSection').style.display = 'none';
         document.getElementById('configSection').style.display = 'block';
 
-        // Populate fields
-        document.getElementById('apiKeyInput').value = config.api_key || '';
+        // Populate fields — show placeholder for masked keys, not the masked value
+        var apiInput = document.getElementById('apiKeyInput');
+        if (config.api_key && config.api_key.includes('...')) {
+            apiInput.value = '';
+            apiInput.placeholder = config.api_key + ' (saved — enter new key to change)';
+        } else {
+            apiInput.value = config.api_key || '';
+        }
         document.getElementById('allowUserModel').checked = config.allow_user_model_selection !== false;
         document.getElementById('rateLimit').value = config.rate_limit_per_hour || 0;
         document.getElementById('lastUpdated').textContent = config.updated_at || 'Never';

@@ -113,7 +113,10 @@ def admin_save_config():
     config = AdminConfigManager.load()
 
     if "api_key" in data:
-        config.api_key = data["api_key"]
+        new_key = data["api_key"].strip()
+        # Only update the key if user entered a real key (not the masked placeholder)
+        if new_key and "..." not in new_key:
+            config.api_key = new_key
     if "default_model" in data:
         config.default_model = data["default_model"]
     if "allow_user_model_selection" in data:
