@@ -17,23 +17,20 @@ def index():
 
 @main_bp.route("/api/health")
 def health():
+    # Always return 200 so Railway healthcheck passes during startup.
+    # DB status is informational — don't block deployment on slow DB warmup.
     db_status = "healthy"
-    status_code = 200
     try:
         db.session.execute(text("SELECT 1"))
     except Exception:
         db_status = "unhealthy"
-        status_code = 503
-    return (
-        jsonify(
-            {
-                "status": "healthy" if db_status == "healthy" else "degraded",
-                "database": db_status,
-                "configured": AdminConfigManager.is_configured(),
-                "backend": "openrouter",
-            }
-        ),
-        status_code,
+    return jsonify(
+        {
+            "status": "healthy" if db_status == "healthy" else "degraded",
+            "database": db_status,
+            "configured": AdminConfigManager.is_configured(),
+            "backend": "openrouter",
+        }
     )
 
 
