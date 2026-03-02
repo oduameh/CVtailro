@@ -196,10 +196,12 @@ def login():
         return jsonify({"error": "Invalid email or password."}), 401
 
     if not user.email_verified:
-        return jsonify({
-            "error": "Please verify your email before signing in.",
-            "needs_verification": True,
-        }), 403
+        return jsonify(
+            {
+                "error": "Please verify your email before signing in.",
+                "needs_verification": True,
+            }
+        ), 403
 
     login_rate_limiter.reset(ip)
     user.last_login_at = datetime.now(timezone.utc)

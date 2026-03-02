@@ -242,9 +242,7 @@ def _apply_column_migrations() -> None:
         for col_name, col_type in user_new_columns:
             if col_name not in user_columns:
                 try:
-                    db.session.execute(
-                        text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}")
-                    )
+                    db.session.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}"))
                     db.session.commit()
                     logger.info(f"Added users.{col_name} column")
                 except Exception as e:
@@ -253,9 +251,7 @@ def _apply_column_migrations() -> None:
 
         # Make google_id nullable (was NOT NULL for Google-only auth)
         try:
-            db.session.execute(
-                text("ALTER TABLE users ALTER COLUMN google_id DROP NOT NULL")
-            )
+            db.session.execute(text("ALTER TABLE users ALTER COLUMN google_id DROP NOT NULL"))
             db.session.commit()
         except Exception:
             db.session.rollback()  # Already nullable or SQLite (no ALTER support)
