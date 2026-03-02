@@ -145,12 +145,13 @@
         .theme-toggle .icon-moon { display: block; }
 
         .site-logo {
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 22px;
+            font-weight: 700;
             text-decoration: none;
             display: flex;
             align-items: center;
             gap: 0;
+            letter-spacing: -0.5px;
         }
 
         .site-logo .cv { color: var(--primary); }
@@ -160,11 +161,11 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 8px 20px;
+            padding: 10px 22px;
             background: var(--primary);
             color: #fff;
             border: none;
-            border-radius: var(--radius);
+            border-radius: 10px;
             font-size: 14px;
             font-weight: 600;
             font-family: inherit;
@@ -182,7 +183,7 @@
             background: var(--bg);
             color: var(--text);
             text-align: center;
-            padding: 56px 24px 48px;
+            padding: 72px 24px 48px;
         }
 
         @keyframes pulse {
@@ -191,29 +192,38 @@
         }
 
         .hero-inner {
-            max-width: 560px;
+            max-width: 640px;
             margin: 0 auto;
         }
 
         .hero h1 {
-            font-size: 32px;
-            font-weight: 600;
-            letter-spacing: -0.5px;
-            line-height: 1.25;
-            margin-bottom: 12px;
+            font-size: 44px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            line-height: 1.15;
+            margin-bottom: 20px;
             color: var(--text);
         }
 
         .hero-highlight {
-            color: var(--primary);
+            background: linear-gradient(135deg, var(--primary), #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        html.dark .hero-highlight {
+            background: linear-gradient(135deg, #60a5fa, #93c5fd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .hero-sub {
-            font-size: 16px;
+            font-size: 17px;
             color: var(--text-secondary);
-            line-height: 1.6;
-            max-width: 480px;
-            margin: 0 auto 32px;
+            line-height: 1.7;
+            max-width: 520px;
+            margin: 0 auto 40px;
         }
 
         .hero-stats {
@@ -289,7 +299,7 @@
 
         /* --- Container --- */
         .container {
-            max-width: 720px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 32px 24px 64px;
         }
@@ -298,16 +308,16 @@
         .card {
             background: var(--card);
             border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 28px;
-            margin-bottom: 20px;
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
         }
 
         .card h2 {
-            font-size: 15px;
-            font-weight: 600;
+            font-size: 16px;
+            font-weight: 700;
             color: var(--text);
-            margin-bottom: 16px;
+            margin-bottom: 20px;
         }
 
         /* --- Form Layout: side by side --- */
@@ -325,29 +335,30 @@
         /* --- Upload Zone --- */
         .upload-zone {
             border: 2px dashed var(--border);
-            border-radius: var(--radius);
-            padding: 40px 24px;
+            border-radius: 12px;
+            padding: 48px 28px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s ease;
             position: relative;
-            background: var(--primary-bg);
+            background: var(--bg);
         }
 
         .upload-zone:hover {
             border-color: var(--primary);
-            background: var(--accent-light);
+            background: var(--primary-bg);
         }
 
         .upload-zone.dragover {
             border-color: var(--primary);
-            background: var(--accent-light);
+            background: var(--primary-bg);
+            border-style: solid;
         }
 
         .upload-zone.has-file {
             border-style: solid;
             border-color: var(--primary);
-            background: var(--accent-light);
+            background: var(--primary-bg);
         }
 
         .upload-zone input[type="file"] {
@@ -358,27 +369,29 @@
         }
 
         .upload-icon {
-            width: 48px;
-            height: 48px;
-            margin: 0 auto 12px;
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 16px;
             display: flex;
             align-items: center;
             justify-content: center;
+            background: var(--primary-bg);
+            border-radius: 14px;
         }
 
         .upload-icon svg {
-            width: 44px;
-            height: 44px;
-            color: var(--text-tertiary);
-            stroke-width: 1.2;
+            width: 28px;
+            height: 28px;
+            color: var(--primary);
+            stroke-width: 1.5;
         }
 
-        .upload-zone.has-file .upload-icon svg {
-            color: var(--primary);
+        .upload-zone.has-file .upload-icon {
+            background: rgba(37, 99, 235, 0.15);
         }
 
         .upload-label {
-            font-size: 14px;
+            font-size: 15px;
             color: var(--text-secondary);
             line-height: 1.5;
         }
@@ -416,7 +429,7 @@
             width: 100%;
             min-height: 200px;
             border: 1px solid var(--border);
-            border-radius: var(--radius);
+            border-radius: 12px;
             padding: 16px;
             font-family: inherit;
             font-size: 15px;
@@ -516,22 +529,24 @@
 
         .btn-run {
             width: 100%;
-            max-width: 400px;
-            padding: 14px 28px;
+            max-width: 440px;
+            padding: 16px 32px;
             background: var(--primary);
             color: #fff;
             border: none;
-            border-radius: var(--radius);
-            font-size: 15px;
-            font-weight: 600;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
             font-family: inherit;
             cursor: pointer;
-            transition: background 0.2s;
-            min-height: 48px;
+            transition: background 0.2s, box-shadow 0.2s;
+            min-height: 52px;
+            letter-spacing: -0.01em;
         }
 
         .btn-run:hover:not(:disabled) {
             background: var(--primary-hover);
+            box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
         }
 
         .btn-run:disabled {
@@ -723,20 +738,20 @@
         /* --- Circular Score --- */
         .score-section {
             text-align: center;
-            padding: 32px 24px;
+            padding: 36px 24px;
         }
 
         .score-ring-wrap {
             display: inline-block;
             position: relative;
-            width: 160px;
-            height: 160px;
-            margin-bottom: 12px;
+            width: 140px;
+            height: 140px;
+            margin-bottom: 16px;
         }
 
         .score-ring-wrap svg {
-            width: 160px;
-            height: 160px;
+            width: 140px;
+            height: 140px;
             transform: rotate(-90deg);
         }
 
@@ -758,8 +773,8 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 36px;
-            font-weight: 600;
+            font-size: 32px;
+            font-weight: 700;
             color: var(--text);
             letter-spacing: -0.5px;
         }
@@ -838,30 +853,32 @@
 
         /* --- Downloads --- */
         .downloads-heading {
-            font-size: 16px;
-            font-weight: 600;
+            font-size: 18px;
+            font-weight: 700;
             color: var(--text);
-            margin-bottom: 16px;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
         }
 
         .template-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin: 16px 0;
+            gap: 14px;
+            margin: 20px 0;
         }
         .template-card {
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 20px;
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            padding: 24px 16px;
             text-align: center;
             cursor: pointer;
-            transition: border-color 0.2s, background 0.2s;
+            transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
             background: var(--card);
         }
         .template-card:hover {
             border-color: var(--primary);
-            background: var(--accent-light);
+            background: var(--primary-bg);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
         }
         .template-card:hover .template-name {
             color: var(--primary);
@@ -1099,20 +1116,21 @@
         }
 
         .btn-again {
-            padding: 12px 28px;
+            padding: 14px 32px;
             background: var(--primary);
             color: #fff;
             border: none;
-            border-radius: var(--radius);
-            font-size: 15px;
-            font-weight: 600;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: background 0.2s, box-shadow 0.2s;
             font-family: inherit;
         }
 
         .btn-again:hover {
             background: var(--primary-hover);
+            box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
         }
 
         /* --- Footer --- */
@@ -1295,11 +1313,12 @@
 
             /* Hero: tighter padding on mobile */
             .hero {
-                padding: 32px 20px 28px;
+                padding: 40px 20px 32px;
             }
 
             .hero h1 {
-                font-size: 24px;
+                font-size: 30px;
+                letter-spacing: -0.5px;
             }
 
             .hero-sub {
@@ -1328,8 +1347,9 @@
 
             /* Cards: tighter padding */
             .card {
-                padding: 16px;
+                padding: 20px;
                 margin-bottom: 16px;
+                border-radius: 14px;
             }
 
             /* Form layout: stack vertically */
@@ -2080,7 +2100,7 @@
 
         /* --- Small phones (iPhone SE, older Androids) --- */
         @media (max-width: 375px) {
-            .hero h1 { font-size: 26px; }
+            .hero h1 { font-size: 28px; }
             .hero-sub { font-size: 14px; }
             .hero-stats { padding: 14px 20px; }
             .hero-stat-value { font-size: 20px; }
@@ -2307,8 +2327,8 @@
     <!-- Hero -->
     <section class="hero">
         <div class="hero-inner">
-            <h1>Land interviews faster with a <span class="hero-highlight">perfectly tailored</span> resume</h1>
-            <p class="hero-sub">Upload your resume and paste any job description. Our AI optimizes every bullet point, matches ATS keywords, and delivers interview prep — all in under 2 minutes.</p>
+            <h1>AI Resume Tailoring.<br><span class="hero-highlight">Getting you hired.</span></h1>
+            <p class="hero-sub">Upload your resume, paste a job description, and get an ATS-optimized resume with 3 templates, keyword matching, and interview prep — in 2 minutes.</p>
             <div class="hero-stats">
                 <div class="hero-stat">
                     <div class="hero-stat-value">3</div>
@@ -2332,10 +2352,10 @@
     </div>
 
     <!-- Demo Banner -->
-    <div style="max-width:960px;margin:24px auto 0;text-align:center;">
-        <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:var(--primary-bg);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text-secondary);font-weight:500;">
-            <span style="width:6px;height:6px;border-radius:50%;background:var(--primary);display:inline-block;animation:pulse 2s ease-in-out infinite;"></span>
-            Live — Tailor as many resumes as you want
+    <div style="max-width:960px;margin:0 auto;text-align:center;padding-bottom:8px;">
+        <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;font-size:12px;color:var(--text-tertiary);font-weight:500;">
+            <span style="width:6px;height:6px;border-radius:50%;background:#059669;display:inline-block;animation:pulse 2s ease-in-out infinite;"></span>
+            Free &amp; unlimited — no credit card needed
         </div>
     </div>
 
