@@ -30,7 +30,7 @@ from agents.gap_analysis import GapAnalysisAgent
 from agents.job_intelligence import JobIntelligenceAgent
 from agents.resume_optimiser import ResumeOptimiserAgent
 from agents.resume_parser import ResumeParserAgent
-from config import AppConfig, DEFAULT_MODEL
+from config import DEFAULT_MODEL, AppConfig
 from models import (
     ATSResume,
     GapReport,
@@ -48,6 +48,8 @@ from utils import (
     save_markdown,
     setup_logging,
 )
+
+logger = logging.getLogger("cvtailro.orchestrator")
 
 STAGE_ORDER = [
     "job_intelligence",
@@ -177,7 +179,6 @@ def run_pipeline(args: argparse.Namespace) -> None:
 
     output_dir = create_output_dir(config.output_dir)
     setup_logging(verbose=config.verbose, log_file=output_dir / "pipeline.log")
-    logger = logging.getLogger("orchestrator")
 
     logger.info("=" * 60)
     logger.info("CVtailro: Multi-Agent Resume Tailoring System")
@@ -482,7 +483,7 @@ def main() -> None:
         print(f"File error: {e}", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
-        logging.getLogger("orchestrator").exception("Pipeline failed")
+        logger.exception("Pipeline failed")
         print(f"Pipeline error: {e}", file=sys.stderr)
         sys.exit(1)
 

@@ -6,15 +6,16 @@ import logging
 import platform as platform_mod
 import resource as resource_mod
 import threading
+from datetime import datetime, timedelta, timezone
 
 import requests as http_requests
 from flask import Blueprint, jsonify, render_template, request, session
 from flask_login import current_user
-from sqlalchemy import func
+from sqlalchemy import func, case
 
 from analytics import pipeline_analytics
 from app.extensions import csrf, db, limiter
-from app.models import TailoringJob, User
+from app.models import SavedResume, TailoringJob, User
 from app.services.admin_config import AdminConfigManager
 from app.services.pipeline import (
     MAX_CONCURRENT_PIPELINES,
@@ -261,3 +262,121 @@ def admin_live_stats():
         "analytics_stats": pipeline_analytics.get_global_stats(),
         "recent_errors_count": recent_errors_count,
     })
+
+
+@admin_bp.route("/admin/api/stats")
+@_admin_required
+def admin_stats():
+    """Comprehensive stats: jobs by status, time trends, success rate, saved resumes."""
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = today_start - timedelta(days=7)
+    month_start = today_start - timedelta(days=30)
+
+    # Jobs by status
+    status_counts = (
+        db.session.query(TailoringJob.status, func.count(TailoringJob.id))
+        .group_by(TailoringJob.status)
+        .all()
+    )
+    jobs_by_status = {s: c for s, c in status_counts}
+
+    # Time-based counts
+    jobs_today = TailoringJob.query.filter(TailoringJob.created_at >= today_start).count()
+    jobs_this_week = TailoringJob.query.filter(TailoringJob.created_at >= week_start).count()
+    jobs_this_month = TailoringJob.query.filter(TailoringJob.created_at >= month_start).count()
+
+    # Success rate (completed jobs with resume)
+    completed = jobs_by_status.get("completed", 0)
+    errors = jobs_by_status.get("error", 0)
+    total_finished = completed + errors
+    success_rate = (completed / total_finished * 100) if total_finished > 0 else 100.0
+
+    # Match score improvement (avg before vs after)
+    score_improvement = (
+        db.session.query(
+            func.avg(
+                case(
+                    (
+                        (TailoringJob.match_score.isnot(None))
+                        & (TailoringJob.original_match_score.isnot(None)),
+                        TailoringJob.match_score - TailoringJob.original_match_score,
+                    ),
+                    else_=None,
+                )
+            )
+        ).scalar()
+    )
+    avg_improvement = round(float(score_improvement or 0), 1)
+
+    # Saved resumes count
+    saved_resumes_count = SavedResume.query.count()
+
+    total_jobs = sum(jobs_by_status.values())
+
+    return jsonify({
+        "total_jobs": total_jobs,
+        "jobs_by_status": jobs_by_status,
+        "jobs_today": jobs_today,
+        "jobs_this_week": jobs_this_week,
+        "jobs_this_month": jobs_this_month,
+        "success_rate": round(success_rate, 1),
+        "avg_match_improvement": avg_improvement,
+        "saved_resumes_count": saved_resumes_count,
+    })
+
+
+@admin_bp.route("/admin/api/recent-jobs")
+@_admin_required
+def admin_recent_jobs():
+    """Last 20 jobs across all users (for dashboard activity)."""
+    jobs = (
+        TailoringJob.query
+        .order_by(TailoringJob.created_at.desc())
+        .limit(20)
+        .all()
+    )
+    user_ids = [j.user_id for j in jobs if j.user_id]
+    users_by_id = {u.id: u for u in User.query.filter(User.id.in_(user_ids)).all()} if user_ids else {}
+
+    return jsonify({
+        "jobs": [
+            {
+                "id": j.id,
+                "status": j.status,
+                "job_title": j.job_title,
+                "company": j.company,
+                "match_score": j.match_score,
+                "user_email": (users_by_id[j.user_id].email if j.user_id in users_by_id else "Anonymous"),
+                "user_name": (users_by_id[j.user_id].name if j.user_id in users_by_id else "—"),
+                "created_at": j.created_at.isoformat() if j.created_at else None,
+                "duration_seconds": j.duration_seconds,
+            }
+            for j in jobs
+        ],
+    })
+
+
+@admin_bp.route("/admin/api/errors/clear", methods=["POST"])
+@_admin_required
+def admin_clear_errors():
+    """Clear the pipeline error log."""
+    with pipeline_errors_lock:
+        pipeline_errors.clear()
+    return jsonify({"ok": True})
+
+
+@admin_bp.route("/admin/api/users/<user_id>/admin", methods=["POST"])
+@_admin_required
+def admin_set_user_admin(user_id: str):
+    """Promote or demote a user to/from admin."""
+    data = request.get_json(force=True) or {}
+    is_admin = bool(data.get("is_admin", False)) if data else False
+
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    user.is_admin = is_admin
+    db.session.commit()
+    return jsonify({"ok": True, "user_id": user_id, "is_admin": is_admin})

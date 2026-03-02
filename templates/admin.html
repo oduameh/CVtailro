@@ -319,6 +319,7 @@
         .metric-icon.orange { background: rgba(225,112,85,0.1); }
         .metric-icon.blue { background: rgba(9,132,227,0.1); }
         .metric-icon.yellow { background: rgba(253,203,110,0.15); }
+        .insights-grid { grid-template-columns: repeat(4, 1fr); }
         .metric-value {
             font-size: 28px;
             font-weight: 800;
@@ -673,6 +674,9 @@
             .metrics-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
+            .insights-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
             .sys-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
@@ -831,15 +835,57 @@
                     </div>
                 </div>
 
+                <!-- Insights Row -->
+                <div class="metrics-grid insights-grid">
+                    <div class="metric-card">
+                        <div class="metric-icon green">&#128200;</div>
+                        <div class="metric-value" id="dashJobsToday">--</div>
+                        <div class="metric-label">Jobs Today</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon blue">&#128197;</div>
+                        <div class="metric-value" id="dashJobsWeek">--</div>
+                        <div class="metric-label">Jobs This Week</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon purple">&#128203;</div>
+                        <div class="metric-value" id="dashSuccessRate">--</div>
+                        <div class="metric-label">Success Rate</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon orange">&#128201;</div>
+                        <div class="metric-value" id="dashMatchImprovement">--</div>
+                        <div class="metric-label">Avg Match Improvement</div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header">
+                        <h2>Service Snapshot</h2>
+                        <button class="btn btn-sm btn-secondary" onclick="loadStats(); loadRecentJobs(); loadUsersList();">Refresh</button>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                        <div>
+                            <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px;">Saved Resumes</div>
+                            <div style="font-size:20px;font-weight:800;color:var(--accent);" id="dashSavedResumes">--</div>
+                        </div>
+                        <div>
+                            <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px;">Jobs This Month</div>
+                            <div style="font-size:20px;font-weight:800;color:var(--accent);" id="dashJobsMonth">--</div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Recent Activity -->
                 <div class="card">
                     <div class="card-header">
-                        <h2>Recent Signups</h2>
+                        <h2>Recent Jobs</h2>
+                        <button class="btn btn-sm btn-secondary" onclick="loadRecentJobs()">Refresh</button>
                     </div>
                     <div id="recentActivity">
                         <div class="empty-state">
-                            <div class="empty-icon">&#128101;</div>
-                            <div>Loading recent activity...</div>
+                            <div class="empty-icon">&#128196;</div>
+                            <div>Loading recent jobs...</div>
                         </div>
                     </div>
                 </div>
@@ -1012,7 +1058,10 @@
                 <div class="card">
                     <div class="card-header">
                         <h2>Error Log</h2>
-                        <button class="btn btn-sm btn-secondary" onclick="loadErrors()">Refresh</button>
+                        <div class="btn-row">
+                            <button class="btn btn-sm btn-secondary" onclick="loadErrors()">Refresh</button>
+                            <button class="btn btn-sm btn-danger" onclick="clearErrors()">Clear Log</button>
+                        </div>
                     </div>
                     <div id="errorLog" style="max-height:600px;overflow-y:auto;">
                         <div style="color:var(--text-secondary);font-size:13px;">Loading...</div>
@@ -1271,6 +1320,8 @@
         loadUsage();
         loadAnalytics();
         loadErrors();
+        loadStats();
+        loadRecentJobs();
         loadUsersList();
         loadLiveStats();
         switchTab('dashboard');
@@ -1311,6 +1362,78 @@
         } catch(e) {}
     }
 
+    async function loadStats() {
+        try {
+            var r = await fetch('/admin/api/stats');
+            if (!r.ok) return;
+            var d = await r.json();
+            var el = function(id) { return document.getElementById(id); };
+            if (el('dashJobsToday')) el('dashJobsToday').textContent = d.jobs_today || 0;
+            if (el('dashJobsWeek')) el('dashJobsWeek').textContent = d.jobs_this_week || 0;
+            if (el('dashJobsMonth')) el('dashJobsMonth').textContent = d.jobs_this_month || 0;
+            if (el('dashSuccessRate')) {
+                el('dashSuccessRate').textContent = (d.success_rate || 0) + '%';
+                el('dashSuccessRate').className = 'metric-value ' + (d.success_rate >= 90 ? 'status-good' : d.success_rate >= 70 ? '' : 'status-bad');
+            }
+            if (el('dashMatchImprovement')) {
+                var imp = d.avg_match_improvement || 0;
+                el('dashMatchImprovement').textContent = (imp >= 0 ? '+' : '') + imp + '%';
+                el('dashMatchImprovement').className = 'metric-value ' + (imp > 0 ? 'status-good' : '');
+            }
+            if (el('dashSavedResumes')) el('dashSavedResumes').textContent = d.saved_resumes_count || 0;
+        } catch(e) {}
+    }
+
+    async function loadRecentJobs() {
+        try {
+            var r = await fetch('/admin/api/recent-jobs');
+            if (!r.ok) return;
+            var d = await r.json();
+            var el = document.getElementById('recentActivity');
+            if (!el) return;
+            if (!d.jobs || d.jobs.length === 0) {
+                el.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128196;</div><div>No jobs yet.</div></div>';
+                return;
+            }
+            el.innerHTML = d.jobs.map(function(j) {
+                var score = j.match_score != null ? Math.round(j.match_score) + '%' : '--';
+                var scoreColor = j.match_score >= 80 ? 'var(--success)' : j.match_score >= 50 ? '#F59E0B' : 'var(--text-secondary)';
+                var statusColor = j.status === 'completed' ? 'var(--success)' : j.status === 'error' ? 'var(--error)' : 'var(--text-secondary)';
+                var date = j.created_at ? new Date(j.created_at).toLocaleDateString() + ' ' + new Date(j.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+                return '<div class="activity-item">' +
+                    '<div class="activity-avatar" style="background:rgba(108,92,231,0.15);color:var(--accent);">' + (j.job_title || '?').substring(0, 1).toUpperCase() + '</div>' +
+                    '<div style="flex:1;min-width:0;">' +
+                        '<div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(j.job_title || 'Untitled') + (j.company ? ' at ' + escapeHtml(j.company) : '') + '</div>' +
+                        '<div style="font-size:12px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(j.user_name || j.user_email || 'Anonymous') + ' &middot; ' + date + '</div>' +
+                    '</div>' +
+                    '<div style="text-align:right;">' +
+                        '<div style="font-size:13px;font-weight:600;color:' + statusColor + ';">' + escapeHtml(j.status) + '</div>' +
+                        '<div style="font-size:14px;font-weight:700;color:' + scoreColor + ';">' + score + '</div>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        } catch(e) {}
+    }
+
+    async function clearErrors() {
+        if (!confirm('Clear all errors from the log?')) return;
+        try {
+            var r = await fetch('/admin/api/errors/clear', { method: 'POST', headers: {'Content-Type': 'application/json'} });
+            if (r.ok) loadErrors();
+        } catch(e) {}
+    }
+
+    async function setUserAdmin(userId, isAdmin) {
+        try {
+            var r = await fetch('/admin/api/users/' + userId + '/admin', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ is_admin: isAdmin })
+            });
+            if (r.ok) loadUsersList();
+        } catch(e) {}
+    }
+
     async function loadAnalytics() {
         try {
             var r = await fetch('/admin/api/analytics');
@@ -1343,6 +1466,8 @@
             var tableEl = document.getElementById('analyticsModelTable');
             var models = d.jobs_by_model || {};
             var tokensByModel = d.tokens_by_model || {};
+            var totalTokens = d.total_tokens || 0;
+            var totalCost = d.total_cost_usd || 0;
             var modelNames = Object.keys(models);
 
             if (modelNames.length === 0) {
@@ -1356,11 +1481,12 @@
             if (maxJobs < 1) maxJobs = 1;
 
             var html = '<table class="analytics-table">';
-            html += '<thead><tr><th>Model</th><th class="num">Jobs</th><th class="num">Tokens</th><th style="width:30%"></th></tr></thead>';
+            html += '<thead><tr><th>Model</th><th class="num">Jobs</th><th class="num">Tokens</th><th class="num">Est. Cost</th><th style="width:25%"></th></tr></thead>';
             html += '<tbody>';
             modelNames.forEach(function(model) {
                 var jobs = models[model] || 0;
                 var toks = tokensByModel[model] || 0;
+                var costShare = totalTokens > 0 ? (toks / totalTokens) * totalCost : 0;
                 var barWidth = Math.max(2, Math.round((jobs / maxJobs) * 100));
                 var shortName = model.split('/').pop().replace(/:free$/, ' (free)');
                 var tokStr = toks >= 1000000 ? (toks / 1000000).toFixed(1) + 'M' :
@@ -1369,6 +1495,7 @@
                 html += '<td title="' + model + '" style="font-weight:500;">' + shortName + '</td>';
                 html += '<td class="num">' + jobs + '</td>';
                 html += '<td class="num">' + tokStr + '</td>';
+                html += '<td class="num">$' + costShare.toFixed(4) + '</td>';
                 html += '<td><span class="analytics-bar" style="width:' + barWidth + '%"></span></td>';
                 html += '</tr>';
             });
@@ -1504,49 +1631,29 @@
                 var pic = u.picture
                     ? '<img src="' + u.picture + '" style="width:36px;height:36px;border-radius:50%;object-fit:cover;" alt="">'
                     : '<div class="activity-avatar">' + initials + '</div>';
+                var adminBadge = u.is_admin ? '<span style="font-size:10px;background:var(--accent);color:#fff;padding:2px 6px;border-radius:4px;margin-left:4px;">Admin</span>' : '';
+                var adminBtn = u.is_admin
+                    ? '<button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();setUserAdmin(\'' + u.id + '\',false)" title="Demote from admin">Demote</button>'
+                    : '<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();setUserAdmin(\'' + u.id + '\',true)" title="Promote to admin">Admin</button>';
                 return '<div class="user-card" data-name="' + (u.name || '').toLowerCase() + '" data-email="' + (u.email || '').toLowerCase() + '" data-user-id="' + escapeHtml(u.id) + '" onclick="loadUserJobs(this.dataset.userId)">' +
                     pic +
                     '<div style="flex:1;min-width:0;">' +
-                        '<div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(u.name || 'Unknown') + '</div>' +
+                        '<div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(u.name || 'Unknown') + adminBadge + '</div>' +
                         '<div style="font-size:12px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(u.email || '') + '</div>' +
                     '</div>' +
-                    '<div style="text-align:right;">' +
-                        '<div style="font-size:18px;font-weight:800;color:var(--accent);">' + u.jobs_count + '</div>' +
-                        '<div style="font-size:11px;color:var(--text-secondary);">jobs</div>' +
+                    '<div style="display:flex;align-items:center;gap:12px;">' +
+                        '<div style="text-align:right;">' +
+                            '<div style="font-size:18px;font-weight:800;color:var(--accent);">' + u.jobs_count + '</div>' +
+                            '<div style="font-size:11px;color:var(--text-secondary);">jobs</div>' +
+                        '</div>' +
+                        adminBtn +
                     '</div>' +
                 '</div>';
             }).join('');
 
-            // Populate recent activity on dashboard (last 5 signups)
-            populateRecentActivity(d.users);
         } catch(e) {
             console.error('Failed to load users:', e);
         }
-    }
-
-    function populateRecentActivity(users) {
-        var el = document.getElementById('recentActivity');
-        if (!el) return;
-        // Take last 5 (most recent at end of array, or we show the last 5 from the list)
-        var recent = users.slice(-5).reverse();
-        if (recent.length === 0) {
-            el.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128101;</div><div>No users yet.</div></div>';
-            return;
-        }
-        el.innerHTML = recent.map(function(u) {
-            var initials = (u.name || u.email || '?').substring(0, 2).toUpperCase();
-            var pic = u.picture
-                ? '<div class="activity-avatar"><img src="' + u.picture + '" alt=""></div>'
-                : '<div class="activity-avatar">' + initials + '</div>';
-            return '<div class="activity-item">' +
-                pic +
-                '<div style="flex:1;min-width:0;">' +
-                    '<div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (u.name || 'Unknown') + '</div>' +
-                    '<div style="font-size:12px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (u.email || '') + '</div>' +
-                '</div>' +
-                '<div style="font-size:13px;font-weight:600;color:var(--accent);">' + u.jobs_count + ' jobs</div>' +
-            '</div>';
-        }).join('');
     }
 
     async function loadUserJobs(userId) {

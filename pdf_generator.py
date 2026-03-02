@@ -18,8 +18,6 @@ import re
 import time
 from pathlib import Path
 
-import markdown as md_lib
-
 if platform.system() == "Darwin":
     homebrew_lib = "/opt/homebrew/lib"
     if os.path.isdir(homebrew_lib):

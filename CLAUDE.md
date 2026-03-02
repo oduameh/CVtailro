@@ -24,6 +24,11 @@ Stages 5+6 PARALLEL: Resume Optimiser + Talking Points
 ```
 One unified resume output (was two ATS+Recruiter, merged). All 3 PDF templates generated per job.
 
+## Documentation
+- [README.md](README.md) — Public overview, quick start
+- [ARCHITECTURE.md](ARCHITECTURE.md) — Technical architecture for maintainers
+- [SETUP.md](SETUP.md) — Infrastructure and deployment
+
 ## Project Structure
 ```
 CVtailro/

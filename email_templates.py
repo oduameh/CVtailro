@@ -7,6 +7,7 @@ Three templates:
 """
 
 from __future__ import annotations
+
 from dataclasses import dataclass
 
 
@@ -32,12 +33,6 @@ def generate_follow_up_templates(
         skills_mention = f", particularly in {key_skills[0]} and {key_skills[1]}"
     elif key_skills and len(key_skills) >= 1:
         skills_mention = f", particularly in {key_skills[0]}"
-
-    talking_point = ""
-    if talking_points and len(talking_points) > 0:
-        talking_point = talking_points[0]
-
-    first_name = candidate_name.split()[0] if candidate_name else "there"
 
     templates = [
         EmailTemplate(

@@ -585,7 +585,7 @@ def run_pipeline_job(
         threading.Thread(target=_delayed_result_cleanup, args=(job_id,), daemon=True).start()
 
     except Exception as e:
-        logging.getLogger("pipeline").exception("Pipeline failed")
+        logging.getLogger("cvtailro.pipeline").exception("Pipeline failed")
         error_msg = str(e)
         pipeline_analytics.complete_job(job_id)
         import traceback

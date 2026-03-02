@@ -56,7 +56,8 @@ def google_callback():
         user.picture_url = picture
         user.email = email
 
-    user.is_admin = email in _get_admin_emails()
+    # Admin: env list takes precedence; otherwise respect DB (allows admin panel promotion)
+    user.is_admin = email in _get_admin_emails() or user.is_admin
     user.last_login_at = datetime.now(timezone.utc)
     db.session.commit()
     login_user(user, remember=True)

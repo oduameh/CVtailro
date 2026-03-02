@@ -1,20 +1,19 @@
-"""Legacy entry point — delegates to wsgi.py / create_app().
+"""Development entry point.
 
-Kept for backward compatibility with existing deployment configs.
-Use `python wsgi.py` or `gunicorn wsgi:application` for new deployments.
+Use `python app.py` for local dev, or `gunicorn wsgi:application` for production.
+Logging is configured by create_app() via init_structured_logging().
 """
 
 import os
-import logging
 
-from utils import setup_logging
 from app import create_app
 
-setup_logging(verbose=False)
 app = create_app()
 
 if __name__ == "__main__":
+    import logging
+
     port = int(os.environ.get("PORT", 5050))
-    logging.getLogger("cvtailro").info(f"Starting CVtailro on port {port}")
+    logging.getLogger("cvtailro").info("Starting CVtailro on port %s", port)
     print(f"\n  CVtailro Web UI\n  {'─' * 15}\n  Open http://localhost:{port} in your browser\n")
     app.run(host="0.0.0.0", port=port, debug=False, threaded=True)

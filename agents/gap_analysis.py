@@ -150,9 +150,7 @@ class GapAnalysisAgent:
             ):
                 return True
             # Substring match for multi-word skills
-            if len(sl.split()) > 1 and sl in resume_text_lower:
-                return True
-            return False
+            return len(sl.split()) > 1 and sl in resume_text_lower
 
         missing_keywords = [
             s for s in required + preferred + tools if not skill_in_resume(s)

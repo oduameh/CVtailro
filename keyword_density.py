@@ -5,6 +5,7 @@ appears in the job description vs the resume (before and after tailoring).
 """
 
 from __future__ import annotations
+
 import re
 from collections import Counter
 from dataclasses import dataclass, field
@@ -76,7 +77,7 @@ def analyze_keyword_density(
                        "other", "than", "into", "over", "such", "what", "when",
                        "where", "which", "who", "how", "all", "each", "every",
                        "both", "few", "most", "any", "can", "may", "must", "shall",
-                       "not", "only", "own", "same", "than", "too", "very",
+                       "not", "only", "own", "same", "too", "very",
                        "just", "but", "don", "now", "new", "way", "use", "get",
                        "one", "two", "per", "role", "team", "work", "well",
                        "ability", "experience", "strong", "knowledge", "skills",

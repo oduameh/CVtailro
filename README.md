@@ -1,168 +1,95 @@
 # CVtailro
 
-A production-grade, local, multi-agent resume tailoring system powered by Claude Code CLI.
+AI-powered resume tailoring SaaS. Upload a PDF resume, paste a job description, and get an AI-optimized resume in 3 PDF templates (Modern/Executive/Minimal), DOCX, match report, and interview talking points.
 
-CVtailro analyses job descriptions against your master resume (PDF or markdown), optimises for ATS compatibility and recruiter appeal, and outputs professionally formatted PDF resumes with match reports and interview talking points.
+**Live:** [cvtailro-production.up.railway.app](https://cvtailro-production.up.railway.app)
 
-**No API key required** — uses your existing Claude Code CLI access.
+## Features
+
+- **Google OAuth** — Sign in with your Google account
+- **6-stage pipeline** — Job intelligence, resume parsing, gap analysis, bullet optimisation, resume optimisation, talking points
+- **3 PDF templates** — Modern, Executive, Minimal — pick your style when downloading
+- **Match report** — Before/after scores, missing keywords, section breakdown
+- **Interview prep** — STAR-format talking points generated per job
+- **OpenRouter** — Uses GPT-4o-mini by default (configurable via admin panel)
 
 ## Architecture
 
-7 specialised agents in a sequential pipeline:
-
 ```
-resume.pdf ──> [1. Job Intelligence] ──> JobAnalysis
-  job.txt  ──> [2. Resume Parser]    ──> ResumeData
-                         ↓
-               [3. Gap Analysis] ──> GapReport
-                         ↓
-               [4. Bullet Optimiser] ──> OptimisedBullets
-                     ↓           ↓
-           [5. ATS Optimiser]  [6. Recruiter Optimiser]
-                     ↓           ↓
-               [7. Final Assembly]
-                         ↓
-         tailored_resume_ats.pdf
-         tailored_resume_recruiter.pdf
-         match_report.json
-         interview_talking_points.md
+Stages 1+2 PARALLEL: Job Intelligence + Resume Parser
+Stage 3: Gap Analysis (pure Python, instant)
+Stage 4: Bullet Optimiser (parallel per role if 3+ roles)
+Stages 5+6 PARALLEL: Resume Optimiser + Talking Points
 ```
 
-## Installation
+One unified resume output. All 3 PDF templates generated per job.
+
+## Quick Start
 
 ### Prerequisites
 
-- Python 3.10+
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and authenticated
-- WeasyPrint system dependencies (for PDF generation)
+- Python 3.11+
+- [WeasyPrint](https://doc.courtbouillon.org/weasyprint/) system dependencies (cairo, pango, gdk-pixbuf)
 
-### macOS setup
+### macOS
 
 ```bash
-# Install WeasyPrint system dependencies
 brew install cairo pango gdk-pixbuf libffi
+```
 
-# Clone/enter the project
+### Install and run
+
+```bash
 cd CVtailro
-
-# Create virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
-
-# Install Python dependencies
 pip install -r requirements.txt
+
+# Set env vars (see .env.example)
+cp .env.example .env
+# Edit .env with GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, OPENROUTER_API_KEY, etc.
+
+python app.py   # or: python wsgi.py
+# Open http://localhost:5050
 ```
 
-### Verify setup
-
-```bash
-# Check Claude CLI is available
-claude --version
-
-# Check Python deps
-python -c "import pdfplumber, weasyprint, markdown, pydantic; print('All dependencies OK')"
-```
-
-## Usage
-
-### Basic usage (conservative mode)
+### CLI (no web UI)
 
 ```bash
 python orchestrator.py --job job.txt --resume resume.pdf
 ```
 
-### Aggressive rewriting mode
-
-```bash
-python orchestrator.py --job job.txt --resume resume.pdf --mode aggressive
-```
-
-### With markdown resume
-
-```bash
-python orchestrator.py --job job.txt --resume master.md
-```
-
-### Verbose logging
-
-```bash
-python orchestrator.py --job job.txt --resume resume.pdf -v
-```
-
-### Re-run from a specific stage
-
-```bash
-python orchestrator.py --job job.txt --resume resume.pdf \
-    --stage bullet_optimiser \
-    --output-dir output/20260227_143000/
-```
-
-## Input Files
-
-**resume** — Your master resume as a `.pdf`, `.md`, or `.txt` file. PDF text is automatically extracted. This is the source of truth that the system optimises from.
-
-**job.txt** — The target job description as plain text or markdown. Copy-paste the full job posting.
-
-## Output Files
-
-All outputs are saved to a timestamped directory under `output/`:
-
-| File | Description |
-|------|-------------|
-| `tailored_resume_ats.pdf` | Professionally formatted ATS-optimised resume PDF |
-| `tailored_resume_recruiter.pdf` | Professionally formatted recruiter-optimised resume PDF |
-| `tailored_resume_ats.md` | ATS version in markdown (for further editing) |
-| `tailored_resume_recruiter.md` | Recruiter version in markdown (for further editing) |
-| `match_report.json` | Match score, cosine similarity, missing keywords, ATS checks |
-| `interview_talking_points.md` | STAR-format talking points for interview prep |
-| `01_job_analysis.json` — `06_recruiter_resume.json` | Intermediate artifacts |
-| `pipeline.log` | Full debug log |
-
-## Conservative vs Aggressive Mode
-
-**Conservative** (default):
-- Subtle keyword swaps and reordering
-- Preserves original sentence structure
-- Auto-reverts any bullet flagged as potential fabrication
-
-**Aggressive**:
-- More significant rephrasing allowed
-- Language elevation (e.g., "helped with" -> "spearheaded")
-- Fabrication-flagged bullets are kept but flagged in the match report
-- Still never fabricates metrics, tools, or experience
-
-## How to Extend
-
-### Add a new agent
-
-1. Create a Pydantic model in `models.py` for the agent's output
-2. Create a prompt template in `prompts/your_agent.txt`
-3. Create `agents/your_agent.py` inheriting from `BaseAgent`
-4. Set `PROMPT_FILE`, `OUTPUT_MODEL`, and `AGENT_NAME`
-5. Implement `prepare_user_message()` and optionally `post_process()`
-6. Add the stage to `orchestrator.py`
-
-### Modify agent behaviour
-
-Edit the prompt template in `prompts/`. No Python code changes needed.
-
-### Customise PDF styling
-
-Edit `RESUME_CSS` in `pdf_generator.py` to change fonts, colours, spacing, or layout.
+See [SETUP.md](SETUP.md) for full deployment (Railway, Google OAuth, R2, PostgreSQL).
 
 ## Project Structure
 
 ```
 CVtailro/
-├── orchestrator.py          # CLI entry point + pipeline
-├── config.py                # Configuration (no API key needed)
-├── models.py                # All Pydantic data contracts
-├── base_agent.py            # Abstract base (uses Claude CLI)
-├── similarity.py            # TF-IDF cosine similarity (pure Python)
-├── pdf_generator.py         # HTML/CSS -> PDF via WeasyPrint
-├── utils.py                 # File I/O, logging, PDF text extraction
-├── agents/                  # 7 specialised agents
-├── prompts/                 # Editable prompt templates
-├── output/                  # Generated at runtime
-└── requirements.txt         # pydantic + pdfplumber + weasyprint + markdown
+├── app/                    # Flask application
+│   ├── routes/             # API and web routes
+│   ├── services/           # Pipeline, file service, admin config
+│   └── models/             # SQLAlchemy ORM
+├── agents/                 # Pipeline agents (6 stages)
+├── prompts/                # LLM prompt templates
+├── config.py               # Pipeline config, models
+├── base_agent.py           # OpenRouter API client
+├── pdf_generator.py        # 3 CSS templates → PDF
+├── docx_generator.py       # Markdown → DOCX
+├── app.py                  # Dev entry point
+├── wsgi.py                 # Gunicorn entry point
+└── orchestrator.py         # CLI pipeline
 ```
+
+## Tests
+
+```bash
+pytest tests/ -v
+ruff check app/ tests/
+```
+
+## Documentation
+
+| File | Purpose |
+|------|---------|
+| [CLAUDE.md](CLAUDE.md) | Full project context for AI assistants |
+| [SETUP.md](SETUP.md) | Infrastructure and deployment guide |

@@ -8,6 +8,7 @@ Analyzes resume bullets for:
 """
 
 from __future__ import annotations
+
 import re
 from dataclasses import dataclass, field
 
@@ -164,8 +165,8 @@ def analyze_resume(bullets: list[str]) -> ResumeQualityReport:
     # Length analysis
     lengths = [a.word_count for a in analyses]
     avg_length = sum(lengths) / len(lengths) if lengths else 0
-    too_long = sum(1 for l in lengths if l > 35)
-    too_short = sum(1 for l in lengths if l < 8)
+    too_long = sum(1 for ln in lengths if ln > 35)
+    too_short = sum(1 for ln in lengths if ln < 8)
 
     # Overall score (weighted)
     metrics_score = (with_metrics / total * 40) if total else 0
