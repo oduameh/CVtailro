@@ -1483,6 +1483,26 @@ def download_file(job_id: str, filename: str):
             logger.error(f"[Download] DOCX regeneration failed for {safe_name}: {e}", exc_info=True)
             return jsonify({"error": "Could not generate DOCX. Try downloading the markdown version instead."}), 500
 
+    # Cover letter PDF — generate from stored cover letter markdown
+    if "cover" in safe_name.lower() and safe_name.endswith(".pdf"):
+        source_md = db_job.cover_letter_md
+        if not source_md:
+            return jsonify({"error": "No cover letter available for this job."}), 404
+        try:
+            import tempfile
+            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+                tmp_path = tmp.name
+            generate_resume_pdf(source_md, tmp_path, template="modern")
+            pdf_data = open(tmp_path, "rb").read()
+            os.unlink(tmp_path)
+            return FlaskResponse(
+                pdf_data, mimetype="application/pdf",
+                headers={"Content-Disposition": f"attachment; filename={safe_name}"}
+            )
+        except Exception as e:
+            logger.error(f"[Download] Cover letter PDF failed: {e}", exc_info=True)
+            return jsonify({"error": "Could not generate cover letter PDF."}), 500
+
     # Match report JSON — reconstruct from stored fields
     if "match_report" in safe_name and safe_name.endswith(".json"):
         import json as json_mod

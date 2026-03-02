@@ -1204,6 +1204,26 @@
         .change-stat-value { font-size: 32px; font-weight: 800; color: var(--primary); line-height: 1.1; letter-spacing: -0.5px; }
         .change-stat-label { font-size: 11px; color: var(--text-secondary); font-weight: 600; margin-top: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
 
+        /* --- Collapsible Sections --- */
+        .collapsible-header {
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+        .collapsible-header:hover {
+            color: var(--primary);
+        }
+        .collapsible-chevron {
+            font-size: 14px;
+            color: var(--text-secondary);
+            transition: transform 0.2s;
+        }
+        .collapsible-content.collapsed {
+            display: none;
+        }
+
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(16px); }
             to { opacity: 1; transform: translateY(0); }
@@ -2267,33 +2287,32 @@
 
             <!-- Talking Points -->
             <div class="card talking-points-card" id="talkingPointsCard" style="display:none">
-                <h2>Interview Talking Points</h2>
-                <div class="talking-points-content" id="talkingPointsContent"></div>
+                <h2 class="collapsible-header" onclick="toggleCollapsible(this)">Interview Talking Points <span class="collapsible-chevron">&#9662;</span></h2>
+                <div class="talking-points-content collapsible-content" id="talkingPointsContent"></div>
             </div>
 
             <!-- Cover Letter -->
             <div class="card talking-points-card" id="coverLetterCard" style="display:none">
                 <h2 style="font-size:16px;font-weight:700;margin-bottom:12px;">Cover Letter</h2>
-                <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
-                    <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('coverLetterContent').textContent).then(function(){var b=event.target;b.textContent='Copied!';setTimeout(function(){b.textContent='Copy';},2000);})">Copy</button>
-                </div>
                 <div id="coverLetterContent" class="talking-points-content"></div>
             </div>
 
             <!-- Email Templates -->
             <div class="card talking-points-card" id="emailTemplatesCard" style="display:none">
-                <h2 style="font-size:16px;font-weight:700;margin-bottom:12px;">Email Follow-Up Templates</h2>
-                <div class="talking-points-content" id="emailTemplatesContent"></div>
+                <h2 class="collapsible-header" style="font-size:16px;font-weight:700;margin-bottom:12px;" onclick="toggleCollapsible(this)">Email Follow-Up Templates <span class="collapsible-chevron">&#9656;</span></h2>
+                <div class="talking-points-content collapsible-content collapsed" id="emailTemplatesContent"></div>
             </div>
 
             <!-- Preview -->
             <div class="card">
                 <div class="preview-header">
-                    <h2 style="margin-bottom:0">Resume Preview</h2>
+                    <h2 class="collapsible-header" style="margin-bottom:0" onclick="toggleCollapsible(this)">Resume Preview <span class="collapsible-chevron">&#9662;</span></h2>
                     <button class="copy-btn" onclick="copyPreview()">Copy</button>
                 </div>
-                <div class="tabs" id="tabs"></div>
-                <div id="panels"></div>
+                <div class="collapsible-content">
+                    <div class="tabs" id="tabs"></div>
+                    <div id="panels"></div>
+                </div>
             </div>
 
             <div class="again-wrap">
@@ -2401,6 +2420,20 @@
     <div class="toast" id="toastNotification" role="alert"></div>
 
     <script>
+    // --- Collapsible section toggle ---
+    function toggleCollapsible(btn) {
+        var content = btn.parentElement.nextElementSibling;
+        if (!content) return;
+        var chevron = btn.querySelector('.collapsible-chevron');
+        if (content.classList.contains('collapsed')) {
+            content.classList.remove('collapsed');
+            if (chevron) chevron.textContent = '\u25BE';
+        } else {
+            content.classList.add('collapsed');
+            if (chevron) chevron.textContent = '\u25B8';
+        }
+    }
+
     // --- Stage Names: internal key -> user-friendly label ---
     var STAGES = [
         "Job Intelligence",
@@ -2939,7 +2972,16 @@
             var clContainer = document.getElementById("coverLetterCard");
             if (s.cover_letter_md) {
                 clContainer.style.display = "block";
-                document.getElementById("coverLetterContent").innerHTML = renderMarkdown(s.cover_letter_md);
+                var safeT = (s.job_title || 'Cover_Letter').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_').substring(0, 30);
+                var safeC = (s.company || '').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_').substring(0, 20);
+                var clPrefix = safeT + (safeC ? '_' + safeC : '');
+                document.getElementById("coverLetterContent").innerHTML =
+                    '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">' +
+                    '<a href="/api/download/' + effectiveJobId + '/' + clPrefix + '_Cover_Letter.pdf" style="padding:10px 18px;background:var(--primary);color:#fff;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;">Download PDF</a>' +
+                    '<button onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.textContent).then(function(){showToast(\'Cover letter copied!\',\'success\');})" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;">Copy Text</button>' +
+                    '<button onclick="this.parentElement.nextElementSibling.style.display=this.parentElement.nextElementSibling.style.display===\'none\'?\'block\':\'none\';this.textContent=this.parentElement.nextElementSibling.style.display===\'none\'?\'Show Preview\':\'Hide Preview\'" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;">Show Preview</button>' +
+                    '</div>' +
+                    '<div style="display:none;font-size:14px;line-height:1.8;padding:16px;background:#fff;border:1px solid var(--border);border-radius:10px;max-height:300px;overflow-y:auto;">' + renderMarkdown(s.cover_letter_md) + '</div>';
             } else {
                 clContainer.style.display = "none";
             }
@@ -3667,7 +3709,16 @@
         var clContainer = document.getElementById("coverLetterCard");
         if (s.cover_letter_md) {
             clContainer.style.display = "block";
-            document.getElementById("coverLetterContent").innerHTML = renderMarkdown(s.cover_letter_md);
+            var safeT = (s.job_title || 'Cover_Letter').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_').substring(0, 30);
+            var safeC = (s.company || '').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_').substring(0, 20);
+            var clPrefix = safeT + (safeC ? '_' + safeC : '');
+            document.getElementById("coverLetterContent").innerHTML =
+                '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">' +
+                '<a href="/api/download/' + jobId + '/' + clPrefix + '_Cover_Letter.pdf" style="padding:10px 18px;background:var(--primary);color:#fff;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;">Download PDF</a>' +
+                '<button onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.textContent).then(function(){showToast(\'Cover letter copied!\',\'success\');})" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;">Copy Text</button>' +
+                '<button onclick="this.parentElement.nextElementSibling.style.display=this.parentElement.nextElementSibling.style.display===\'none\'?\'block\':\'none\';this.textContent=this.parentElement.nextElementSibling.style.display===\'none\'?\'Show Preview\':\'Hide Preview\'" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;">Show Preview</button>' +
+                '</div>' +
+                '<div style="display:none;font-size:14px;line-height:1.8;padding:16px;background:#fff;border:1px solid var(--border);border-radius:10px;max-height:300px;overflow-y:auto;">' + renderMarkdown(s.cover_letter_md) + '</div>';
         } else {
             clContainer.style.display = "none";
         }
