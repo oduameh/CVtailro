@@ -2252,6 +2252,315 @@
         button:focus:not(:focus-visible) {
             outline: none;
         }
+
+        /* --- Auth Modal --- */
+        .auth-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 400;
+            background: rgba(0,0,0,0.45);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+        }
+        .auth-modal-overlay.active {
+            display: flex;
+        }
+        html.dark .auth-modal-overlay {
+            background: rgba(0,0,0,0.65);
+        }
+        .auth-modal {
+            background: var(--card);
+            border-radius: 14px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            animation: authModalIn 0.2s ease-out;
+            margin: 16px;
+        }
+        @keyframes authModalIn {
+            from { opacity: 0; transform: translateY(12px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .auth-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px 0;
+        }
+        .auth-modal-header h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0;
+        }
+        .auth-modal-close {
+            width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            background: none; border: none; border-radius: 8px; cursor: pointer;
+            color: var(--text-secondary); font-size: 20px;
+            transition: background 0.15s;
+        }
+        .auth-modal-close:hover { background: var(--primary-bg); color: var(--text); }
+
+        .auth-tabs {
+            display: flex;
+            margin: 16px 24px 0;
+            border-bottom: 2px solid var(--border);
+        }
+        .auth-tab {
+            flex: 1;
+            padding: 10px 0;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: none;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.2s;
+        }
+        .auth-tab.active {
+            color: var(--primary);
+        }
+        .auth-tab.active::after {
+            content: '';
+            position: absolute;
+            left: 0; right: 0; bottom: -2px;
+            height: 2px;
+            background: var(--primary);
+            border-radius: 2px 2px 0 0;
+        }
+
+        .auth-modal-body {
+            padding: 20px 24px 24px;
+        }
+        .auth-form { display: none; }
+        .auth-form.active { display: block; }
+
+        .auth-field {
+            margin-bottom: 14px;
+        }
+        .auth-field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+        .auth-field input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: inherit;
+            background: var(--bg);
+            color: var(--text);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .auth-field input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+        .auth-field .auth-field-error {
+            font-size: 12px;
+            color: var(--error);
+            margin-top: 4px;
+            display: none;
+        }
+        .auth-field .auth-field-error.visible {
+            display: block;
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 11px 20px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 4px;
+        }
+        .auth-btn:hover { background: var(--primary-hover); }
+        .auth-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 18px 0;
+            color: var(--text-tertiary);
+            font-size: 13px;
+        }
+        .auth-divider::before, .auth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .auth-google-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .auth-google-btn:hover { background: var(--primary-bg); box-shadow: var(--shadow-sm); }
+        .auth-google-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+        .auth-link {
+            font-size: 13px;
+            color: var(--primary);
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-family: inherit;
+            padding: 0;
+            text-decoration: underline;
+        }
+        .auth-link:hover { color: var(--primary-hover); }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .auth-error-msg {
+            background: rgba(220,38,38,0.08);
+            border: 1px solid rgba(220,38,38,0.2);
+            color: var(--error);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 14px;
+            display: none;
+        }
+        .auth-error-msg.visible { display: block; }
+
+        .auth-success-msg {
+            background: rgba(5,150,105,0.08);
+            border: 1px solid rgba(5,150,105,0.2);
+            color: var(--score-high);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 14px;
+            display: none;
+        }
+        .auth-success-msg.visible { display: block; }
+
+        /* Profile enhancements */
+        .profile-edit-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+        .profile-edit-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 12px;
+        }
+        .profile-field {
+            margin-bottom: 12px;
+        }
+        .profile-field label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+        .profile-field input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: inherit;
+            background: var(--bg);
+            color: var(--text);
+        }
+        .profile-field input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+        .profile-save-btn {
+            padding: 8px 16px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .profile-save-btn:hover { background: var(--primary-hover); }
+        .profile-save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .profile-provider-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        .profile-provider-badge.google {
+            background: rgba(66,133,244,0.1);
+            color: #4285F4;
+        }
+        .profile-provider-badge.email {
+            background: rgba(37,99,235,0.1);
+            color: var(--primary);
+        }
+
+        /* Password reset overlay */
+        .reset-pw-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 500;
+            background: rgba(0,0,0,0.45);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+        }
+        .reset-pw-overlay.active { display: flex; }
+
+        @media (max-width: 480px) {
+            .auth-modal { max-width: 100%; margin: 12px; }
+            .auth-modal-body { padding: 16px 18px 20px; }
+        }
     </style>
     <script type="application/ld+json">
     {
@@ -2283,11 +2592,11 @@
         </button>
         <div class="header-auth" id="headerAuth">
             <!-- Signed out state (default) -->
-            <a href="/auth/google/login" class="btn-google-signin" id="btnGoogleSignin" style="display:none;">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-                <span class="signin-text-full">Sign in with Google</span>
+            <button class="btn-google-signin" id="btnGoogleSignin" style="display:none;" onclick="openAuthModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:18px;height:18px;"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                <span class="signin-text-full">Sign In</span>
                 <span class="signin-text-short">Sign in</span>
-            </a>
+            </button>
             <!-- Signed in state (hidden by default) -->
             <div class="user-menu-wrap" id="userMenuWrap" style="display:none;">
                 <button class="user-menu-trigger" onclick="toggleUserMenu(event)" aria-expanded="false" aria-haspopup="true" aria-label="User menu">
@@ -2637,6 +2946,7 @@
                     <div id="profileAvatar" class="profile-avatar"></div>
                     <div id="profileName" class="profile-name"></div>
                     <div id="profileEmail" class="profile-email"></div>
+                    <div id="profileProviderBadge" class="profile-provider-badge" style="display:none;"></div>
                 </div>
                 <div class="profile-stats">
                     <div class="profile-stat">
@@ -2652,8 +2962,134 @@
                         <div class="profile-stat-label">Member Since</div>
                     </div>
                 </div>
-                <h3 class="profile-section-title">Recent Tailoring Jobs</h3>
+
+                <!-- Editable profile section -->
+                <div class="profile-edit-section">
+                    <h3>Edit Profile</h3>
+                    <div id="profileEditMsg" class="auth-success-msg" style="margin-bottom:12px;"></div>
+                    <div class="profile-field">
+                        <label for="profileEditName">Name</label>
+                        <input type="text" id="profileEditName" placeholder="Your name">
+                    </div>
+                    <button class="profile-save-btn" id="btnProfileSave" onclick="saveProfileName()">Save Name</button>
+                </div>
+
+                <!-- Password section -->
+                <div class="profile-edit-section" id="profilePasswordSection">
+                    <h3 id="profilePwTitle">Change Password</h3>
+                    <div id="profilePwMsg" class="auth-success-msg" style="margin-bottom:12px;"></div>
+                    <div id="profilePwError" class="auth-error-msg" style="margin-bottom:12px;"></div>
+                    <div class="profile-field" id="profileCurrentPwField">
+                        <label for="profileCurrentPw">Current Password</label>
+                        <input type="password" id="profileCurrentPw" placeholder="Current password" autocomplete="current-password">
+                    </div>
+                    <div class="profile-field">
+                        <label for="profileNewPw">New Password</label>
+                        <input type="password" id="profileNewPw" placeholder="At least 8 characters" autocomplete="new-password">
+                    </div>
+                    <button class="profile-save-btn" id="btnProfilePwSave" onclick="saveProfilePassword()">Update Password</button>
+                </div>
+
+                <h3 class="profile-section-title" style="margin-top:20px;">Recent Tailoring Jobs</h3>
                 <div id="profileJobs" style="max-height:300px;overflow-y:auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div class="auth-modal-overlay" id="authModalOverlay" onclick="if(event.target===this)closeAuthModal()">
+        <div class="auth-modal">
+            <div class="auth-modal-header">
+                <h2 id="authModalTitle">Sign In</h2>
+                <button class="auth-modal-close" onclick="closeAuthModal()" aria-label="Close">&times;</button>
+            </div>
+            <div class="auth-tabs" id="authTabs">
+                <button class="auth-tab active" data-tab="login" onclick="switchAuthTab('login')">Sign In</button>
+                <button class="auth-tab" data-tab="register" onclick="switchAuthTab('register')">Create Account</button>
+            </div>
+            <div class="auth-modal-body">
+                <div class="auth-error-msg" id="authError"></div>
+                <div class="auth-success-msg" id="authSuccess"></div>
+
+                <!-- Login Form -->
+                <div class="auth-form active" id="authFormLogin">
+                    <div class="auth-field">
+                        <label for="loginEmail">Email</label>
+                        <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email">
+                    </div>
+                    <div class="auth-field">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password">
+                    </div>
+                    <div style="text-align:right;margin-bottom:14px;">
+                        <button class="auth-link" type="button" onclick="showForgotPassword()">Forgot password?</button>
+                    </div>
+                    <button class="auth-btn" id="btnLogin" onclick="doLogin()">Sign In</button>
+                    <div class="auth-divider">or</div>
+                    <a href="/auth/google/login" class="auth-google-btn">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                        Continue with Google
+                    </a>
+                </div>
+
+                <!-- Register Form -->
+                <div class="auth-form" id="authFormRegister">
+                    <div class="auth-field">
+                        <label for="regName">Full Name</label>
+                        <input type="text" id="regName" placeholder="Your full name" autocomplete="name">
+                    </div>
+                    <div class="auth-field">
+                        <label for="regEmail">Email</label>
+                        <input type="email" id="regEmail" placeholder="you@example.com" autocomplete="email">
+                    </div>
+                    <div class="auth-field">
+                        <label for="regPassword">Password</label>
+                        <input type="password" id="regPassword" placeholder="At least 8 characters" autocomplete="new-password">
+                    </div>
+                    <button class="auth-btn" id="btnRegister" onclick="doRegister()">Create Account</button>
+                    <div class="auth-divider">or</div>
+                    <a href="/auth/google/login" class="auth-google-btn">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                        Continue with Google
+                    </a>
+                </div>
+
+                <!-- Forgot Password Form -->
+                <div class="auth-form" id="authFormForgot">
+                    <p style="font-size:14px;color:var(--text-secondary);margin-bottom:16px;">
+                        Enter your email and we'll send you a link to reset your password.
+                    </p>
+                    <div class="auth-field">
+                        <label for="forgotEmail">Email</label>
+                        <input type="email" id="forgotEmail" placeholder="you@example.com" autocomplete="email">
+                    </div>
+                    <button class="auth-btn" id="btnForgot" onclick="doForgotPassword()">Send Reset Link</button>
+                    <div class="auth-footer">
+                        <button class="auth-link" type="button" onclick="switchAuthTab('login')">Back to Sign In</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Reset Overlay -->
+    <div class="reset-pw-overlay" id="resetPwOverlay" onclick="if(event.target===this)closeResetOverlay()">
+        <div class="auth-modal">
+            <div class="auth-modal-header">
+                <h2>Reset Password</h2>
+                <button class="auth-modal-close" onclick="closeResetOverlay()" aria-label="Close">&times;</button>
+            </div>
+            <div class="auth-modal-body">
+                <div class="auth-error-msg" id="resetError"></div>
+                <div class="auth-field">
+                    <label for="resetNewPw">New Password</label>
+                    <input type="password" id="resetNewPw" placeholder="At least 8 characters" autocomplete="new-password">
+                </div>
+                <div class="auth-field">
+                    <label for="resetConfirmPw">Confirm Password</label>
+                    <input type="password" id="resetConfirmPw" placeholder="Confirm your password" autocomplete="new-password">
+                </div>
+                <button class="auth-btn" id="btnResetPw" onclick="doResetPassword()">Set New Password</button>
             </div>
         </div>
     </div>
@@ -2884,7 +3320,7 @@
 
             // Update CTA hint for signed-out users
             if (ctaHint) {
-                ctaHint.textContent = 'Takes about 2 minutes \u00b7 Sign in with Google to get started';
+                ctaHint.textContent = 'Takes about 2 minutes \u00b7 Sign in to get started';
             }
         }
     }
@@ -2922,6 +3358,326 @@
         showToast('You have been signed out.', 'info');
     }
 
+    // --- Auth Modal ---
+    function openAuthModal(tab) {
+        var overlay = document.getElementById('authModalOverlay');
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        switchAuthTab(tab || 'login');
+        // Clear previous state
+        document.getElementById('authError').classList.remove('visible');
+        document.getElementById('authSuccess').classList.remove('visible');
+    }
+
+    function closeAuthModal() {
+        document.getElementById('authModalOverlay').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    function switchAuthTab(tab) {
+        // Update tabs
+        var tabs = document.querySelectorAll('.auth-tab');
+        tabs.forEach(function(t) { t.classList.toggle('active', t.getAttribute('data-tab') === tab); });
+
+        // Show/hide forms
+        document.getElementById('authFormLogin').classList.toggle('active', tab === 'login');
+        document.getElementById('authFormRegister').classList.toggle('active', tab === 'register');
+        document.getElementById('authFormForgot').classList.toggle('active', tab === 'forgot');
+
+        // Update title
+        var titles = { login: 'Sign In', register: 'Create Account', forgot: 'Reset Password' };
+        document.getElementById('authModalTitle').textContent = titles[tab] || 'Sign In';
+
+        // Show/hide tabs bar for forgot form
+        document.getElementById('authTabs').style.display = tab === 'forgot' ? 'none' : 'flex';
+
+        // Clear messages
+        document.getElementById('authError').classList.remove('visible');
+        document.getElementById('authSuccess').classList.remove('visible');
+    }
+
+    function showForgotPassword() {
+        switchAuthTab('forgot');
+    }
+
+    function _showAuthError(msg) {
+        var el = document.getElementById('authError');
+        el.textContent = msg;
+        el.classList.add('visible');
+        document.getElementById('authSuccess').classList.remove('visible');
+    }
+
+    function _showAuthSuccess(msg) {
+        var el = document.getElementById('authSuccess');
+        el.textContent = msg;
+        el.classList.add('visible');
+        document.getElementById('authError').classList.remove('visible');
+    }
+
+    async function doLogin() {
+        var email = document.getElementById('loginEmail').value.trim();
+        var password = document.getElementById('loginPassword').value;
+        if (!email || !password) { _showAuthError('Please fill in all fields.'); return; }
+
+        var btn = document.getElementById('btnLogin');
+        btn.disabled = true;
+        btn.textContent = 'Signing in...';
+
+        try {
+            var resp = await fetch('/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, password: password }),
+                credentials: 'same-origin'
+            });
+            var data = await resp.json();
+
+            if (resp.ok && data.ok) {
+                closeAuthModal();
+                await checkAuth();
+                showToast('Welcome back!', 'success');
+            } else if (data.needs_verification) {
+                _showAuthError(data.error);
+                // Show resend option
+                var successEl = document.getElementById('authSuccess');
+                successEl.innerHTML = '<button class="auth-link" onclick="doResendVerification(\'' + escapeAttr(email) + '\')">Resend verification email</button>';
+                successEl.classList.add('visible');
+            } else {
+                _showAuthError(data.error || 'Login failed.');
+            }
+        } catch(e) {
+            _showAuthError('Network error. Please try again.');
+        }
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+    }
+
+    async function doRegister() {
+        var name = document.getElementById('regName').value.trim();
+        var email = document.getElementById('regEmail').value.trim();
+        var password = document.getElementById('regPassword').value;
+        if (!name || !email || !password) { _showAuthError('Please fill in all fields.'); return; }
+        if (password.length < 8) { _showAuthError('Password must be at least 8 characters.'); return; }
+
+        var btn = document.getElementById('btnRegister');
+        btn.disabled = true;
+        btn.textContent = 'Creating account...';
+
+        try {
+            var resp = await fetch('/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name, email: email, password: password }),
+                credentials: 'same-origin'
+            });
+            var data = await resp.json();
+
+            if (resp.ok && data.ok) {
+                _showAuthSuccess(data.message || 'Account created! Check your email for a verification link.');
+                // Clear form
+                document.getElementById('regName').value = '';
+                document.getElementById('regEmail').value = '';
+                document.getElementById('regPassword').value = '';
+            } else {
+                _showAuthError(data.error || 'Registration failed.');
+            }
+        } catch(e) {
+            _showAuthError('Network error. Please try again.');
+        }
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+    }
+
+    async function doForgotPassword() {
+        var email = document.getElementById('forgotEmail').value.trim();
+        if (!email) { _showAuthError('Please enter your email.'); return; }
+
+        var btn = document.getElementById('btnForgot');
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+
+        try {
+            var resp = await fetch('/auth/forgot-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email }),
+                credentials: 'same-origin'
+            });
+            var data = await resp.json();
+
+            if (resp.ok) {
+                _showAuthSuccess(data.message || 'If that email exists, a reset link has been sent.');
+            } else {
+                _showAuthError(data.error || 'Failed to send reset email.');
+            }
+        } catch(e) {
+            _showAuthError('Network error. Please try again.');
+        }
+        btn.disabled = false;
+        btn.textContent = 'Send Reset Link';
+    }
+
+    async function doResendVerification(email) {
+        try {
+            var resp = await fetch('/auth/resend-verification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email }),
+                credentials: 'same-origin'
+            });
+            var data = await resp.json();
+            _showAuthSuccess(data.message || 'Verification email sent.');
+        } catch(e) {
+            _showAuthError('Network error.');
+        }
+    }
+
+    // --- Password Reset Overlay ---
+    function closeResetOverlay() {
+        document.getElementById('resetPwOverlay').classList.remove('active');
+        document.body.style.overflow = '';
+        _pendingResetToken = null;
+    }
+
+    async function doResetPassword() {
+        var pw = document.getElementById('resetNewPw').value;
+        var confirm = document.getElementById('resetConfirmPw').value;
+        var errEl = document.getElementById('resetError');
+
+        if (!pw || pw.length < 8) {
+            errEl.textContent = 'Password must be at least 8 characters.';
+            errEl.classList.add('visible');
+            return;
+        }
+        if (pw !== confirm) {
+            errEl.textContent = 'Passwords do not match.';
+            errEl.classList.add('visible');
+            return;
+        }
+
+        var btn = document.getElementById('btnResetPw');
+        btn.disabled = true;
+        btn.textContent = 'Resetting...';
+        errEl.classList.remove('visible');
+
+        try {
+            var resp = await fetch('/auth/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: _pendingResetToken, password: pw }),
+                credentials: 'same-origin'
+            });
+            var data = await resp.json();
+
+            if (resp.ok && data.ok) {
+                closeResetOverlay();
+                showToast('Password updated! You can now sign in.', 'success');
+            } else {
+                errEl.textContent = data.error || 'Reset failed.';
+                errEl.classList.add('visible');
+            }
+        } catch(e) {
+            errEl.textContent = 'Network error. Please try again.';
+            errEl.classList.add('visible');
+        }
+        btn.disabled = false;
+        btn.textContent = 'Set New Password';
+    }
+
+    // --- Profile: save name ---
+    async function saveProfileName() {
+        var name = document.getElementById('profileEditName').value.trim();
+        if (!name) return;
+
+        var btn = document.getElementById('btnProfileSave');
+        btn.disabled = true;
+        var msgEl = document.getElementById('profileEditMsg');
+        msgEl.classList.remove('visible');
+
+        try {
+            var resp = await fetch('/auth/profile/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name }),
+                credentials: 'same-origin'
+            });
+            var data = await resp.json();
+            if (resp.ok && data.ok) {
+                msgEl.textContent = 'Name updated!';
+                msgEl.classList.add('visible');
+                // Update local state
+                if (authUser) authUser.name = data.name;
+                renderAuthUI();
+                document.getElementById('profileName').textContent = data.name;
+            } else {
+                msgEl.textContent = data.error || 'Update failed.';
+                msgEl.style.color = 'var(--error)';
+                msgEl.classList.add('visible');
+            }
+        } catch(e) {
+            msgEl.textContent = 'Network error.';
+            msgEl.classList.add('visible');
+        }
+        btn.disabled = false;
+    }
+
+    // --- Profile: change/set password ---
+    async function saveProfilePassword() {
+        var currentPw = document.getElementById('profileCurrentPw').value;
+        var newPw = document.getElementById('profileNewPw').value;
+        var msgEl = document.getElementById('profilePwMsg');
+        var errEl = document.getElementById('profilePwError');
+        msgEl.classList.remove('visible');
+        errEl.classList.remove('visible');
+
+        if (!newPw || newPw.length < 8) {
+            errEl.textContent = 'New password must be at least 8 characters.';
+            errEl.classList.add('visible');
+            return;
+        }
+
+        var btn = document.getElementById('btnProfilePwSave');
+        btn.disabled = true;
+
+        try {
+            var resp = await fetch('/auth/profile/change-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ current_password: currentPw, new_password: newPw }),
+                credentials: 'same-origin'
+            });
+            var data = await resp.json();
+            if (resp.ok && data.ok) {
+                msgEl.textContent = data.message || 'Password updated!';
+                msgEl.classList.add('visible');
+                document.getElementById('profileCurrentPw').value = '';
+                document.getElementById('profileNewPw').value = '';
+                // Update local state
+                if (authUser) authUser.has_password = true;
+            } else {
+                errEl.textContent = data.error || 'Update failed.';
+                errEl.classList.add('visible');
+            }
+        } catch(e) {
+            errEl.textContent = 'Network error.';
+            errEl.classList.add('visible');
+        }
+        btn.disabled = false;
+    }
+
+    // Handle Enter key in auth forms
+    document.addEventListener('keydown', function(e) {
+        if (e.key !== 'Enter') return;
+        var overlay = document.getElementById('authModalOverlay');
+        if (overlay && overlay.classList.contains('active')) {
+            if (document.getElementById('authFormLogin').classList.contains('active')) doLogin();
+            else if (document.getElementById('authFormRegister').classList.contains('active')) doRegister();
+            else if (document.getElementById('authFormForgot').classList.contains('active')) doForgotPassword();
+        }
+        var resetOl = document.getElementById('resetPwOverlay');
+        if (resetOl && resetOl.classList.contains('active')) doResetPassword();
+    });
+
     // --- Toast Notifications ---
     var toastTimer = null;
 
@@ -2939,8 +3695,8 @@
         }, 5000);
     }
 
-    // --- Auth error from URL params ---
-    (function checkAuthError() {
+    // --- Auth error / success from URL params ---
+    (function checkAuthParams() {
         var params = new URLSearchParams(window.location.search);
         var authError = params.get('auth_error');
         if (authError) {
@@ -2948,14 +3704,32 @@
                 'access_denied': 'Sign-in was cancelled.',
                 'no_email': 'Could not get your email from Google. Please try again.',
                 'callback_failed': 'Sign-in failed. Please try again.',
-                'unauthorized': 'Your account is not authorized. Please contact the administrator.'
+                'unauthorized': 'Your account is not authorized. Please contact the administrator.',
+                'oauth_failed': 'Google sign-in failed. Please try again.',
+                'invalid_token': 'Verification link is invalid or expired.',
+                'invalid_reset_token': 'Password reset link is invalid or expired.'
             };
             showToast(messages[authError] || 'Sign-in error: ' + authError, 'error');
-            // Clean URL
-            var cleanUrl = window.location.pathname;
-            window.history.replaceState({}, document.title, cleanUrl);
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        // Email verified success
+        if (params.get('verified') === 'true') {
+            showToast('Email verified successfully! You are now signed in.', 'success');
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        // Password reset token — show the reset overlay
+        var resetToken = params.get('reset_token');
+        if (resetToken) {
+            _pendingResetToken = resetToken;
+            document.getElementById('resetPwOverlay').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            window.history.replaceState({}, document.title, window.location.pathname);
         }
     })();
+
+    var _pendingResetToken = null;
 
     // Check auth on page load
     checkAuth();
@@ -3007,6 +3781,14 @@
     // Close overlays on Escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
+            if (document.getElementById('authModalOverlay').classList.contains('active')) {
+                closeAuthModal();
+                return;
+            }
+            if (document.getElementById('resetPwOverlay').classList.contains('active')) {
+                closeResetOverlay();
+                return;
+            }
             if (document.getElementById('profileOverlay').classList.contains('active')) {
                 closeProfile();
             }
@@ -3618,8 +4400,7 @@
     async function startTailoring() {
         // Require sign-in
         if (!authUser || authUser === false) {
-            showToast('Please sign in with Google to use this tool', 'info');
-            setTimeout(function() { window.location.href = '/auth/google/login'; }, 1500);
+            openAuthModal();
             return;
         }
         if (!serviceConfigured) { showError("Service is temporarily unavailable. Please try again later."); return; }
@@ -4269,11 +5050,36 @@
         document.body.style.overflow = 'hidden';
 
         // Populate from current user data
-        var name = document.getElementById('userNameText').textContent || '';
-        var email = document.getElementById('dropdownUserEmail').textContent || '';
+        var name = (authUser && authUser.name) || document.getElementById('userNameText').textContent || '';
+        var email = (authUser && authUser.email) || document.getElementById('dropdownUserEmail').textContent || '';
         document.getElementById('profileName').textContent = name;
         document.getElementById('profileEmail').textContent = email;
         document.getElementById('profileAvatar').textContent = (name || email || '?').substring(0, 2).toUpperCase();
+
+        // Editable name field
+        document.getElementById('profileEditName').value = name;
+        document.getElementById('profileEditMsg').classList.remove('visible');
+        document.getElementById('profilePwMsg').classList.remove('visible');
+        document.getElementById('profilePwError').classList.remove('visible');
+
+        // Auth provider badge
+        var badge = document.getElementById('profileProviderBadge');
+        var provider = (authUser && authUser.auth_provider) || 'google';
+        badge.style.display = 'inline-flex';
+        if (provider === 'google') {
+            badge.className = 'profile-provider-badge google';
+            badge.textContent = 'Google Account';
+        } else {
+            badge.className = 'profile-provider-badge email';
+            badge.textContent = 'Email Account';
+        }
+
+        // Password section: show current password field only if user already has one
+        var hasPw = authUser && authUser.has_password;
+        document.getElementById('profileCurrentPwField').style.display = hasPw ? 'block' : 'none';
+        document.getElementById('profilePwTitle').textContent = hasPw ? 'Change Password' : 'Set Password';
+        document.getElementById('profileCurrentPw').value = '';
+        document.getElementById('profileNewPw').value = '';
 
         // Load history for stats
         fetch('/api/history?per_page=50')

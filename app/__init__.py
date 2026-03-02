@@ -228,3 +228,34 @@ def _apply_column_migrations() -> None:
                 db.session.commit()
             except Exception:
                 db.session.rollback()
+
+    # --- User table: email/password auth columns ---
+    if insp.has_table("users"):
+        user_columns = [c["name"] for c in insp.get_columns("users")]
+
+        user_new_columns = [
+            ("password_hash", "VARCHAR(255)"),
+            ("email_verified", "BOOLEAN DEFAULT FALSE"),
+            ("email_verified_at", "TIMESTAMP WITH TIME ZONE"),
+            ("auth_provider", "VARCHAR(20) DEFAULT 'google'"),
+        ]
+        for col_name, col_type in user_new_columns:
+            if col_name not in user_columns:
+                try:
+                    db.session.execute(
+                        text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}")
+                    )
+                    db.session.commit()
+                    logger.info(f"Added users.{col_name} column")
+                except Exception as e:
+                    db.session.rollback()
+                    logger.warning(f"Failed to add users.{col_name}: {e}")
+
+        # Make google_id nullable (was NOT NULL for Google-only auth)
+        try:
+            db.session.execute(
+                text("ALTER TABLE users ALTER COLUMN google_id DROP NOT NULL")
+            )
+            db.session.commit()
+        except Exception:
+            db.session.rollback()  # Already nullable or SQLite (no ALTER support)
