@@ -6,6 +6,7 @@
     <title>CVtailro Admin</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%232563eb' width='100' height='100' rx='12'/><text x='50' y='68' font-size='60' font-weight='bold' text-anchor='middle' fill='white' font-family='system-ui'>CV</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
     (function() {
         var saved = localStorage.getItem('cvtailro-theme');
@@ -678,6 +679,80 @@
             opacity: 0.5;
         }
 
+        /* Chart containers */
+        .chart-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .chart-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .chart-card-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .chart-container {
+            position: relative;
+            height: 220px;
+            width: 100%;
+        }
+        .dashboard-chart-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 900px) {
+            .dashboard-chart-row { grid-template-columns: 1fr; }
+        }
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            transition: box-shadow 0.2s, border-color 0.2s;
+        }
+        .kpi-card:hover {
+            border-color: var(--accent-light-border);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+        .kpi-card .kpi-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.5px;
+            line-height: 1.2;
+        }
+        .kpi-card .kpi-value.accent { color: var(--accent); }
+        .kpi-card .kpi-value.success { color: var(--success); }
+        .kpi-card .kpi-value.warning { color: var(--warning); }
+        .kpi-card .kpi-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-top: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .kpi-card .kpi-sublabel {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            margin-top: 2px;
+        }
+
         /* Mobile Responsive */
         @media (max-width: 768px) {
             .sidebar {
@@ -864,75 +939,81 @@
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;">
                         <a href="#" onclick="switchTab('diagnostics'); return false;" style="font-size:13px;font-weight:500;color:var(--accent);text-decoration:none;">Run diagnostics</a>
-                        <button class="btn btn-sm btn-secondary" onclick="loadStats(); loadRecentJobs(); loadUsersList();">Refresh</button>
+                        <button class="btn btn-sm btn-secondary" onclick="loadDashboardData(); loadRecentJobs(); loadUsersList(); loadStats();">Refresh</button>
                     </div>
                 </div>
 
                 <div class="dashboard-grid">
                     <div class="dashboard-main">
-                        <div class="section-title">Overview</div>
-                        <div class="metrics-grid hero-metrics">
-                            <div class="metric-card hero">
-                                <div class="metric-icon purple">&#128101;</div>
-                                <div class="metric-value" id="dashUsers">--</div>
-                                <div class="metric-label">Total Users</div>
+                        <!-- KPI Row -->
+                        <div class="kpi-row">
+                            <div class="kpi-card">
+                                <div class="kpi-value accent" id="dashUsers">--</div>
+                                <div class="kpi-label">Total Users</div>
                             </div>
-                            <div class="metric-card hero">
-                                <div class="metric-icon blue">&#128196;</div>
-                                <div class="metric-value" id="dashJobs">--</div>
-                                <div class="metric-label">Total Jobs</div>
+                            <div class="kpi-card">
+                                <div class="kpi-value" id="dashJobs">--</div>
+                                <div class="kpi-label">Total Jobs</div>
+                                <div class="kpi-sublabel" id="dashJobsSublabel">All time (DB)</div>
                             </div>
-                            <div class="metric-card hero">
-                                <div class="metric-icon green">&#128273;</div>
-                                <div class="metric-value" id="dashApiStatus">--</div>
-                                <div class="metric-label">API Key</div>
+                            <div class="kpi-card">
+                                <div class="kpi-value" id="dashApiStatus">--</div>
+                                <div class="kpi-label">API Key</div>
                             </div>
-                        </div>
-
-                        <div class="section-title">Usage &amp; Performance</div>
-                        <div class="metrics-grid">
-                            <div class="metric-card">
-                                <div class="metric-icon orange">&#9881;</div>
-                                <div class="metric-value" id="dashPipelines">--</div>
-                                <div class="metric-label">Active Pipelines</div>
+                            <div class="kpi-card">
+                                <div class="kpi-value accent" id="dashJobsToday">--</div>
+                                <div class="kpi-label">Jobs Today</div>
                             </div>
-                            <div class="metric-card">
-                                <div class="metric-icon yellow">&#128176;</div>
-                                <div class="metric-value" id="dashCost">--</div>
-                                <div class="metric-label">Est. Cost (USD)</div>
+                            <div class="kpi-card">
+                                <div class="kpi-value" id="dashSuccessRate">--</div>
+                                <div class="kpi-label">Success Rate</div>
                             </div>
-                            <div class="metric-card">
-                                <div class="metric-icon blue">&#9889;</div>
-                                <div class="metric-value" id="dashRequests">--</div>
-                                <div class="metric-label">Requests / Hour</div>
+                            <div class="kpi-card">
+                                <div class="kpi-value" id="dashCost">--</div>
+                                <div class="kpi-label">Est. Cost (USD)</div>
+                                <div class="kpi-sublabel">Pipeline runs this session</div>
                             </div>
-                            <div class="metric-card">
-                                <div class="metric-icon green">&#128200;</div>
-                                <div class="metric-value" id="dashJobsToday">--</div>
-                                <div class="metric-label">Jobs Today</div>
+                            <div class="kpi-card">
+                                <div class="kpi-value" id="dashPipelines">--</div>
+                                <div class="kpi-label">Active Pipelines</div>
                             </div>
-                            <div class="metric-card">
-                                <div class="metric-icon blue">&#128197;</div>
-                                <div class="metric-value" id="dashJobsWeek">--</div>
-                                <div class="metric-label">Jobs This Week</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-icon purple">&#128203;</div>
-                                <div class="metric-value" id="dashSuccessRate">--</div>
-                                <div class="metric-label">Success Rate</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-icon orange">&#128201;</div>
-                                <div class="metric-value" id="dashMatchImprovement">--</div>
-                                <div class="metric-label">Avg Match Improvement</div>
+                            <div class="kpi-card">
+                                <div class="kpi-value" id="dashMatchImprovement">--</div>
+                                <div class="kpi-label">Avg Match Δ</div>
                             </div>
                         </div>
 
+                        <!-- Charts Row -->
+                        <div class="dashboard-chart-row">
+                            <div class="chart-card">
+                                <div class="chart-card-header">
+                                    <h3>Jobs Over Time (Last 30 Days)</h3>
+                                    <button class="btn btn-sm btn-secondary" onclick="loadDashboardData()">Refresh</button>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="jobsChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="chart-card">
+                                <div class="chart-card-header">
+                                    <h3>Jobs by Status</h3>
+                                </div>
+                                <div class="chart-container" style="height:200px;">
+                                    <canvas id="statusChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Secondary Stats -->
                         <div class="section-title">This Month</div>
                         <div class="snapshot-row">
                             <div class="snapshot-item">
                                 <span class="snapshot-label">Saved Resumes</span>
                                 <span class="snapshot-value" id="dashSavedResumes">--</span>
+                            </div>
+                            <div class="snapshot-item">
+                                <span class="snapshot-label">Jobs This Week</span>
+                                <span class="snapshot-value" id="dashJobsWeek">--</span>
                             </div>
                             <div class="snapshot-item">
                                 <span class="snapshot-label">Jobs This Month</span>
@@ -1092,32 +1173,52 @@
 
             <!-- ═══ TAB: ANALYTICS ═══ -->
             <div class="tab-content" id="tab-analytics">
-                <div class="tab-header">
-                    <h1>Analytics</h1>
-                    <p>Token usage and estimated cost across all pipeline runs</p>
+                <div class="tab-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+                    <div>
+                        <h1>Analytics</h1>
+                        <p>Token usage, cost, and pipeline performance over time</p>
+                    </div>
+                    <button class="btn btn-sm btn-secondary" onclick="loadAnalytics()">Refresh</button>
                 </div>
 
-                <!-- Summary Cards -->
-                <div class="metrics-grid" style="grid-template-columns: repeat(4, 1fr);">
-                    <div class="metric-card">
-                        <div class="metric-icon purple">&#128196;</div>
-                        <div class="metric-value" id="analyticsJobs">--</div>
-                        <div class="metric-label">Total Jobs</div>
+                <!-- KPI Summary -->
+                <div class="kpi-row">
+                    <div class="kpi-card">
+                        <div class="kpi-value accent" id="analyticsJobs">--</div>
+                        <div class="kpi-label">Total Jobs</div>
+                        <div class="kpi-sublabel">Pipeline runs this session</div>
                     </div>
-                    <div class="metric-card">
-                        <div class="metric-icon blue">&#128290;</div>
-                        <div class="metric-value" id="analyticsTokens">--</div>
-                        <div class="metric-label">Total Tokens</div>
+                    <div class="kpi-card">
+                        <div class="kpi-value" id="analyticsTokens">--</div>
+                        <div class="kpi-label">Total Tokens</div>
                     </div>
-                    <div class="metric-card">
-                        <div class="metric-icon green">&#128176;</div>
-                        <div class="metric-value" id="analyticsCost">--</div>
-                        <div class="metric-label">Est. Cost (USD)</div>
+                    <div class="kpi-card">
+                        <div class="kpi-value success" id="analyticsCost">--</div>
+                        <div class="kpi-label">Est. Cost (USD)</div>
                     </div>
-                    <div class="metric-card">
-                        <div class="metric-icon orange">&#128178;</div>
-                        <div class="metric-value" id="analyticsAvgCost">--</div>
-                        <div class="metric-label">Avg Cost / Job</div>
+                    <div class="kpi-card">
+                        <div class="kpi-value" id="analyticsAvgCost">--</div>
+                        <div class="kpi-label">Avg Cost / Job</div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="dashboard-chart-row">
+                    <div class="chart-card">
+                        <div class="chart-card-header">
+                            <h3>Jobs Over Time (Last 30 Days)</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="analyticsJobsChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-card-header">
+                            <h3>Jobs by Status</h3>
+                        </div>
+                        <div class="chart-container" style="height:200px;">
+                            <canvas id="analyticsStatusChart"></canvas>
+                        </div>
                     </div>
                 </div>
 
@@ -1238,6 +1339,10 @@
             stopSystemRefresh();
         }
 
+        // Refresh dashboard when switching to it
+        if (tabName === 'dashboard') {
+            loadDashboardData();
+        }
 
         // Close mobile menu if open
         var sidebar = document.getElementById('sidebarNav');
@@ -1416,6 +1521,7 @@
         loadRecentJobs();
         loadUsersList();
         loadLiveStats();
+        loadDashboardData();
         switchTab('dashboard');
     }
 
@@ -1460,20 +1566,210 @@
             if (!r.ok) return;
             var d = await r.json();
             var el = function(id) { return document.getElementById(id); };
-            if (el('dashJobsToday')) el('dashJobsToday').textContent = d.jobs_today || 0;
-            if (el('dashJobsWeek')) el('dashJobsWeek').textContent = d.jobs_this_week || 0;
-            if (el('dashJobsMonth')) el('dashJobsMonth').textContent = d.jobs_this_month || 0;
+            if (el('dashUsers')) el('dashUsers').textContent = d.total_users ?? '--';
+            if (el('dashJobs')) el('dashJobs').textContent = d.total_jobs ?? '--';
+            if (el('dashJobsToday')) el('dashJobsToday').textContent = d.jobs_today ?? 0;
+            if (el('dashJobsWeek')) el('dashJobsWeek').textContent = d.jobs_this_week ?? 0;
+            if (el('dashJobsMonth')) el('dashJobsMonth').textContent = d.jobs_this_month ?? 0;
             if (el('dashSuccessRate')) {
-                el('dashSuccessRate').textContent = (d.success_rate || 0) + '%';
-                el('dashSuccessRate').className = 'metric-value ' + (d.success_rate >= 90 ? 'status-good' : d.success_rate >= 70 ? '' : 'status-bad');
+                el('dashSuccessRate').textContent = (d.success_rate ?? 0) + '%';
+                el('dashSuccessRate').className = 'kpi-value ' + (d.success_rate >= 90 ? 'success' : d.success_rate >= 70 ? '' : 'warning');
             }
             if (el('dashMatchImprovement')) {
-                var imp = d.avg_match_improvement || 0;
+                var imp = d.avg_match_improvement ?? 0;
                 el('dashMatchImprovement').textContent = (imp >= 0 ? '+' : '') + imp + '%';
-                el('dashMatchImprovement').className = 'metric-value ' + (imp > 0 ? 'status-good' : '');
+                el('dashMatchImprovement').className = 'kpi-value ' + (imp > 0 ? 'success' : '');
             }
-            if (el('dashSavedResumes')) el('dashSavedResumes').textContent = d.saved_resumes_count || 0;
+            if (el('dashSavedResumes')) el('dashSavedResumes').textContent = d.saved_resumes_count ?? 0;
         } catch(e) {}
+    }
+
+    var jobsChartInstance = null;
+    var statusChartInstance = null;
+
+    function renderJobsChart(jobsOverTime) {
+        var canvas = document.getElementById('jobsChart');
+        if (!canvas || typeof Chart === 'undefined') return;
+        if (jobsChartInstance) jobsChartInstance.destroy();
+
+        var labels = [];
+        var data = [];
+        var last30 = [];
+        for (var i = 29; i >= 0; i--) {
+            var d = new Date();
+            d.setDate(d.getDate() - i);
+            var dateStr = d.toISOString().slice(0, 10);
+            last30.push({ date: dateStr, jobs: 0 });
+        }
+        var byDate = {};
+        (jobsOverTime || []).forEach(function(p) {
+            byDate[p.date] = (byDate[p.date] || 0) + p.jobs;
+        });
+        last30.forEach(function(p) {
+            labels.push(p.date.slice(5));
+            data.push(byDate[p.date] || 0);
+        });
+
+        var isDark = document.documentElement.classList.contains('dark');
+        var gridColor = isDark ? 'rgba(148,163,184,0.15)' : 'rgba(0,0,0,0.06)';
+        var textColor = isDark ? '#94a3b8' : '#64748b';
+
+        jobsChartInstance = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Jobs',
+                    data: data,
+                    backgroundColor: 'rgba(37,99,235,0.6)',
+                    borderColor: 'rgba(37,99,235,0.9)',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: {
+                        grid: { color: gridColor },
+                        ticks: { color: textColor, maxRotation: 45, font: { size: 10 } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: gridColor },
+                        ticks: { color: textColor }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderAnalyticsJobsChart(jobsOverTime) {
+        var canvas = document.getElementById('analyticsJobsChart');
+        if (!canvas || typeof Chart === 'undefined') return;
+        if (analyticsJobsChartInstance) analyticsJobsChartInstance.destroy();
+
+        var labels = [], data = [];
+        var byDate = {};
+        (jobsOverTime || []).forEach(function(p) { byDate[p.date] = (byDate[p.date] || 0) + p.jobs; });
+        for (var i = 29; i >= 0; i--) {
+            var d = new Date();
+            d.setDate(d.getDate() - i);
+            var dateStr = d.toISOString().slice(0, 10);
+            labels.push(dateStr.slice(5));
+            data.push(byDate[dateStr] || 0);
+        }
+        var isDark = document.documentElement.classList.contains('dark');
+        var gridColor = isDark ? 'rgba(148,163,184,0.15)' : 'rgba(0,0,0,0.06)';
+        var textColor = isDark ? '#94a3b8' : '#64748b';
+        analyticsJobsChartInstance = new Chart(canvas, {
+            type: 'bar',
+            data: { labels: labels, datasets: [{ label: 'Jobs', data: data, backgroundColor: 'rgba(37,99,235,0.6)', borderColor: 'rgba(37,99,235,0.9)', borderWidth: 1, borderRadius: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: gridColor }, ticks: { color: textColor, maxRotation: 45, font: { size: 10 } } }, y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor } } } }
+        });
+    }
+
+    function renderAnalyticsStatusChart(jobsByStatus) {
+        var canvas = document.getElementById('analyticsStatusChart');
+        if (!canvas || typeof Chart === 'undefined') return;
+        if (analyticsStatusChartInstance) analyticsStatusChartInstance.destroy();
+        var labels = [], data = [], colors = ['#059669', '#2563eb', '#d97706', '#dc2626', '#64748b'];
+        for (var k in jobsByStatus || {}) { labels.push(k); data.push(jobsByStatus[k]); }
+        if (labels.length === 0) { labels = ['No data']; data = [1]; }
+        var isDark = document.documentElement.classList.contains('dark');
+        var textColor = isDark ? '#94a3b8' : '#64748b';
+        analyticsStatusChartInstance = new Chart(canvas, {
+            type: 'doughnut',
+            data: { labels: labels, datasets: [{ data: data, backgroundColor: colors.slice(0, labels.length), borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: textColor, padding: 12 } } } }
+        });
+    }
+
+    function renderStatusChart(jobsByStatus) {
+        var canvas = document.getElementById('statusChart');
+        if (!canvas || typeof Chart === 'undefined') return;
+        if (statusChartInstance) statusChartInstance.destroy();
+
+        var labels = [];
+        var data = [];
+        var colors = ['#059669', '#2563eb', '#d97706', '#dc2626', '#64748b'];
+        var i = 0;
+        for (var k in jobsByStatus || {}) {
+            labels.push(k);
+            data.push(jobsByStatus[k]);
+            i++;
+        }
+        if (labels.length === 0) {
+            labels = ['No data'];
+            data = [1];
+        }
+
+        var isDark = document.documentElement.classList.contains('dark');
+        var textColor = isDark ? '#94a3b8' : '#64748b';
+
+        statusChartInstance = new Chart(canvas, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors.slice(0, labels.length),
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: textColor, padding: 12 } }
+                }
+            }
+        });
+    }
+
+    async function loadDashboardData() {
+        try {
+            var [statsRes, analyticsRes, liveRes] = await Promise.all([
+                fetch('/admin/api/stats'),
+                fetch('/admin/api/analytics'),
+                fetch('/admin/api/live-stats')
+            ]);
+            if (statsRes.ok) {
+                var stats = await statsRes.json();
+                var el = function(id) { return document.getElementById(id); };
+                if (el('dashUsers')) el('dashUsers').textContent = stats.total_users ?? '--';
+                if (el('dashJobs')) el('dashJobs').textContent = stats.total_jobs ?? '--';
+                if (el('dashJobsToday')) el('dashJobsToday').textContent = stats.jobs_today ?? 0;
+                if (el('dashJobsWeek')) el('dashJobsWeek').textContent = stats.jobs_this_week ?? 0;
+                if (el('dashJobsMonth')) el('dashJobsMonth').textContent = stats.jobs_this_month ?? 0;
+                if (el('dashSuccessRate')) {
+                    el('dashSuccessRate').textContent = (stats.success_rate ?? 0) + '%';
+                    el('dashSuccessRate').className = 'kpi-value ' + (stats.success_rate >= 90 ? 'success' : stats.success_rate >= 70 ? '' : 'warning');
+                }
+                if (el('dashMatchImprovement')) {
+                    var imp = stats.avg_match_improvement ?? 0;
+                    el('dashMatchImprovement').textContent = (imp >= 0 ? '+' : '') + imp + '%';
+                    el('dashMatchImprovement').className = 'kpi-value ' + (imp > 0 ? 'success' : '');
+                }
+                if (el('dashSavedResumes')) el('dashSavedResumes').textContent = stats.saved_resumes_count ?? 0;
+            }
+            if (analyticsRes.ok) {
+                var analytics = await analyticsRes.json();
+                var dc = document.getElementById('dashCost');
+                if (dc) dc.textContent = '$' + (analytics.total_cost_usd || 0).toFixed(2);
+                var dj = document.getElementById('dashJobs');
+                if (dj && !statsRes.ok) dj.textContent = analytics.total_jobs ?? '--';
+                renderJobsChart(analytics.jobs_over_time || []);
+                renderStatusChart(analytics.jobs_by_status || {});
+            }
+            if (liveRes.ok) {
+                var live = await liveRes.json();
+                var dp = document.getElementById('dashPipelines');
+                if (dp) dp.textContent = live.active_pipelines + '/' + live.max_concurrent;
+            }
+        } catch(e) { console.error('Dashboard load error:', e); }
     }
 
     async function loadRecentJobs() {
@@ -1526,6 +1822,9 @@
         } catch(e) {}
     }
 
+    var analyticsJobsChartInstance = null;
+    var analyticsStatusChartInstance = null;
+
     async function loadAnalytics() {
         try {
             var r = await fetch('/admin/api/analytics');
@@ -1534,25 +1833,33 @@
 
             // Summary numbers
             var totalJobs = d.total_jobs || 0;
-            document.getElementById('analyticsJobs').textContent = totalJobs;
+            var el = document.getElementById('analyticsJobs');
+            if (el) el.textContent = totalJobs;
 
             var tokens = d.total_tokens || 0;
-            document.getElementById('analyticsTokens').textContent =
+            var tokEl = document.getElementById('analyticsTokens');
+            if (tokEl) tokEl.textContent =
                 tokens >= 1000000 ? (tokens / 1000000).toFixed(1) + 'M' :
                 tokens >= 1000 ? (tokens / 1000).toFixed(1) + 'K' :
                 tokens;
 
             var cost = d.total_cost_usd || 0;
-            document.getElementById('analyticsCost').textContent = '$' + cost.toFixed(4);
+            var costEl = document.getElementById('analyticsCost');
+            if (costEl) costEl.textContent = '$' + cost.toFixed(4);
 
             var avg = d.avg_cost_per_job || 0;
-            document.getElementById('analyticsAvgCost').textContent = '$' + avg.toFixed(4);
+            var avgEl = document.getElementById('analyticsAvgCost');
+            if (avgEl) avgEl.textContent = '$' + avg.toFixed(4);
 
             // Update dashboard metrics
             var dj = document.getElementById('dashJobs');
             if (dj) dj.textContent = totalJobs;
             var dc = document.getElementById('dashCost');
             if (dc) dc.textContent = '$' + cost.toFixed(2);
+
+            // Render analytics tab charts
+            renderAnalyticsJobsChart(d.jobs_over_time || []);
+            renderAnalyticsStatusChart(d.jobs_by_status || {});
 
             // Model breakdown table
             var tableEl = document.getElementById('analyticsModelTable');

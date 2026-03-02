@@ -169,7 +169,62 @@ def admin_usage():
 @admin_bp.route("/admin/api/analytics")
 @_admin_required
 def admin_analytics():
-    return jsonify(pipeline_analytics.get_global_stats())
+    """Returns in-memory pipeline analytics (tokens, cost) + DB-backed stats for charts."""
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # In-memory pipeline stats (resets on restart)
+    pipeline_stats = pipeline_analytics.get_global_stats()
+
+    # DB-backed: jobs per day for last 30 days (for charts)
+    jobs_per_day = (
+        db.session.query(
+            func.date(TailoringJob.created_at).label("day"),
+            func.count(TailoringJob.id).label("count"),
+        )
+        .filter(TailoringJob.created_at >= today_start - timedelta(days=30))
+        .group_by(func.date(TailoringJob.created_at))
+        .order_by(func.date(TailoringJob.created_at))
+        .all()
+    )
+    jobs_over_time = [
+        {"date": str(d).split()[0] if d else "1970-01-01", "jobs": c}
+        for d, c in jobs_per_day
+    ]
+
+    # DB-backed: jobs by status for pie chart
+    status_counts = (
+        db.session.query(TailoringJob.status, func.count(TailoringJob.id))
+        .group_by(TailoringJob.status)
+        .all()
+    )
+    jobs_by_status = {s: c for s, c in status_counts}
+
+    # DB-backed: avg duration, completed jobs
+    completed_count = jobs_by_status.get("completed", 0)
+    avg_duration = (
+        db.session.query(func.avg(TailoringJob.duration_seconds))
+        .filter(TailoringJob.status == "completed", TailoringJob.duration_seconds.isnot(None))
+        .scalar()
+    )
+    avg_duration_seconds = round(float(avg_duration or 0), 1)
+
+    return jsonify(
+        {
+            **pipeline_stats,
+            "jobs_over_time": jobs_over_time,
+            "jobs_by_status": jobs_by_status,
+            "jobs_today": TailoringJob.query.filter(TailoringJob.created_at >= today_start).count(),
+            "jobs_this_week": TailoringJob.query.filter(
+                TailoringJob.created_at >= today_start - timedelta(days=7)
+            ).count(),
+            "jobs_this_month": TailoringJob.query.filter(
+                TailoringJob.created_at >= today_start - timedelta(days=30)
+            ).count(),
+            "avg_duration_seconds": avg_duration_seconds,
+            "completed_count": completed_count,
+        }
+    )
 
 
 @admin_bp.route("/admin/api/users")
@@ -323,10 +378,12 @@ def admin_stats():
     saved_resumes_count = SavedResume.query.count()
 
     total_jobs = sum(jobs_by_status.values())
+    total_users = User.query.count()
 
     return jsonify(
         {
             "total_jobs": total_jobs,
+            "total_users": total_users,
             "jobs_by_status": jobs_by_status,
             "jobs_today": jobs_today,
             "jobs_this_week": jobs_this_week,
