@@ -79,8 +79,8 @@
             --border: #334155;
             --border-light: #1e293b;
             --text: #f8fafc;
-            --text-secondary: #94a3b8;
-            --text-tertiary: #64748b;
+            --text-secondary: #cbd5e1;
+            --text-tertiary: #94a3b8;
             --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
             --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
             --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
@@ -1667,6 +1667,9 @@
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
         }
+        html.dark .history-overlay {
+            background: rgba(0,0,0,0.6);
+        }
 
         .history-overlay.active {
             display: flex;
@@ -1676,7 +1679,8 @@
         }
 
         .history-panel {
-            background: #fff;
+            background: var(--card);
+            color: var(--text);
             border-radius: 12px;
             width: 100%;
             max-width: 640px;
@@ -1684,6 +1688,7 @@
             display: flex;
             flex-direction: column;
             box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            border: 1px solid var(--border);
             overflow: hidden;
         }
 
@@ -1739,7 +1744,7 @@
             width: 48px;
             height: 48px;
             margin: 0 auto 16px;
-            color: #D1D5DB;
+            color: var(--text-tertiary);
         }
 
         .history-empty h3 {
@@ -1764,11 +1769,12 @@
             cursor: pointer;
             transition: border-color 0.2s, box-shadow 0.2s, background 0.15s;
             min-height: 44px;
+            background: var(--bg);
         }
 
         .history-card:hover {
             border-color: var(--primary);
-            box-shadow: 0 2px 8px rgba(108, 92, 231, 0.1);
+            box-shadow: 0 2px 8px var(--accent-glow);
             background: var(--primary-bg);
         }
 
@@ -1784,9 +1790,12 @@
             flex-shrink: 0;
         }
 
-        .history-card-score.high { background: #ECFDF5; color: #047857; }
-        .history-card-score.mid { background: #FFFBEB; color: #B45309; }
-        .history-card-score.low { background: #FEF2F2; color: #B91C1C; }
+        .history-card-score.high { background: rgba(5,150,105,0.15); color: var(--score-high); }
+        .history-card-score.mid { background: rgba(217,119,6,0.15); color: var(--score-mid); }
+        .history-card-score.low { background: rgba(220,38,38,0.15); color: var(--score-low); }
+        html.dark .history-card-score.high { background: rgba(5,150,105,0.25); color: #34d399; }
+        html.dark .history-card-score.mid { background: rgba(217,119,6,0.25); color: #fbbf24; }
+        html.dark .history-card-score.low { background: rgba(220,38,38,0.25); color: #f87171; }
 
         .history-card-info {
             flex: 1;
@@ -1840,19 +1849,22 @@
         }
 
         .history-badge.template {
-            background: #EDE9FE;
-            color: #6D28D9;
+            background: var(--accent-light);
+            color: var(--primary);
         }
 
         .history-badge.mode-conservative {
-            background: #DBEAFE;
-            color: #1D4ED8;
+            background: rgba(59,130,246,0.15);
+            color: #2563eb;
         }
 
         .history-badge.mode-aggressive {
-            background: #FEE2E2;
-            color: #B91C1C;
+            background: rgba(220,38,38,0.15);
+            color: var(--score-low);
         }
+        html.dark .history-badge.template { background: rgba(37,99,235,0.25); color: #93c5fd; }
+        html.dark .history-badge.mode-conservative { background: rgba(59,130,246,0.25); color: #93c5fd; }
+        html.dark .history-badge.mode-aggressive { background: rgba(220,38,38,0.25); color: #f87171; }
 
         .history-card-arrow {
             width: 16px;
@@ -1866,6 +1878,73 @@
             padding: 40px 24px;
             color: var(--text-secondary);
             font-size: 14px;
+        }
+
+        /* Profile overlay — ensure contrast in light/dark */
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .profile-stat {
+            text-align: center;
+            padding: 16px;
+            background: var(--primary-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+        .profile-stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .profile-stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        .profile-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 12px;
+        }
+        .profile-job-card {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 8px;
+            background: var(--bg);
+        }
+        .profile-job-card .profile-job-title { font-size: 14px; font-weight: 600; color: var(--text); }
+        .profile-job-card .profile-job-meta { font-size: 12px; color: var(--text-secondary); }
+        .profile-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--primary-bg);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0 auto 12px;
+        }
+        .profile-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .profile-email {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 4px;
         }
 
         /* --- Elapsed Time in Progress --- */
@@ -2410,7 +2489,7 @@
                     <button class="detail-tab" onclick="showDetailTab('talking')">Talking Points</button>
                 </div>
 
-                <div id="detailContent" style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;max-height:400px;overflow-y:auto;font-size:13px;line-height:1.8;white-space:pre-wrap;font-family:inherit;"></div>
+                <div id="detailContent" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:20px;max-height:400px;overflow-y:auto;font-size:13px;line-height:1.8;white-space:pre-wrap;font-family:inherit;"></div>
 
                 <!-- Download buttons -->
                 <div id="detailDownloads" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;"></div>
@@ -2426,26 +2505,26 @@
                 <button class="history-close" onclick="closeProfile()" aria-label="Close profile">&times;</button>
             </div>
             <div class="history-body" id="profileBody" style="padding:20px;">
-                <div style="text-align:center;margin-bottom:24px;">
-                    <div id="profileAvatar" style="width:80px;height:80px;border-radius:50%;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;margin:0 auto 12px;"></div>
-                    <div id="profileName" style="font-size:20px;font-weight:700;"></div>
-                    <div id="profileEmail" style="font-size:14px;color:var(--text-secondary);margin-top:4px;"></div>
+                <div class="profile-header">
+                    <div id="profileAvatar" class="profile-avatar"></div>
+                    <div id="profileName" class="profile-name"></div>
+                    <div id="profileEmail" class="profile-email"></div>
                 </div>
-                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;">
-                    <div style="text-align:center;padding:16px;background:var(--primary-bg);border-radius:12px;">
-                        <div id="profileJobCount" style="font-size:24px;font-weight:800;color:var(--primary);">--</div>
-                        <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">TOTAL JOBS</div>
+                <div class="profile-stats">
+                    <div class="profile-stat">
+                        <div id="profileJobCount" class="profile-stat-value">--</div>
+                        <div class="profile-stat-label">Total Jobs</div>
                     </div>
-                    <div style="text-align:center;padding:16px;background:var(--primary-bg);border-radius:12px;">
-                        <div id="profileAvgScore" style="font-size:24px;font-weight:800;color:var(--primary);">--</div>
-                        <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">AVG SCORE</div>
+                    <div class="profile-stat">
+                        <div id="profileAvgScore" class="profile-stat-value">--</div>
+                        <div class="profile-stat-label">Avg Score</div>
                     </div>
-                    <div style="text-align:center;padding:16px;background:var(--primary-bg);border-radius:12px;">
-                        <div id="profileMemberSince" style="font-size:14px;font-weight:700;color:var(--primary);">--</div>
-                        <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">MEMBER SINCE</div>
+                    <div class="profile-stat">
+                        <div id="profileMemberSince" class="profile-stat-value">--</div>
+                        <div class="profile-stat-label">Member Since</div>
                     </div>
                 </div>
-                <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;">Recent Tailoring Jobs</h3>
+                <h3 class="profile-section-title">Recent Tailoring Jobs</h3>
                 <div id="profileJobs" style="max-height:300px;overflow-y:auto;"></div>
             </div>
         </div>
@@ -3029,7 +3108,7 @@
                     '<button onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.textContent).then(function(){showToast(\'Cover letter copied!\',\'success\');})" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;">Copy Text</button>' +
                     '<button onclick="this.parentElement.nextElementSibling.style.display=this.parentElement.nextElementSibling.style.display===\'none\'?\'block\':\'none\';this.textContent=this.parentElement.nextElementSibling.style.display===\'none\'?\'Show Preview\':\'Hide Preview\'" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;">Show Preview</button>' +
                     '</div>' +
-                    '<div style="display:none;font-size:14px;line-height:1.8;padding:16px;background:#fff;border:1px solid var(--border);border-radius:10px;max-height:300px;overflow-y:auto;">' + renderMarkdown(s.cover_letter_md) + '</div>';
+                    '<div style="display:none;font-size:14px;line-height:1.8;padding:16px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:10px;max-height:300px;overflow-y:auto;">' + renderMarkdown(s.cover_letter_md) + '</div>';
             } else {
                 clContainer.style.display = "none";
             }
@@ -3759,7 +3838,7 @@
                 '<button onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.textContent).then(function(){showToast(\'Cover letter copied!\',\'success\');})" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;">Copy Text</button>' +
                 '<button onclick="this.parentElement.nextElementSibling.style.display=this.parentElement.nextElementSibling.style.display===\'none\'?\'block\':\'none\';this.textContent=this.parentElement.nextElementSibling.style.display===\'none\'?\'Show Preview\':\'Hide Preview\'" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;">Show Preview</button>' +
                 '</div>' +
-                '<div style="display:none;font-size:14px;line-height:1.8;padding:16px;background:#fff;border:1px solid var(--border);border-radius:10px;max-height:300px;overflow-y:auto;">' + renderMarkdown(s.cover_letter_md) + '</div>';
+                '<div style="display:none;font-size:14px;line-height:1.8;padding:16px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:10px;max-height:300px;overflow-y:auto;">' + renderMarkdown(s.cover_letter_md) + '</div>';
         } else {
             clContainer.style.display = "none";
         }
@@ -4074,11 +4153,11 @@
                     var scoreColor = j.match_score >= 80 ? 'var(--score-high)' : j.match_score >= 50 ? 'var(--score-mid)' : 'var(--score-low)';
                     var date = j.created_at ? new Date(j.created_at).toLocaleDateString() : '';
 
-                    html += '<div style="padding:12px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;">';
+                    html += '<div class="profile-job-card">';
                     html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
                     html += '<div style="flex:1;min-width:0;">';
-                    html += '<div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (j.job_title || 'Untitled') + '</div>';
-                    html += '<div style="font-size:12px;color:var(--text-secondary);">' + (j.company || '') + (j.company && date ? ' \u00b7 ' : '') + date + '</div>';
+                    html += '<div class="profile-job-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (j.job_title || 'Untitled') + '</div>';
+                    html += '<div class="profile-job-meta">' + (j.company || '') + (j.company && date ? ' \u00b7 ' : '') + date + '</div>';
                     html += '</div>';
                     html += '<div style="font-size:18px;font-weight:800;color:' + scoreColor + ';margin-left:12px;">' + score + '</div>';
                     html += '</div>';
@@ -4088,7 +4167,7 @@
                         var pTitle = (j.job_title || 'Resume').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_').substring(0, 30);
                         var pCo = (j.company || '').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_').substring(0, 20);
                         var pPrefix = pTitle + (pCo ? '_' + pCo : '');
-                        var dlBtnStyle = 'padding:4px 10px;background:var(--primary-bg);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;color:var(--primary);text-decoration:none;transition:all 0.2s;';
+                        var dlBtnStyle = 'padding:4px 10px;background:var(--primary-bg);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;color:var(--primary);text-decoration:none;transition:all 0.2s;display:inline-block;';
                         html += '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">';
                         ['Modern', 'Executive', 'Minimal'].forEach(function(tpl) {
                             html += '<a href="/api/download/' + j.id + '/' + pPrefix + '_' + tpl + '.pdf" style="' + dlBtnStyle + '">' + tpl + '</a>';

@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CVtailro Admin</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%236C5CE7' width='100' height='100' rx='20'/><text x='50' y='68' font-size='60' font-weight='bold' text-anchor='middle' fill='white' font-family='system-ui'>CV</text></svg>">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%232563eb' width='100' height='100' rx='12'/><text x='50' y='68' font-size='60' font-weight='bold' text-anchor='middle' fill='white' font-family='system-ui'>CV</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
     <script>
     (function() {
         var saved = localStorage.getItem('cvtailro-theme');
@@ -17,38 +17,41 @@
     </script>
     <style>
         :root {
-            --bg: #f0f2f5;
+            --bg: #f8fafc;
             --card: #ffffff;
             --border: #e2e8f0;
-            --text: #1a1a2e;
+            --text: #0f172a;
             --text-secondary: #64748b;
-            --accent: #6C5CE7;
-            --accent-hover: #5A4BD1;
-            --accent-light: rgba(108,92,231,0.08);
-            --accent-light-border: rgba(108,92,231,0.2);
-            --success: #00B894;
-            --error: #E17055;
-            --warning: #FDCB6E;
+            --text-tertiary: #94a3b8;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --accent-light: rgba(37,99,235,0.08);
+            --accent-light-border: rgba(37,99,235,0.2);
+            --success: #059669;
+            --error: #dc2626;
+            --warning: #d97706;
             --sidebar-bg: #0f172a;
             --sidebar-text: #94a3b8;
-            --sidebar-active: rgba(108,92,231,0.15);
-            --sidebar-width: 240px;
+            --sidebar-active: rgba(37,99,235,0.15);
+            --sidebar-width: 220px;
             --header-height: 56px;
-            --radius: 16px;
+            --radius: 10px;
+            --radius-lg: 14px;
         }
         html.dark {
-            --bg: #0f0d15;
-            --card: #1e1a2e;
-            --border: #2d2640;
-            --text: #e8e0f5;
-            --text-secondary: #a89cc0;
-            --accent-light: rgba(108,92,231,0.2);
-            --accent-light-border: rgba(108,92,231,0.35);
-            --sidebar-bg: #0a0812;
+            --bg: #0f172a;
+            --card: #1e293b;
+            --border: #334155;
+            --text: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-tertiary: #64748b;
+            --accent-light: rgba(37,99,235,0.2);
+            --accent-light-border: rgba(37,99,235,0.3);
+            --sidebar-bg: #020617;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: var(--bg);
             color: var(--text);
             line-height: 1.6;
@@ -76,13 +79,10 @@
             margin-bottom: 28px;
         }
         .auth-card .auth-logo h1 {
-            font-size: 28px;
-            font-weight: 800;
+            font-size: 24px;
+            font-weight: 600;
             letter-spacing: -0.5px;
-            background: linear-gradient(135deg, var(--accent), #a29bfe);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--accent);
         }
         .auth-card .auth-logo p {
             color: var(--text-secondary);
@@ -231,8 +231,59 @@
         .main-content {
             margin-left: var(--sidebar-width);
             margin-top: var(--header-height);
-            padding: 28px 32px 60px;
+            padding: 24px 28px 48px;
             min-height: calc(100vh - var(--header-height));
+        }
+
+        /* Dashboard 2-column layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 28px;
+            align-items: start;
+        }
+        .dashboard-sidebar {
+            position: sticky;
+            top: calc(var(--header-height) + 24px);
+        }
+        .snapshot-row {
+            display: flex;
+            gap: 24px;
+            padding: 16px 20px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+        .snapshot-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .snapshot-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: var(--text-secondary);
+        }
+        .snapshot-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+        .recent-activity-list {
+            max-height: 420px;
+            overflow-y: auto;
+            margin: 0 -4px;
+            padding: 0 4px;
+        }
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            .dashboard-sidebar {
+                position: static;
+            }
         }
 
         /* Tab Content Sections */
@@ -245,12 +296,11 @@
 
         /* Tab Header */
         .tab-header {
-            margin-bottom: 24px;
+            margin-bottom: 28px;
         }
         .tab-header h1 {
-            font-size: 24px;
-            font-weight: 800;
-            letter-spacing: -0.5px;
+            font-size: 22px;
+            font-weight: 600;
             color: var(--text);
         }
         .tab-header p {
@@ -262,80 +312,86 @@
         /* Cards */
         .card {
             background: var(--card);
-            border-radius: var(--radius);
-            padding: 24px;
+            border-radius: var(--radius-lg);
+            padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
-            border: 1px solid rgba(0,0,0,0.04);
-            transition: box-shadow 0.2s, transform 0.2s;
-        }
-        .card:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.03);
+            border: 1px solid var(--border);
         }
         .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
         .card-header h2 {
-            font-size: 15px;
-            font-weight: 700;
+            font-size: 14px;
+            font-weight: 600;
             color: var(--text);
         }
+
+        /* Section Headers */
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-tertiary);
+            margin-bottom: 12px;
+            margin-top: 24px;
+        }
+        .section-title:first-child { margin-top: 0; }
 
         /* Metric Cards */
         .metrics-grid {
             display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .metrics-grid.hero-metrics {
             grid-template-columns: repeat(3, 1fr);
             gap: 16px;
-            margin-bottom: 24px;
         }
         .metric-card {
             background: var(--card);
             border-radius: var(--radius);
-            padding: 22px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
-            border: 1px solid rgba(0,0,0,0.04);
-            transition: transform 0.2s, box-shadow 0.2s;
+            padding: 16px;
+            border: 1px solid var(--border);
             cursor: default;
         }
-        .metric-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        .metric-card.hero {
+            padding: 20px;
         }
         .metric-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
-            margin-bottom: 14px;
+            font-size: 16px;
+            margin-bottom: 12px;
         }
-        .metric-icon.purple { background: rgba(108,92,231,0.1); }
-        .metric-icon.green { background: rgba(0,184,148,0.1); }
-        .metric-icon.orange { background: rgba(225,112,85,0.1); }
-        .metric-icon.blue { background: rgba(9,132,227,0.1); }
-        .metric-icon.yellow { background: rgba(253,203,110,0.15); }
+        .metric-icon.purple { background: rgba(37,99,235,0.1); }
+        .metric-icon.green { background: rgba(5,150,105,0.1); }
+        .metric-icon.orange { background: rgba(220,38,38,0.08); }
+        .metric-icon.blue { background: rgba(59,130,246,0.1); }
+        .metric-icon.yellow { background: rgba(217,119,6,0.1); }
         .insights-grid { grid-template-columns: repeat(4, 1fr); }
         .metric-value {
-            font-size: 28px;
-            font-weight: 800;
+            font-size: 24px;
+            font-weight: 600;
             color: var(--text);
-            letter-spacing: -0.5px;
-            line-height: 1.1;
+            line-height: 1.2;
         }
+        .metric-card.hero .metric-value { font-size: 28px; }
         .metric-value.status-good { color: var(--success); }
         .metric-value.status-bad { color: var(--error); }
         .metric-label {
-            font-size: 12px;
-            font-weight: 600;
+            font-size: 11px;
+            font-weight: 500;
             color: var(--text-secondary);
-            margin-top: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
+            margin-top: 4px;
         }
 
         /* Forms */
@@ -354,16 +410,17 @@
             width: 100%;
             padding: 10px 14px;
             border: 1px solid var(--border);
-            border-radius: 10px;
+            border-radius: var(--radius);
             font-size: 13px;
             outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
             font-family: inherit;
-            background: #fff;
+            background: var(--card);
+            color: var(--text);
         }
         .form-group input:focus, .form-group select:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(108,92,231,0.1);
+            box-shadow: 0 0 0 3px var(--accent-light);
         }
         .form-group .hint {
             font-size: 11px;
@@ -412,19 +469,16 @@
         .btn-primary {
             background: var(--accent);
             color: white;
-            box-shadow: 0 2px 8px rgba(108,92,231,0.25);
         }
         .btn-primary:hover {
             background: var(--accent-hover);
-            box-shadow: 0 4px 16px rgba(108,92,231,0.35);
-            transform: translateY(-1px);
         }
         .btn-secondary {
-            background: #f1f5f9;
+            background: var(--bg);
             color: var(--text);
             border: 1px solid var(--border);
         }
-        .btn-secondary:hover { background: #e2e8f0; }
+        .btn-secondary:hover { background: var(--border); }
         .btn-danger {
             background: rgba(225,112,85,0.1);
             color: var(--error);
@@ -468,7 +522,7 @@
             border-bottom: 1px solid var(--border);
         }
         .analytics-table tr:last-child td { border-bottom: none; }
-        .analytics-table tr:hover td { background: rgba(108,92,231,0.03); }
+        .analytics-table tr:hover td { background: var(--accent-light); }
         .analytics-table .num { text-align: right; font-variant-numeric: tabular-nums; }
         .analytics-bar {
             height: 6px;
@@ -504,11 +558,11 @@
             gap: 12px;
             padding: 12px;
             border: 1px solid var(--border);
-            border-radius: 10px;
-            margin-bottom: 6px;
+            border-radius: var(--radius);
+            margin-bottom: 8px;
             cursor: pointer;
             transition: all 0.2s;
-            background: #fff;
+            background: var(--card);
         }
         .user-card:hover {
             background: var(--accent-light);
@@ -548,27 +602,29 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 12px 0;
+            padding: 14px 0;
             border-bottom: 1px solid var(--border);
+            transition: background 0.15s;
         }
         .activity-item:last-child { border-bottom: none; }
+        .activity-item:hover { background: var(--accent-light); margin: 0 -4px; padding: 14px 12px; border-radius: var(--radius); }
         .activity-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            border-radius: 10px;
             background: var(--accent-light);
             color: var(--accent);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 13px;
-            font-weight: 700;
-            flex-shrink: 0;
+            font-weight: 600;
+            font-size: 14px;
         }
         .activity-avatar img {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
             object-fit: cover;
         }
 
@@ -771,6 +827,10 @@
                     <span class="nav-text">Users &amp; Resumes</span>
                 </a>
                 <div class="nav-label">Monitoring</div>
+                <a class="nav-item" data-tab="diagnostics" onclick="switchTab('diagnostics')">
+                    <span class="nav-icon">&#128269;</span>
+                    <span class="nav-text">Diagnostics</span>
+                </a>
                 <a class="nav-item" data-tab="analytics" onclick="switchTab('analytics')">
                     <span class="nav-icon">&#128200;</span>
                     <span class="nav-text">Analytics</span>
@@ -797,95 +857,102 @@
 
             <!-- ═══ TAB: DASHBOARD ═══ -->
             <div class="tab-content active" id="tab-dashboard">
-                <div class="tab-header">
-                    <h1>Dashboard</h1>
-                    <p>Overview of your CVtailro service</p>
-                </div>
-
-                <div class="metrics-grid">
-                    <div class="metric-card">
-                        <div class="metric-icon purple">&#128101;</div>
-                        <div class="metric-value" id="dashUsers">--</div>
-                        <div class="metric-label">Total Users</div>
+                <div class="tab-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+                    <div>
+                        <h1>Dashboard</h1>
+                        <p>Overview of your CVtailro service</p>
                     </div>
-                    <div class="metric-card">
-                        <div class="metric-icon blue">&#128196;</div>
-                        <div class="metric-value" id="dashJobs">--</div>
-                        <div class="metric-label">Total Jobs</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-icon green">&#128273;</div>
-                        <div class="metric-value" id="dashApiStatus">--</div>
-                        <div class="metric-label">API Key</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-icon orange">&#9881;</div>
-                        <div class="metric-value" id="dashPipelines">--</div>
-                        <div class="metric-label">Active Pipelines</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-icon yellow">&#128176;</div>
-                        <div class="metric-value" id="dashCost">--</div>
-                        <div class="metric-label">Est. Cost (USD)</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-icon blue">&#9889;</div>
-                        <div class="metric-value" id="dashRequests">--</div>
-                        <div class="metric-label">Requests / Hour</div>
-                    </div>
-                </div>
-
-                <!-- Insights Row -->
-                <div class="metrics-grid insights-grid">
-                    <div class="metric-card">
-                        <div class="metric-icon green">&#128200;</div>
-                        <div class="metric-value" id="dashJobsToday">--</div>
-                        <div class="metric-label">Jobs Today</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-icon blue">&#128197;</div>
-                        <div class="metric-value" id="dashJobsWeek">--</div>
-                        <div class="metric-label">Jobs This Week</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-icon purple">&#128203;</div>
-                        <div class="metric-value" id="dashSuccessRate">--</div>
-                        <div class="metric-label">Success Rate</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-icon orange">&#128201;</div>
-                        <div class="metric-value" id="dashMatchImprovement">--</div>
-                        <div class="metric-label">Avg Match Improvement</div>
-                    </div>
-                </div>
-
-                <div class="card" style="margin-bottom:20px;">
-                    <div class="card-header">
-                        <h2>Service Snapshot</h2>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <a href="#" onclick="switchTab('diagnostics'); return false;" style="font-size:13px;font-weight:500;color:var(--accent);text-decoration:none;">Run diagnostics</a>
                         <button class="btn btn-sm btn-secondary" onclick="loadStats(); loadRecentJobs(); loadUsersList();">Refresh</button>
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
-                        <div>
-                            <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px;">Saved Resumes</div>
-                            <div style="font-size:20px;font-weight:800;color:var(--accent);" id="dashSavedResumes">--</div>
-                        </div>
-                        <div>
-                            <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px;">Jobs This Month</div>
-                            <div style="font-size:20px;font-weight:800;color:var(--accent);" id="dashJobsMonth">--</div>
-                        </div>
-                    </div>
                 </div>
 
-                <!-- Recent Activity -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2>Recent Jobs</h2>
-                        <button class="btn btn-sm btn-secondary" onclick="loadRecentJobs()">Refresh</button>
+                <div class="dashboard-grid">
+                    <div class="dashboard-main">
+                        <div class="section-title">Overview</div>
+                        <div class="metrics-grid hero-metrics">
+                            <div class="metric-card hero">
+                                <div class="metric-icon purple">&#128101;</div>
+                                <div class="metric-value" id="dashUsers">--</div>
+                                <div class="metric-label">Total Users</div>
+                            </div>
+                            <div class="metric-card hero">
+                                <div class="metric-icon blue">&#128196;</div>
+                                <div class="metric-value" id="dashJobs">--</div>
+                                <div class="metric-label">Total Jobs</div>
+                            </div>
+                            <div class="metric-card hero">
+                                <div class="metric-icon green">&#128273;</div>
+                                <div class="metric-value" id="dashApiStatus">--</div>
+                                <div class="metric-label">API Key</div>
+                            </div>
+                        </div>
+
+                        <div class="section-title">Usage &amp; Performance</div>
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-icon orange">&#9881;</div>
+                                <div class="metric-value" id="dashPipelines">--</div>
+                                <div class="metric-label">Active Pipelines</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-icon yellow">&#128176;</div>
+                                <div class="metric-value" id="dashCost">--</div>
+                                <div class="metric-label">Est. Cost (USD)</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-icon blue">&#9889;</div>
+                                <div class="metric-value" id="dashRequests">--</div>
+                                <div class="metric-label">Requests / Hour</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-icon green">&#128200;</div>
+                                <div class="metric-value" id="dashJobsToday">--</div>
+                                <div class="metric-label">Jobs Today</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-icon blue">&#128197;</div>
+                                <div class="metric-value" id="dashJobsWeek">--</div>
+                                <div class="metric-label">Jobs This Week</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-icon purple">&#128203;</div>
+                                <div class="metric-value" id="dashSuccessRate">--</div>
+                                <div class="metric-label">Success Rate</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-icon orange">&#128201;</div>
+                                <div class="metric-value" id="dashMatchImprovement">--</div>
+                                <div class="metric-label">Avg Match Improvement</div>
+                            </div>
+                        </div>
+
+                        <div class="section-title">This Month</div>
+                        <div class="snapshot-row">
+                            <div class="snapshot-item">
+                                <span class="snapshot-label">Saved Resumes</span>
+                                <span class="snapshot-value" id="dashSavedResumes">--</span>
+                            </div>
+                            <div class="snapshot-item">
+                                <span class="snapshot-label">Jobs This Month</span>
+                                <span class="snapshot-value" id="dashJobsMonth">--</span>
+                            </div>
+                        </div>
                     </div>
-                    <div id="recentActivity">
-                        <div class="empty-state">
-                            <div class="empty-icon">&#128196;</div>
-                            <div>Loading recent jobs...</div>
+
+                    <div class="dashboard-sidebar">
+                        <div class="card" style="margin-bottom:0;">
+                            <div class="card-header">
+                                <h2>Recent Jobs</h2>
+                                <button class="btn btn-sm btn-secondary" onclick="loadRecentJobs()">Refresh</button>
+                            </div>
+                            <div id="recentActivity" class="recent-activity-list">
+                                <div class="empty-state">
+                                    <div class="empty-icon">&#128196;</div>
+                                    <div>Loading recent jobs...</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1002,6 +1069,24 @@
                         <button class="resume-tab-btn" id="btnViewJD" onclick="showResumeTab('jd')">Job Description</button>
                     </div>
                     <div id="resumeContent" style="max-height:600px;overflow-y:auto;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:20px;font-size:13px;line-height:1.7;white-space:pre-wrap;font-family:'Inter',monospace;"></div>
+                </div>
+            </div>
+
+            <!-- ═══ TAB: DIAGNOSTICS ═══ -->
+            <div class="tab-content" id="tab-diagnostics">
+                <div class="tab-header">
+                    <h1>Diagnostics &amp; Troubleshooting</h1>
+                    <p>Run health checks on database, API, R2, and Redis</p>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Health Checks</h2>
+                        <div class="btn-row">
+                            <button class="btn btn-primary" onclick="runDiagnostics()" id="diagRunBtn">Run Diagnostics</button>
+                            <button class="btn btn-sm btn-secondary" onclick="copyDiagOutput()" id="diagCopyBtn">Copy for Support</button>
+                        </div>
+                    </div>
+                    <pre id="diagOutput" style="margin:0;padding:16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-size:12px;line-height:1.5;max-height:500px;overflow:auto;white-space:pre-wrap;word-break:break-word;">Click "Run Diagnostics" to check services.</pre>
                 </div>
             </div>
 
@@ -1402,7 +1487,7 @@
                 var statusColor = j.status === 'completed' ? 'var(--success)' : j.status === 'error' ? 'var(--error)' : 'var(--text-secondary)';
                 var date = j.created_at ? new Date(j.created_at).toLocaleDateString() + ' ' + new Date(j.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
                 return '<div class="activity-item">' +
-                    '<div class="activity-avatar" style="background:rgba(108,92,231,0.15);color:var(--accent);">' + (j.job_title || '?').substring(0, 1).toUpperCase() + '</div>' +
+                    '<div class="activity-avatar">' + (j.job_title || '?').substring(0, 1).toUpperCase() + '</div>' +
                     '<div style="flex:1;min-width:0;">' +
                         '<div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(j.job_title || 'Untitled') + (j.company ? ' at ' + escapeHtml(j.company) : '') + '</div>' +
                         '<div style="font-size:12px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(j.user_name || j.user_email || 'Anonymous') + ' &middot; ' + date + '</div>' +
@@ -1740,6 +1825,42 @@
 
     function closeResumeViewer() {
         document.getElementById('resumeViewerPanel').style.display = 'none';
+    }
+
+    // ─── Diagnostics (minimal, defensive) ───
+    function runDiagnostics() {
+        var out = document.getElementById('diagOutput');
+        var btn = document.getElementById('diagRunBtn');
+        if (!out) return;
+        try {
+            if (btn) { btn.disabled = true; btn.textContent = 'Running...'; }
+            out.textContent = 'Running checks...';
+            fetch('/admin/api/diagnostics').then(function(r) {
+                return r.ok ? r.json() : Promise.reject(new Error('Request failed'));
+            }).then(function(d) {
+                out.textContent = JSON.stringify(d, null, 2);
+            }).catch(function(e) {
+                out.textContent = 'Error: ' + (e && e.message ? e.message : 'Unknown');
+            }).finally(function() {
+                if (btn) { btn.disabled = false; btn.textContent = 'Run Diagnostics'; }
+            });
+        } catch (e) {
+            out.textContent = 'Error: ' + (e && e.message ? e.message : 'Unknown');
+            if (btn) { btn.disabled = false; btn.textContent = 'Run Diagnostics'; }
+        }
+    }
+    function copyDiagOutput() {
+        var out = document.getElementById('diagOutput');
+        if (!out || !out.textContent || out.textContent.indexOf('Click "Run') === 0) {
+            alert('Run diagnostics first.');
+            return;
+        }
+        try {
+            navigator.clipboard.writeText(out.textContent).then(function() {
+                var b = document.getElementById('diagCopyBtn');
+                if (b) { var t = b.textContent; b.textContent = 'Copied!'; setTimeout(function() { b.textContent = t; }, 2000); }
+            }).catch(function() { alert('Could not copy.'); });
+        } catch (e) { alert('Could not copy.'); }
     }
 
     // ─── Init ───
