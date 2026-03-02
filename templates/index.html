@@ -438,7 +438,7 @@
             outline: none;
             transition: all 0.3s ease;
             color: var(--text);
-            background: #fff;
+            background: var(--card);
         }
 
         textarea:focus {
@@ -518,7 +518,7 @@
         }
 
         .toggle-group input:checked + label:hover {
-            background: #fff;
+            background: var(--card);
         }
 
         /* --- CTA Row --- */
@@ -608,7 +608,7 @@
             max-width: 540px;
             margin: 0 auto;
             text-align: center;
-            background: #fff;
+            background: var(--card);
             border: 1px solid var(--border);
             border-radius: var(--radius-lg);
             padding: 40px 32px;
@@ -891,15 +891,15 @@
             border: 1px solid var(--border);
         }
         .modern-preview {
-            background: linear-gradient(180deg, #f0f4ff 0%, #fff 100%);
+            background: linear-gradient(180deg, var(--primary-bg) 0%, var(--card) 100%);
             border-left: 4px solid #1a3a5c;
         }
         .exec-preview {
-            background: linear-gradient(180deg, #faf8f5 0%, #fff 100%);
+            background: linear-gradient(180deg, var(--bg) 0%, var(--card) 100%);
             border-bottom: 2px solid #8B7355;
         }
         .min-preview {
-            background: #fafafa;
+            background: var(--bg);
         }
 
         .dl-usage-hint {
@@ -984,7 +984,7 @@
 
         /* --- Talking Points --- */
         .talking-points-card {
-            background: #fff;
+            background: var(--card);
             border: 1px solid var(--border);
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-sm);
@@ -1054,7 +1054,7 @@
             max-height: 500px;
             overflow-y: auto;
             padding: 24px;
-            background: #fff;
+            background: var(--card);
             border: 1px solid var(--border);
             border-radius: 0 0 var(--radius) var(--radius);
             font-size: 14px;
@@ -1494,10 +1494,10 @@
             align-items: center;
             gap: 8px;
             padding: 8px 16px;
-            background: #fff;
+            background: var(--card);
             color: var(--text);
             border: 1px solid var(--border);
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 14px;
             font-weight: 500;
             font-family: inherit;
@@ -1509,7 +1509,7 @@
         }
 
         .btn-google-signin:hover {
-            background: #F8F9FA;
+            background: var(--primary-bg);
             box-shadow: 0 1px 3px rgba(0,0,0,0.08);
         }
 
@@ -2269,7 +2269,7 @@
 <body>
     <a href="#main-content" class="skip-link">Skip to main content</a>
     <noscript>
-        <div style="padding:20px;text-align:center;background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;border-radius:8px;margin:20px;">
+        <div style="padding:20px;text-align:center;background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;border-radius:8px;margin:20px;" class="noscript-banner">
             <strong>JavaScript Required</strong> — Please enable JavaScript to use CVtailro.
         </div>
     </noscript>
@@ -2421,7 +2421,7 @@
                 <label style="font-size:13px; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:6px;">AI Model</label>
                 <select id="modelSelect" onchange="selectedModel=this.value; saveModelPref();"
                     style="width:100%; max-width:360px; padding:10px 14px; border:1px solid var(--border);
-                           border-radius:8px; font-size:14px; font-family:inherit; outline:none; background:var(--card);
+                           border-radius:10px; font-size:14px; font-family:inherit; outline:none; background:var(--card);
                            cursor:pointer; color:var(--text);">
                 </select>
             </div>
