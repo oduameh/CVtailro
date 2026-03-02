@@ -41,6 +41,7 @@ logger = logging.getLogger(__name__)
 # Helper: add a bottom border to a paragraph (used for section headings)
 # ---------------------------------------------------------------------------
 
+
 def _add_bottom_border(paragraph):
     """Add a thin bottom border to a paragraph via Open XML."""
     pPr = paragraph._p.get_or_add_pPr()
@@ -86,6 +87,7 @@ def _strip_inline_md(text: str) -> str:
 # ---------------------------------------------------------------------------
 # Contact block parser (mirrors pdf_generator._parse_contact_block)
 # ---------------------------------------------------------------------------
+
 
 def _parse_contact_block(lines: list[str]) -> tuple[str, list[str], int]:
     """Extract name and contact info from the top of the resume."""
@@ -137,6 +139,7 @@ def _flatten_contact(contact_lines: list[str]) -> str:
 # ---------------------------------------------------------------------------
 # Main generator
 # ---------------------------------------------------------------------------
+
 
 def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
     """Generate a professionally formatted DOCX from markdown resume content.
@@ -235,11 +238,7 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
             or "employment" in current_section
             or "work history" in current_section
         ):
-            parts = [
-                p.strip()
-                for p in re.split(r"\s*\|\s*", re.sub(r"^###\s*", "", line))
-                if p.strip()
-            ]
+            parts = [p.strip() for p in re.split(r"\s*\|\s*", re.sub(r"^###\s*", "", line)) if p.strip()]
             title = parts[0] if len(parts) > 0 else ""
             company = parts[1] if len(parts) > 1 else ""
             location = parts[2] if len(parts) > 2 else ""
@@ -386,11 +385,7 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
         if edu_match and "education" in current_section:
             degree = edu_match.group(1)
             rest = edu_match.group(2)
-            rest_parts = [
-                p.strip()
-                for p in re.split(r"\s*[|—\u2013]\s*", rest)
-                if p.strip()
-            ]
+            rest_parts = [p.strip() for p in re.split(r"\s*[|—\u2013]\s*", rest) if p.strip()]
             school = rest_parts[0] if rest_parts else ""
             date = rest_parts[1] if len(rest_parts) > 1 else ""
             if not date and i + 1 < len(lines):
@@ -432,11 +427,7 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
         # Certification: **Name** | meta  OR  **Name** -- meta
         if "certification" in current_section and stripped:
             cert_bold = re.match(r"^\*\*(.+?)\*\*\s*[|—\u2013-]+\s*(.+)", stripped)
-            cert_plain = (
-                re.match(r"^(.+?)\s*[—\u2013]\s*(.+)", stripped)
-                if not cert_bold
-                else None
-            )
+            cert_plain = re.match(r"^(.+?)\s*[—\u2013]\s*(.+)", stripped) if not cert_bold else None
             if cert_bold:
                 p = doc.add_paragraph()
                 _set_paragraph_spacing(p, before=2, after=2)
@@ -506,11 +497,7 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
             continue
 
         # Skills -- plain comma-separated
-        if (
-            stripped
-            and "skill" in current_section
-            and not re.match(r"^\*\*", stripped)
-        ):
+        if stripped and "skill" in current_section and not re.match(r"^\*\*", stripped):
             skill_text = stripped
             while i + 1 < len(lines):
                 nl = lines[i + 1].strip()
@@ -529,11 +516,7 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
             continue
 
         # Skills -- bold category fallback
-        if (
-            stripped
-            and "skill" in current_section
-            and re.match(r"^\*\*", stripped)
-        ):
+        if stripped and "skill" in current_section and re.match(r"^\*\*", stripped):
             clean = _strip_inline_md(stripped)
             p = doc.add_paragraph()
             _set_paragraph_spacing(p, before=1, after=2)
@@ -545,9 +528,7 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
 
         # Summary -- consolidate consecutive lines
         if stripped and (
-            "summary" in current_section
-            or "profile" in current_section
-            or "objective" in current_section
+            "summary" in current_section or "profile" in current_section or "objective" in current_section
         ):
             summary_text = stripped
             while i + 1 < len(lines):

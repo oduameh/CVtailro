@@ -31,7 +31,7 @@ class KeywordDensityReport:
 
 def _tokenize(text: str) -> list[str]:
     """Tokenize text into lowercase words."""
-    return re.findall(r'\b[a-zA-Z][a-zA-Z+#./-]{1,}\b', text.lower())
+    return re.findall(r"\b[a-zA-Z][a-zA-Z+#./-]{1,}\b", text.lower())
 
 
 def _count_phrase_occurrences(text: str, phrase: str) -> int:
@@ -71,18 +71,88 @@ def analyze_keyword_density(
         jd_words = _tokenize(job_description)
         word_counts = Counter(jd_words)
         # Take words appearing 2+ times that aren't common
-        common_words = {"the", "and", "for", "are", "with", "this", "that", "will",
-                       "you", "our", "your", "from", "have", "has", "been", "their",
-                       "about", "would", "should", "could", "also", "more", "some",
-                       "other", "than", "into", "over", "such", "what", "when",
-                       "where", "which", "who", "how", "all", "each", "every",
-                       "both", "few", "most", "any", "can", "may", "must", "shall",
-                       "not", "only", "own", "same", "too", "very",
-                       "just", "but", "don", "now", "new", "way", "use", "get",
-                       "one", "two", "per", "role", "team", "work", "well",
-                       "ability", "experience", "strong", "knowledge", "skills",
-                       "including", "working", "requirements", "qualifications",
-                       "responsibilities", "position", "looking", "join", "company"}
+        common_words = {
+            "the",
+            "and",
+            "for",
+            "are",
+            "with",
+            "this",
+            "that",
+            "will",
+            "you",
+            "our",
+            "your",
+            "from",
+            "have",
+            "has",
+            "been",
+            "their",
+            "about",
+            "would",
+            "should",
+            "could",
+            "also",
+            "more",
+            "some",
+            "other",
+            "than",
+            "into",
+            "over",
+            "such",
+            "what",
+            "when",
+            "where",
+            "which",
+            "who",
+            "how",
+            "all",
+            "each",
+            "every",
+            "both",
+            "few",
+            "most",
+            "any",
+            "can",
+            "may",
+            "must",
+            "shall",
+            "not",
+            "only",
+            "own",
+            "same",
+            "too",
+            "very",
+            "just",
+            "but",
+            "don",
+            "now",
+            "new",
+            "way",
+            "use",
+            "get",
+            "one",
+            "two",
+            "per",
+            "role",
+            "team",
+            "work",
+            "well",
+            "ability",
+            "experience",
+            "strong",
+            "knowledge",
+            "skills",
+            "including",
+            "working",
+            "requirements",
+            "qualifications",
+            "responsibilities",
+            "position",
+            "looking",
+            "join",
+            "company",
+        }
         for word, count in word_counts.most_common(50):
             if count >= 2 and word not in common_words and len(word) > 2:
                 keywords_to_check.add(word)
@@ -108,19 +178,23 @@ def analyze_keyword_density(
         else:
             status = "missing"  # Still not in resume
 
-        results.append(KeywordFrequency(
-            keyword=keyword,
-            jd_count=jd_count,
-            resume_before_count=before_count,
-            resume_after_count=after_count,
-            status=status,
-        ))
+        results.append(
+            KeywordFrequency(
+                keyword=keyword,
+                jd_count=jd_count,
+                resume_before_count=before_count,
+                resume_after_count=after_count,
+                status=status,
+            )
+        )
 
     # Sort: missing first (most actionable), then by JD frequency
-    results.sort(key=lambda k: (
-        0 if k.status == "missing" else 1 if k.status == "new" else 2 if k.status == "improved" else 3,
-        -k.jd_count
-    ))
+    results.sort(
+        key=lambda k: (
+            0 if k.status == "missing" else 1 if k.status == "new" else 2 if k.status == "improved" else 3,
+            -k.jd_count,
+        )
+    )
 
     # Calculate summary stats
     total = len(results)

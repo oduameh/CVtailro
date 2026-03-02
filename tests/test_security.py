@@ -179,9 +179,7 @@ class TestIDORResult:
         assert resp.status_code == 200
         assert resp.get_json().get("result", {}).get("ats_resume_md") is not None
 
-    def test_authenticated_user_cannot_access_other_user_job(
-        self, client, user, other_user, db
-    ):
+    def test_authenticated_user_cannot_access_other_user_job(self, client, user, other_user, db):
         """Authenticated user must not access another user's job."""
         other_job = TailoringJob(
             id="otherjob1234567890ab",
@@ -199,9 +197,7 @@ class TestIDORResult:
 class TestIDORDownload:
     """IDOR: File downloads must enforce job ownership."""
 
-    def test_anonymous_cannot_download_user_job_file(
-        self, client, user_job, tmp_path, flask_app
-    ):
+    def test_anonymous_cannot_download_user_job_file(self, client, user_job, tmp_path, flask_app):
         """Anonymous user must not download files from authenticated user's job."""
         # Create a file on disk for the job (simulate in-memory job)
         job_dir = tmp_path / "job_output"
@@ -209,6 +205,7 @@ class TestIDORDownload:
         (job_dir / "resume_modern.pdf").write_bytes(b"fake pdf")
         with flask_app.app_context():
             from app.services.pipeline import jobs, jobs_lock
+
             with jobs_lock:
                 jobs[user_job.id] = {
                     "output_dir": str(job_dir),
@@ -221,18 +218,18 @@ class TestIDORDownload:
         finally:
             with flask_app.app_context():
                 from app.services.pipeline import jobs, jobs_lock
+
                 with jobs_lock:
                     jobs.pop(user_job.id, None)
 
-    def test_anonymous_can_download_anonymous_job_file(
-        self, client, anonymous_job, tmp_path, flask_app
-    ):
+    def test_anonymous_can_download_anonymous_job_file(self, client, anonymous_job, tmp_path, flask_app):
         """Anonymous user can download from their own anonymous job."""
         job_dir = tmp_path / "anon_output"
         job_dir.mkdir()
         (job_dir / "resume_modern.pdf").write_bytes(b"fake pdf")
         with flask_app.app_context():
             from app.services.pipeline import jobs, jobs_lock
+
             with jobs_lock:
                 jobs[anonymous_job.id] = {
                     "output_dir": str(job_dir),
@@ -245,6 +242,7 @@ class TestIDORDownload:
         finally:
             with flask_app.app_context():
                 from app.services.pipeline import jobs, jobs_lock
+
                 with jobs_lock:
                     jobs.pop(anonymous_job.id, None)
 
@@ -297,9 +295,7 @@ class TestIDORHistory:
         resp = client.get(f"/api/history/{other_job.id}")
         assert resp.status_code == 404
 
-    def test_saved_resume_get_requires_ownership(
-        self, client, user, other_user, db
-    ):
+    def test_saved_resume_get_requires_ownership(self, client, user, other_user, db):
         """Getting a saved resume must require ownership."""
         other_resume = SavedResume(
             user_id=other_user.id,
@@ -312,9 +308,7 @@ class TestIDORHistory:
         resp = client.get(f"/api/saved-resumes/{other_resume.id}")
         assert resp.status_code == 404
 
-    def test_saved_resume_delete_requires_ownership(
-        self, client, user, other_user, db
-    ):
+    def test_saved_resume_delete_requires_ownership(self, client, user, other_user, db):
         """Deleting a saved resume must require ownership."""
         other_resume = SavedResume(
             user_id=other_user.id,
@@ -338,9 +332,7 @@ class TestIDORHistory:
 class TestAdminAuthorization:
     """Admin panel must require proper authentication."""
 
-    def test_admin_set_user_admin_requires_session_admin(
-        self, client, flask_app, user, admin_user
-    ):
+    def test_admin_set_user_admin_requires_session_admin(self, client, flask_app, user, admin_user):
         """Promoting/demoting users requires admin session, not just is_admin."""
         _login(client, admin_user)
         # Admin user logged in via Google, but admin panel uses session password
@@ -588,15 +580,18 @@ class TestSessionSecurity:
     def test_session_cookie_httponly_in_production(self, flask_app):
         """Session cookie should be HttpOnly (config check)."""
         from app.settings import ProductionSettings
+
         assert ProductionSettings.SESSION_COOKIE_HTTPONLY is True
 
     def test_session_cookie_samesite(self, flask_app):
         """Session cookie should have SameSite."""
         from app.settings import BaseSettings
+
         assert BaseSettings.SESSION_COOKIE_SAMESITE == "Lax"
 
     def test_secret_key_not_default_in_production(self):
         """Production should warn if using default secret (env check)."""
         from app.settings import ProductionSettings
+
         # In tests, we may use default; just verify the setting exists
         assert hasattr(ProductionSettings, "SECRET_KEY")

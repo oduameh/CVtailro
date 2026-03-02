@@ -20,9 +20,7 @@ class TailoringJob(db.Model):
     )
 
     id = db.Column(db.String(32), primary_key=True, default=_uuid)
-    user_id = db.Column(
-        db.String(32), db.ForeignKey("users.id"), nullable=True, index=True
-    )
+    user_id = db.Column(db.String(32), db.ForeignKey("users.id"), nullable=True, index=True)
     status = db.Column(db.String(20), nullable=False, default="running")
     job_title = db.Column(db.String(500), nullable=True)
     company = db.Column(db.String(500), nullable=True)
@@ -76,9 +74,7 @@ class JobFile(db.Model):
     )
     filename = db.Column(db.String(255), nullable=False)
     r2_key = db.Column(db.String(1024), nullable=False)
-    content_type = db.Column(
-        db.String(100), nullable=False, default="application/octet-stream"
-    )
+    content_type = db.Column(db.String(100), nullable=False, default="application/octet-stream")
     size_bytes = db.Column(db.Integer, nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),

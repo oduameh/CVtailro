@@ -75,11 +75,13 @@ def logout():
 def me():
     if not current_user.is_authenticated:
         return jsonify({"authenticated": False})
-    return jsonify({
-        "authenticated": True,
-        "id": current_user.id,
-        "email": current_user.email,
-        "name": current_user.name,
-        "picture": current_user.picture_url,
-        "is_admin": current_user.is_admin,
-    })
+    return jsonify(
+        {
+            "authenticated": True,
+            "id": current_user.id,
+            "email": current_user.email,
+            "name": current_user.name,
+            "picture": current_user.picture_url,
+            "is_admin": current_user.is_admin,
+        }
+    )

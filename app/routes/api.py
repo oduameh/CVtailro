@@ -101,7 +101,9 @@ def start_tailoring():
                 test_text = pdf.pages[0].extract_text()
                 if not test_text or len(test_text.strip()) < 20:
                     return (
-                        jsonify({"error": "PDF appears to be image-based or empty. Please use a text-based PDF."}),
+                        jsonify(
+                            {"error": "PDF appears to be image-based or empty. Please use a text-based PDF."}
+                        ),
                         400,
                     )
             resume_file.stream.seek(0)

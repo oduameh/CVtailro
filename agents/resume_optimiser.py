@@ -58,8 +58,7 @@ class ResumeOptimiserAgent(BaseAgent["ATSResume"]):
             if not role_bullets:
                 # Use original bullets if no optimised version
                 role_bullets = [
-                    {"bullet_index": bi, "text": b.original_text}
-                    for bi, b in enumerate(role.bullets)
+                    {"bullet_index": bi, "text": b.original_text} for bi, b in enumerate(role.bullets)
                 ]
 
             roles_data.append(

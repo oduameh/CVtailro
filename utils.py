@@ -15,9 +15,7 @@ import pdfplumber
 logger = logging.getLogger(__name__)
 
 
-def setup_logging(
-    verbose: bool = False, log_file: Path | None = None
-) -> None | Callable[[], None]:
+def setup_logging(verbose: bool = False, log_file: Path | None = None) -> None | Callable[[], None]:
     """Configure logging with console and optional file handlers.
 
     Args:
@@ -37,9 +35,7 @@ def setup_logging(
     if not root_logger.handlers:
         console = logging.StreamHandler(sys.stdout)
         console.setLevel(logging.DEBUG if verbose else logging.INFO)
-        console_fmt = logging.Formatter(
-            "%(asctime)s | %(levelname)-7s | %(message)s", datefmt="%H:%M:%S"
-        )
+        console_fmt = logging.Formatter("%(asctime)s | %(levelname)-7s | %(message)s", datefmt="%H:%M:%S")
         console.setFormatter(console_fmt)
         root_logger.addHandler(console)
 
@@ -48,9 +44,7 @@ def setup_logging(
         log_file.parent.mkdir(parents=True, exist_ok=True)
         file_handler = logging.FileHandler(log_file, encoding="utf-8")
         file_handler.setLevel(logging.DEBUG)
-        file_fmt = logging.Formatter(
-            "%(asctime)s | %(levelname)-7s | %(name)s | %(message)s"
-        )
+        file_fmt = logging.Formatter("%(asctime)s | %(levelname)-7s | %(name)s | %(message)s")
         file_handler.setFormatter(file_fmt)
         root_logger.addHandler(file_handler)
 

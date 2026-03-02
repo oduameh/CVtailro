@@ -25,33 +25,39 @@ def health():
         db_status = "unhealthy"
         status_code = 503
     return (
-        jsonify({
-            "status": "healthy" if db_status == "healthy" else "degraded",
-            "database": db_status,
-            "configured": AdminConfigManager.is_configured(),
-            "backend": "openrouter",
-        }),
+        jsonify(
+            {
+                "status": "healthy" if db_status == "healthy" else "degraded",
+                "database": db_status,
+                "configured": AdminConfigManager.is_configured(),
+                "backend": "openrouter",
+            }
+        ),
         status_code,
     )
 
 
 @main_bp.route("/api/status")
 def api_status():
-    return jsonify({
-        "configured": AdminConfigManager.is_configured(),
-        "has_admin_password": AdminConfigManager.has_password(),
-    })
+    return jsonify(
+        {
+            "configured": AdminConfigManager.is_configured(),
+            "has_admin_password": AdminConfigManager.has_password(),
+        }
+    )
 
 
 @main_bp.route("/api/models")
 def list_models():
     config = AdminConfigManager.load()
     default = config.default_model if config.default_model else DEFAULT_MODEL
-    return jsonify({
-        "models": [
-            {"id": model_id, "name": display_name}
-            for display_name, model_id in RECOMMENDED_MODELS.items()
-        ],
-        "default": default,
-        "user_selectable": config.allow_user_model_selection,
-    })
+    return jsonify(
+        {
+            "models": [
+                {"id": model_id, "name": display_name}
+                for display_name, model_id in RECOMMENDED_MODELS.items()
+            ],
+            "default": default,
+            "user_selectable": config.allow_user_model_selection,
+        }
+    )

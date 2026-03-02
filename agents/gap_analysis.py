@@ -26,9 +26,7 @@ from similarity import keyword_frequency_analysis, resume_job_similarity
 logger = logging.getLogger(__name__)
 
 
-def _compute_section_scores(
-    resume_data: ResumeData, job_analysis: JobAnalysis
-) -> dict[str, float]:
+def _compute_section_scores(resume_data: ResumeData, job_analysis: JobAnalysis) -> dict[str, float]:
     """Compute per-section keyword overlap scores.
 
     For each resume section (summary, experience, skills, education),
@@ -145,30 +143,23 @@ class GapAnalysisAgent:
                 return True  # treat empty strings as "present" to skip them
             if sl in resume_skills_lower:
                 return True
-            if resume_text_lower and re.search(
-                r"\b" + re.escape(sl) + r"\b", resume_text_lower
-            ):
+            if resume_text_lower and re.search(r"\b" + re.escape(sl) + r"\b", resume_text_lower):
                 return True
             # Substring match for multi-word skills
             return len(sl.split()) > 1 and sl in resume_text_lower
 
-        missing_keywords = [
-            s for s in required + preferred + tools if not skill_in_resume(s)
-        ]
+        missing_keywords = [s for s in required + preferred + tools if not skill_in_resume(s)]
 
         # Skills present but underrepresented
         all_job_keywords = [
-            kw for kw in set(required + preferred + tools + job_analysis.domain_keywords)
-            if kw.strip()
+            kw for kw in set(required + preferred + tools + job_analysis.domain_keywords) if kw.strip()
         ]
         weak_alignment: list[str] = []
         overrepresented: list[str] = []
         keyword_frequency: list[KeywordFrequency] = []
 
         if job_text and resume_text:
-            freq_data = keyword_frequency_analysis(
-                all_job_keywords, resume_text, job_text
-            )
+            freq_data = keyword_frequency_analysis(all_job_keywords, resume_text, job_text)
             keyword_frequency = [KeywordFrequency(**item) for item in freq_data]
 
             for kf in keyword_frequency:
@@ -192,9 +183,7 @@ class GapAnalysisAgent:
             else:
                 prio = SkillPriority.LOW
                 ctx = "Domain keyword not found in resume"
-            priority_list.append(
-                PrioritisedSkill(skill=skill, priority=prio, context=ctx)
-            )
+            priority_list.append(PrioritisedSkill(skill=skill, priority=prio, context=ctx))
 
         priority_order = {
             SkillPriority.CRITICAL: 0,
@@ -206,22 +195,23 @@ class GapAnalysisAgent:
 
         # ── Match score (weighted: required=3, tools=2, preferred=1) ──
         total_weight = len(set(required)) * 3 + len(set(tools)) * 2 + len(set(preferred)) * 1
-        missing_weight = sum(
-            3 if s in required else (2 if s in tools else 1)
-            for s in missing_keywords
-        )
+        missing_weight = sum(3 if s in required else (2 if s in tools else 1) for s in missing_keywords)
         keyword_coverage = max(0.0, 1.0 - (missing_weight / max(total_weight, 1)))
         match_score = round((cos_sim * 40) + (keyword_coverage * 40) + 20, 1)
         match_score = max(0.0, min(100.0, match_score))
 
         # ── Seniority calibration ──
         seniority_map = {
-            "JUNIOR": 2, "MID": 4, "SENIOR": 7, "STAFF": 10,
-            "PRINCIPAL": 12, "DIRECTOR": 15, "VP": 18, "C_LEVEL": 20,
+            "JUNIOR": 2,
+            "MID": 4,
+            "SENIOR": 7,
+            "STAFF": 10,
+            "PRINCIPAL": 12,
+            "DIRECTOR": 15,
+            "VP": 18,
+            "C_LEVEL": 20,
         }
-        expected_years = seniority_map.get(
-            job_analysis.inferred_seniority.value, 5
-        )
+        expected_years = seniority_map.get(job_analysis.inferred_seniority.value, 5)
         actual_years = resume_data.total_years_estimate
         if actual_years >= expected_years:
             seniority_cal = (

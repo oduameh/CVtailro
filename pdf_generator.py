@@ -416,7 +416,7 @@ def _render_role(title: str, company: str, location: str, date: str) -> str:
         f'  <div class="role-header">\n'
         f'    <span class="role-title">{_escape(title)}</span>\n'
         f'    <span class="role-date">{_escape(date)}</span>\n'
-        f'  </div>\n'
+        f"  </div>\n"
         f'  <div class="role-company">{_escape(company_loc)}</div>\n'
     )
 
@@ -427,7 +427,7 @@ def _render_edu(degree: str, school: str, date: str) -> str:
         f'  <div class="edu-header">\n'
         f'    <span class="edu-degree">{_escape(degree)}</span>\n'
         f'    <span class="edu-date">{_escape(date)}</span>\n'
-        f'  </div>\n'
+        f"  </div>\n"
         f'  <div class="edu-school">{_escape(school)}</div>\n'
     )
 
@@ -441,7 +441,7 @@ def _inline_md(text: str) -> str:
     """Process inline markdown: bold, italic, links."""
     text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
     text = re.sub(r"\*(.+?)\*", r"<em>\1</em>", text)
-    text = re.sub(r'\[([^\]]+)\]\(([^)]+(?:\([^)]*\))*[^)]*)\)', r'<a href="\2">\1</a>', text)
+    text = re.sub(r"\[([^\]]+)\]\(([^)]+(?:\([^)]*\))*[^)]*)\)", r'<a href="\2">\1</a>', text)
     return text
 
 
@@ -526,8 +526,12 @@ def markdown_to_html(md_content: str) -> str:
 
         # Role header: ### Title | Company | Location | Date  (recruiter format)
         role_h3 = re.match(r"^###\s+(.+?)(?:\s*\|\s*(.+?))?(?:\s*\|\s*(.+?))?(?:\s*\|\s*(.+?))?\s*$", line)
-        if role_h3 and ("experience" in current_section or "employment" in current_section
-                        or "work history" in current_section or "project" in current_section):
+        if role_h3 and (
+            "experience" in current_section
+            or "employment" in current_section
+            or "work history" in current_section
+            or "project" in current_section
+        ):
             close_role()
             flush_list()
             parts = [p.strip() for p in re.split(r"\s*\|\s*", re.sub(r"^###\s*", "", line)) if p.strip()]
@@ -548,8 +552,12 @@ def markdown_to_html(md_content: str) -> str:
 
         # Role header: **Title** | Company | Location  (ATS format)
         role3 = re.match(r"^\*\*(.+?)\*\*\s*\|\s*(.+?)\s*\|\s*(.+)", line)
-        if role3 and ("experience" in current_section or "employment" in current_section
-                      or "work history" in current_section or "project" in current_section):
+        if role3 and (
+            "experience" in current_section
+            or "employment" in current_section
+            or "work history" in current_section
+            or "project" in current_section
+        ):
             close_role()
             flush_list()
             title, company, location = role3.group(1), role3.group(2), role3.group(3)
@@ -566,8 +574,12 @@ def markdown_to_html(md_content: str) -> str:
 
         # Role header: **Title** | Company
         role2 = re.match(r"^\*\*(.+?)\*\*\s*\|\s*(.+)", line)
-        if role2 and ("experience" in current_section or "employment" in current_section
-                      or "work history" in current_section or "project" in current_section):
+        if role2 and (
+            "experience" in current_section
+            or "employment" in current_section
+            or "work history" in current_section
+            or "project" in current_section
+        ):
             close_role()
             flush_list()
             title, company = role2.group(1), role2.group(2)
@@ -622,7 +634,9 @@ def markdown_to_html(md_content: str) -> str:
                     f' &mdash; <span class="cert-meta">{_escape(cert_plain.group(2))}</span></div>'
                 )
             else:
-                html_parts.append(f'<div class="cert"><span class="cert-name">{_escape(stripped)}</span></div>')
+                html_parts.append(
+                    f'<div class="cert"><span class="cert-name">{_escape(stripped)}</span></div>'
+                )
             i += 1
             continue
 
@@ -640,7 +654,7 @@ def markdown_to_html(md_content: str) -> str:
             flush_list()
             html_parts.append(
                 f'<p class="skills-category"><span class="skills-cat-name">'
-                f'{_escape(cat_skill.group(1))}:</span> {_escape(cat_skill.group(2))}</p>'
+                f"{_escape(cat_skill.group(1))}:</span> {_escape(cat_skill.group(2))}</p>"
             )
             i += 1
             continue
@@ -664,13 +678,14 @@ def markdown_to_html(md_content: str) -> str:
         if stripped and "skill" in current_section and re.match(r"^\*\*", stripped):
             close_role()
             flush_list()
-            html_parts.append(f"<p class=\"skills-category\">{_inline_md(stripped)}</p>")
+            html_parts.append(f'<p class="skills-category">{_inline_md(stripped)}</p>')
             i += 1
             continue
 
         # Summary — consolidate consecutive lines into a single paragraph
-        if stripped and ("summary" in current_section or "profile" in current_section
-                         or "objective" in current_section):
+        if stripped and (
+            "summary" in current_section or "profile" in current_section or "objective" in current_section
+        ):
             flush_list()
             summary_text = stripped
             while i + 1 < len(lines):
@@ -742,7 +757,6 @@ def generate_resume_pdf(
         raise RuntimeError(f"PDF generation produced empty or missing file: {out}")
 
     logger.info(
-        f"PDF generated: {out} ({out.stat().st_size} bytes, "
-        f"template: {template}, took {pdf_elapsed:.1f}s)"
+        f"PDF generated: {out} ({out.stat().st_size} bytes, template: {template}, took {pdf_elapsed:.1f}s)"
     )
     return out

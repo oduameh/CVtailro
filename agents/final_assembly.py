@@ -114,9 +114,7 @@ class FinalAssemblyAgent(BaseAgent["FinalOutput"]):
             talking_points=talking_points,
         )
 
-    def _generate_talking_points(
-        self, input_data: Any
-    ) -> list[TalkingPoint]:
+    def _generate_talking_points(self, input_data: Any) -> list[TalkingPoint]:
         """Use the OpenRouter API to generate interview talking points."""
         system = self.format_system_prompt()
         user_message = self.prepare_user_message(input_data)
@@ -139,7 +137,6 @@ class FinalAssemblyAgent(BaseAgent["FinalOutput"]):
 
         except Exception as e:
             logger.warning(
-                f"[{self.AGENT_NAME}] Failed to generate talking points: {e}. "
-                f"Returning empty list."
+                f"[{self.AGENT_NAME}] Failed to generate talking points: {e}. Returning empty list."
             )
             return []

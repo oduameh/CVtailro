@@ -34,11 +34,13 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 # Reusing a single Session across all agent calls avoids the overhead of
 # establishing a new TCP + TLS connection on every request to OpenRouter.
 _http_session = requests.Session()
-_http_session.headers.update({
-    "Content-Type": "application/json",
-    "HTTP-Referer": "https://cvtailro.app",
-    "X-Title": "CVtailro",
-})
+_http_session.headers.update(
+    {
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://cvtailro.app",
+        "X-Title": "CVtailro",
+    }
+)
 
 
 class AgentError(Exception):
@@ -86,9 +88,7 @@ class BaseAgent(ABC, Generic[T]):
         if self._system_prompt is None:
             prompt_path = Path(__file__).parent / "prompts" / self.PROMPT_FILE
             if not prompt_path.exists():
-                raise FileNotFoundError(
-                    f"Prompt template not found: {prompt_path}"
-                )
+                raise FileNotFoundError(f"Prompt template not found: {prompt_path}")
             self._system_prompt = prompt_path.read_text(encoding="utf-8")
         return self._system_prompt
 
@@ -103,9 +103,7 @@ class BaseAgent(ABC, Generic[T]):
 
         # Inject output schema if placeholder present
         if "{output_schema}" in prompt and self.OUTPUT_MODEL is not None:
-            schema = json.dumps(
-                self.OUTPUT_MODEL.model_json_schema(), indent=2
-            )
+            schema = json.dumps(self.OUTPUT_MODEL.model_json_schema(), indent=2)
             kwargs.setdefault("output_schema", schema)
 
         for key, value in kwargs.items():
@@ -162,20 +160,14 @@ class BaseAgent(ABC, Generic[T]):
             )
 
             if response.status_code == 401:
-                raise AgentError(
-                    "Invalid OpenRouter API key. Check your key and try again."
-                )
+                raise AgentError("Invalid OpenRouter API key. Check your key and try again.")
             if response.status_code == 402:
-                raise AgentError(
-                    "Insufficient OpenRouter credits. Add credits at openrouter.ai."
-                )
+                raise AgentError("Insufficient OpenRouter credits. Add credits at openrouter.ai.")
             if response.status_code == 429:
                 # Wait for rate limit to clear, then retry
                 retry_after = int(response.headers.get("Retry-After", "10"))
                 retry_after = min(retry_after, 30)  # Cap at 30s
-                logger.warning(
-                    f"Rate limited (429). Waiting {retry_after}s before retry..."
-                )
+                logger.warning(f"Rate limited (429). Waiting {retry_after}s before retry...")
                 time.sleep(retry_after)
                 raise AgentError(
                     "The AI service is handling high demand. Please wait a moment and try again."
@@ -186,17 +178,12 @@ class BaseAgent(ABC, Generic[T]):
                     error_detail = response.json().get("error", {}).get("message", "")
                 except (ValueError, json.JSONDecodeError):
                     error_detail = response.text[:200]
-                raise AgentError(
-                    f"OpenRouter API error {response.status_code}: {error_detail}"
-                )
+                raise AgentError(f"OpenRouter API error {response.status_code}: {error_detail}")
 
             try:
                 data = response.json()
             except (ValueError, json.JSONDecodeError) as e:
-                raise AgentError(
-                    f"OpenRouter returned non-JSON response: "
-                    f"{response.text[:300]}"
-                ) from e
+                raise AgentError(f"OpenRouter returned non-JSON response: {response.text[:300]}") from e
 
             # Log token usage at DEBUG level
             usage = data.get("usage", {})
@@ -209,9 +196,7 @@ class BaseAgent(ABC, Generic[T]):
                 )
                 # Track analytics if this agent belongs to a pipeline job
                 if self.config.job_id:
-                    pipeline_analytics.record_api_call(
-                        self.config.job_id, usage
-                    )
+                    pipeline_analytics.record_api_call(self.config.job_id, usage)
 
             # Check if actual model differs from requested model
             actual_model = data.get("model", "")
@@ -236,9 +221,7 @@ class BaseAgent(ABC, Generic[T]):
                 "The AI model took too long to respond. This usually resolves in a minute — please try again."
             )
         except requests.exceptions.ConnectionError:
-            raise AgentError(
-                "Could not reach the AI service. Please check your connection and try again."
-            )
+            raise AgentError("Could not reach the AI service. Please check your connection and try again.")
 
     def run(self, input_data: Any, **prompt_vars: Any) -> T:
         """Execute the full agent pipeline."""
@@ -248,15 +231,10 @@ class BaseAgent(ABC, Generic[T]):
         system = self.format_system_prompt(**prompt_vars)
         user_message = self.prepare_user_message(input_data)
 
-        logger.info(
-            f"[{self.AGENT_NAME}] Calling OpenRouter API ({self.config.model})..."
-        )
+        logger.info(f"[{self.AGENT_NAME}] Calling OpenRouter API ({self.config.model})...")
+        logger.debug(f"[{self.AGENT_NAME}] API key (masked): {_mask_key(self.config.api_key)}")
         logger.debug(
-            f"[{self.AGENT_NAME}] API key (masked): {_mask_key(self.config.api_key)}"
-        )
-        logger.debug(
-            f"[{self.AGENT_NAME}] System prompt: {len(system)} chars, "
-            f"User message: {len(user_message)} chars"
+            f"[{self.AGENT_NAME}] System prompt: {len(system)} chars, User message: {len(user_message)} chars"
         )
 
         last_error: Exception | None = None
@@ -266,12 +244,8 @@ class BaseAgent(ABC, Generic[T]):
                 call_start = time.time()
                 raw_text = self._call_llm_api(system, user_message)
                 call_elapsed = time.time() - call_start
-                logger.info(
-                    f"[{self.AGENT_NAME}] LLM API call took {call_elapsed:.1f}s"
-                )
-                logger.debug(
-                    f"[{self.AGENT_NAME}] Response length: {len(raw_text)} chars"
-                )
+                logger.info(f"[{self.AGENT_NAME}] LLM API call took {call_elapsed:.1f}s")
+                logger.debug(f"[{self.AGENT_NAME}] Response length: {len(raw_text)} chars")
 
                 parsed_json = self._extract_json(raw_text)
                 result = self.OUTPUT_MODEL.model_validate(parsed_json)
@@ -283,37 +257,32 @@ class BaseAgent(ABC, Generic[T]):
             except (ValidationError, json.JSONDecodeError, KeyError) as e:
                 last_error = e
                 logger.warning(
-                    f"[{self.AGENT_NAME}] Attempt {attempt}/{self.MAX_RETRIES} "
-                    f"failed (parse/validation): {e}"
+                    f"[{self.AGENT_NAME}] Attempt {attempt}/{self.MAX_RETRIES} failed (parse/validation): {e}"
                 )
                 if self.config.job_id:
                     pipeline_analytics.record_retry(self.config.job_id)
                 if attempt < self.MAX_RETRIES:
-                    delay = self.RETRY_DELAY_BASE ** attempt
+                    delay = self.RETRY_DELAY_BASE**attempt
                     logger.info(f"Retrying in {delay:.1f}s...")
                     time.sleep(delay)
 
             except AgentError as e:
                 last_error = e
-                logger.warning(
-                    f"[{self.AGENT_NAME}] Attempt {attempt}/{self.MAX_RETRIES} "
-                    f"API error: {e}"
-                )
+                logger.warning(f"[{self.AGENT_NAME}] Attempt {attempt}/{self.MAX_RETRIES} API error: {e}")
                 if self.config.job_id:
                     pipeline_analytics.record_retry(self.config.job_id)
                 # Do NOT retry on auth errors — they won't self-resolve
                 if "Invalid OpenRouter API key" in str(e) or "Insufficient" in str(e):
                     break
                 if attempt < self.MAX_RETRIES:
-                    delay = self.RETRY_DELAY_BASE ** attempt
+                    delay = self.RETRY_DELAY_BASE**attempt
                     logger.info(f"Retrying in {delay:.1f}s...")
                     time.sleep(delay)
                 else:
                     break
 
         raise AgentError(
-            f"We couldn't complete this step after {self.MAX_RETRIES} attempts. "
-            f"Please try again in a moment."
+            f"We couldn't complete this step after {self.MAX_RETRIES} attempts. Please try again in a moment."
         ) from last_error
 
     @staticmethod
@@ -343,9 +312,7 @@ class BaseAgent(ABC, Generic[T]):
         candidates: list[str] = []
 
         # Try to find JSON in code fence (greedy — handles nested objects)
-        fence_match = re.search(
-            r"```(?:json)?\s*(\{[^`]*\})\s*```", text, re.DOTALL
-        )
+        fence_match = re.search(r"```(?:json)?\s*(\{[^`]*\})\s*```", text, re.DOTALL)
         if fence_match:
             candidates.append(fence_match.group(1))
 
@@ -367,6 +334,4 @@ class BaseAgent(ABC, Generic[T]):
             except json.JSONDecodeError:
                 pass
 
-        raise json.JSONDecodeError(
-            "No JSON object found in response", text, 0
-        )
+        raise json.JSONDecodeError("No JSON object found in response", text, 0)

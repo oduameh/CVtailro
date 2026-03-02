@@ -96,8 +96,6 @@ def init_sentry(flask_app: Flask) -> None:
         )
         logging.getLogger("cvtailro").info("Sentry error tracking enabled")
     except ImportError:
-        logging.getLogger("cvtailro").warning(
-            "sentry-sdk not installed — Sentry disabled"
-        )
+        logging.getLogger("cvtailro").warning("sentry-sdk not installed — Sentry disabled")
     except Exception as e:
         logging.getLogger("cvtailro").warning(f"Sentry init failed: {e}")

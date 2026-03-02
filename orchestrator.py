@@ -120,9 +120,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default=DEFAULT_MODEL,
         help=f"OpenRouter model ID (default: {DEFAULT_MODEL})",
     )
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Enable debug logging"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
     return parser
 
 
@@ -261,9 +259,7 @@ def run_pipeline(args: argparse.Namespace) -> None:
             f"{total_bullets} bullets, "
             f"{len(resume_data.global_skills)} skills"
         )
-        logger.info(
-            f"  -> Total experience: {resume_data.total_years_estimate} years"
-        )
+        logger.info(f"  -> Total experience: {resume_data.total_years_estimate} years")
         logger.info(f"  -> Completed in {time.time() - stage_start:.1f}s")
 
     # ── STAGE 3: Gap Analysis ─────────────────────────────────
@@ -275,19 +271,13 @@ def run_pipeline(args: argparse.Namespace) -> None:
         stage_start = time.time()
 
         agent3 = GapAnalysisAgent(config)
-        gap_report = agent3.run(
-            {"job_analysis": job_analysis, "resume_data": resume_data}
-        )
+        gap_report = agent3.run({"job_analysis": job_analysis, "resume_data": resume_data})
         save_json(gap_report.model_dump(), output_dir / "03_gap_report.json")
 
         logger.info(f"  -> Match score: {gap_report.match_score:.1f}%")
         logger.info(f"  -> Cosine similarity: {gap_report.cosine_similarity:.4f}")
-        logger.info(
-            f"  -> Missing keywords: {len(gap_report.missing_keywords)}"
-        )
-        logger.info(
-            f"  -> Weak alignments: {len(gap_report.weak_alignment)}"
-        )
+        logger.info(f"  -> Missing keywords: {len(gap_report.missing_keywords)}")
+        logger.info(f"  -> Weak alignments: {len(gap_report.weak_alignment)}")
         logger.info(f"  -> Completed in {time.time() - stage_start:.1f}s")
 
     # ── STAGE 4: Bullet Optimiser ─────────────────────────────
@@ -313,16 +303,10 @@ def run_pipeline(args: argparse.Namespace) -> None:
             output_dir / "04_optimised_bullets.json",
         )
 
-        fabrication_count = sum(
-            1 for b in optimised_bullets.bullets if b.fabrication_flag
-        )
-        logger.info(
-            f"  -> Optimised {len(optimised_bullets.bullets)} bullets"
-        )
+        fabrication_count = sum(1 for b in optimised_bullets.bullets if b.fabrication_flag)
+        logger.info(f"  -> Optimised {len(optimised_bullets.bullets)} bullets")
         if fabrication_count:
-            logger.warning(
-                f"  -> {fabrication_count} bullets flagged for potential fabrication"
-            )
+            logger.warning(f"  -> {fabrication_count} bullets flagged for potential fabrication")
         logger.info(f"  -> Completed in {time.time() - stage_start:.1f}s")
 
     # ── STAGE 5: Resume Optimiser (unified ATS + Recruiter) ──
@@ -345,12 +329,8 @@ def run_pipeline(args: argparse.Namespace) -> None:
         save_json(ats_resume.model_dump(), output_dir / "05_ats_resume.json")
 
         checks_passed = sum(1 for c in ats_resume.ats_checks if c.passed)
-        logger.info(
-            f"  -> ATS checks: {checks_passed}/{len(ats_resume.ats_checks)} passed"
-        )
-        logger.info(
-            f"  -> Job title aligned: {ats_resume.job_title_aligned}"
-        )
+        logger.info(f"  -> ATS checks: {checks_passed}/{len(ats_resume.ats_checks)} passed")
+        logger.info(f"  -> Job title aligned: {ats_resume.job_title_aligned}")
         logger.info(f"  -> Completed in {time.time() - stage_start:.1f}s")
 
     # ── STAGE 6: Final Assembly (talking points) ──────────────
@@ -395,9 +375,7 @@ def run_pipeline(args: argparse.Namespace) -> None:
     # ── Write final artifacts ─────────────────────────────────
 
     # Unified resume (markdown, PDF)
-    save_markdown(
-        ats_resume.markdown_content, output_dir / "tailored_resume.md"
-    )
+    save_markdown(ats_resume.markdown_content, output_dir / "tailored_resume.md")
     generate_resume_pdf(
         ats_resume.markdown_content,
         output_dir / "tailored_resume.pdf",
@@ -423,12 +401,8 @@ def run_pipeline(args: argparse.Namespace) -> None:
     logger.info("PIPELINE COMPLETE")
     logger.info("=" * 60)
     logger.info(f"Total time: {total_time:.1f}s")
-    logger.info(
-        f"Overall match score: {match_report.overall_match_score:.1f}%"
-    )
-    logger.info(
-        f"Cosine similarity: {match_report.cosine_similarity:.4f}"
-    )
+    logger.info(f"Overall match score: {match_report.overall_match_score:.1f}%")
+    logger.info(f"Cosine similarity: {match_report.cosine_similarity:.4f}")
     logger.info(f"Rewrite mode: {match_report.rewrite_mode}")
     logger.info("")
     logger.info("Output files:")

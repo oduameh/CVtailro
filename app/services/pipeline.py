@@ -58,9 +58,7 @@ def cleanup_old_jobs(ttl: int = 900) -> None:
     cutoff = time.time() - ttl
     with jobs_lock:
         expired = [
-            k
-            for k, v in jobs.items()
-            if v.get("created_at", 0) < cutoff and v.get("status") != "running"
+            k for k, v in jobs.items() if v.get("created_at", 0) < cutoff and v.get("status") != "running"
         ]
         for k in expired:
             del jobs[k]
@@ -103,9 +101,7 @@ def run_pipeline_job(
     progress_queue = jobs[job_id]["queue"]
 
     def emit(stage: int, total: int, name: str, status: str, detail: str = "") -> None:
-        progress_queue.put(
-            {"stage": stage, "total": total, "name": name, "status": status, "detail": detail}
-        )
+        progress_queue.put({"stage": stage, "total": total, "name": name, "status": status, "detail": detail})
 
     with pipeline_queue_lock:
         pipeline_queue_depth += 1
@@ -164,7 +160,10 @@ def run_pipeline_job(
                 job_analysis = agent1.run(job_text)
                 save_json(job_analysis.model_dump(), output_dir / "01_job_analysis.json")
                 emit(
-                    1, 6, "Job Intelligence", "done",
+                    1,
+                    6,
+                    "Job Intelligence",
+                    "done",
                     f"{len(job_analysis.required_skills)} required skills, "
                     f"{len(job_analysis.tools)} tools detected",
                 )
@@ -180,7 +179,10 @@ def run_pipeline_job(
                 save_json(resume_data.model_dump(), output_dir / "02_resume_data.json")
                 total_bullets = sum(len(r.bullets) for r in resume_data.roles)
                 emit(
-                    2, 6, "Resume Parser", "done",
+                    2,
+                    6,
+                    "Resume Parser",
+                    "done",
                     f"{len(resume_data.roles)} roles, {total_bullets} bullets, "
                     f"{resume_data.total_years_estimate:.0f} years experience",
                 )
@@ -205,7 +207,10 @@ def run_pipeline_job(
         gap_report = agent3.run({"job_analysis": job_analysis, "resume_data": resume_data})
         save_json(gap_report.model_dump(), output_dir / "03_gap_report.json")
         emit(
-            3, 6, "Gap Analysis", "done",
+            3,
+            6,
+            "Gap Analysis",
+            "done",
             f"Match: {gap_report.match_score:.0f}% | "
             f"Cosine: {gap_report.cosine_similarity:.2f} | "
             f"{len(gap_report.missing_keywords)} missing keywords",
@@ -243,16 +248,21 @@ def run_pipeline_job(
             nonlocal ats_resume
             try:
                 agent5 = ResumeOptimiserAgent(pipeline_config)
-                ats_resume = agent5.run({
-                    "optimised_bullets": optimised_bullets,
-                    "job_analysis": job_analysis,
-                    "gap_report": gap_report,
-                    "resume_data": resume_data,
-                })
+                ats_resume = agent5.run(
+                    {
+                        "optimised_bullets": optimised_bullets,
+                        "job_analysis": job_analysis,
+                        "gap_report": gap_report,
+                        "resume_data": resume_data,
+                    }
+                )
                 save_json(ats_resume.model_dump(), output_dir / "05_ats_resume.json")
                 checks_passed = sum(1 for c in ats_resume.ats_checks if c.passed)
                 emit(
-                    5, 6, "Resume Optimiser", "done",
+                    5,
+                    6,
+                    "Resume Optimiser",
+                    "done",
                     f"ATS checks: {checks_passed}/{len(ats_resume.ats_checks)} passed",
                 )
             except Exception as e:
@@ -263,12 +273,14 @@ def run_pipeline_job(
             nonlocal talking_points
             try:
                 agent6 = FinalAssemblyAgent(pipeline_config)
-                talking_points = agent6._generate_talking_points({
-                    "gap_report": gap_report,
-                    "job_analysis": job_analysis,
-                    "optimised_bullets": optimised_bullets,
-                    "resume_data": resume_data,
-                })
+                talking_points = agent6._generate_talking_points(
+                    {
+                        "gap_report": gap_report,
+                        "job_analysis": job_analysis,
+                        "optimised_bullets": optimised_bullets,
+                        "resume_data": resume_data,
+                    }
+                )
             except Exception as e:
                 logger.warning(f"Talking points generation failed: {e}")
                 talking_points = []
@@ -348,7 +360,11 @@ def run_pipeline_job(
                     kw_lower = kw.lower().strip()
                     if not kw_lower:
                         continue
-                    if re.search(r"\b" + re.escape(kw_lower) + r"\b", sec_lower) or len(kw_lower.split()) > 1 and kw_lower in sec_lower:
+                    if (
+                        re.search(r"\b" + re.escape(kw_lower) + r"\b", sec_lower)
+                        or len(kw_lower.split()) > 1
+                        and kw_lower in sec_lower
+                    ):
                         found += 1
                 tailored_section_scores[sec_name] = round((found / total_skills) * 100, 1)
             gap_report.section_scores = tailored_section_scores
@@ -383,9 +399,7 @@ def run_pipeline_job(
         save_markdown(ats_resume.markdown_content, output_dir / resume_md_name)
         template_pdf_names = []
         for tpl_name in ["modern", "executive", "minimal"]:
-            pdf_name = safe_filename(
-                job_analysis.job_title, job_analysis.company, f"{tpl_name.title()}.pdf"
-            )
+            pdf_name = safe_filename(job_analysis.job_title, job_analysis.company, f"{tpl_name.title()}.pdf")
             generate_resume_pdf(ats_resume.markdown_content, output_dir / pdf_name, template=tpl_name)
             template_pdf_names.append(pdf_name)
         generate_resume_docx(ats_resume.markdown_content, output_dir / resume_docx_name)
@@ -472,11 +486,13 @@ def run_pipeline_job(
             from agents.cover_letter import CoverLetterAgent
 
             cover_agent = CoverLetterAgent(pipeline_config)
-            cover_result = cover_agent.run({
-                "job_analysis": job_analysis,
-                "resume_md": ats_resume.markdown_content,
-                "candidate_name": getattr(resume_data, "name", ""),
-            })
+            cover_result = cover_agent.run(
+                {
+                    "job_analysis": job_analysis,
+                    "resume_md": ats_resume.markdown_content,
+                    "candidate_name": getattr(resume_data, "name", ""),
+                }
+            )
             cover_letter_md = cover_result.cover_letter_md
         except Exception as e:
             logger.warning(f"Cover letter generation failed (non-critical): {e}")
@@ -563,9 +579,7 @@ def run_pipeline_job(
                 "recruiter_resume_md": ats_resume.markdown_content,
                 "talking_points_md": format_talking_points(talking_points),
                 "cover_letter_md": cover_letter_md,
-                "section_scores": gap_report.section_scores
-                if hasattr(gap_report, "section_scores")
-                else {},
+                "section_scores": gap_report.section_scores if hasattr(gap_report, "section_scores") else {},
                 "resume_quality": resume_quality_data,
                 "email_templates_md": email_templates_md,
                 "keyword_density": keyword_density_data,
@@ -590,12 +604,14 @@ def run_pipeline_job(
         import traceback
 
         with pipeline_errors_lock:
-            pipeline_errors.append({
-                "time": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
-                "model": model,
-                "error": error_msg,
-                "traceback": traceback.format_exc()[-500:],
-            })
+            pipeline_errors.append(
+                {
+                    "time": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+                    "model": model,
+                    "error": error_msg,
+                    "traceback": traceback.format_exc()[-500:],
+                }
+            )
             if len(pipeline_errors) > 50:
                 pipeline_errors.pop(0)
 

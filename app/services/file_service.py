@@ -72,9 +72,7 @@ def serve_download(job_id: str, filename: str):
     return _serve_from_db(db_job, safe_name)
 
 
-def _can_access_job(
-    job_user_id: str | None, request_user_id: str | None, is_authed: bool
-) -> bool:
+def _can_access_job(job_user_id: str | None, request_user_id: str | None, is_authed: bool) -> bool:
     """Return True if the current user may access a job (owned by job_user_id)."""
     if job_user_id is None:
         return True  # Anonymous job — anyone can access
@@ -83,9 +81,7 @@ def _can_access_job(
     return job_user_id == request_user_id
 
 
-def _resolve_job_ownership(
-    job_id: str, user_id: str | None, is_authed: bool
-) -> TailoringJob | None:
+def _resolve_job_ownership(job_id: str, user_id: str | None, is_authed: bool) -> TailoringJob | None:
     """Find a TailoringJob the current user is allowed to access."""
     db_job = None
     if is_authed:

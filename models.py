@@ -158,9 +158,7 @@ class KeywordFrequency(BaseModel):
 class GapReport(BaseModel):
     """Structured output from the Gap Analysis Agent."""
 
-    match_score: float = Field(
-        ge=0.0, le=100.0, description="Overall match percentage (0-100)"
-    )
+    match_score: float = Field(ge=0.0, le=100.0, description="Overall match percentage (0-100)")
     cosine_similarity: float = Field(
         default=0.0, ge=0.0, le=1.0, description="TF-IDF cosine similarity score"
     )
@@ -209,7 +207,10 @@ class OptimisedBullet(BaseModel):
         description="True if the change might add unverifiable claims",
     )
     quality_score: int = Field(default=5, description="Quality score 1-10 for the optimised bullet")
-    improvements: list[str] = Field(default_factory=list, description="List of improvement tags applied: 'stronger_verb', 'added_metrics', 'keyword_injected', 'shortened', 'reframed'")
+    improvements: list[str] = Field(
+        default_factory=list,
+        description="List of improvement tags applied: 'stronger_verb', 'added_metrics', 'keyword_injected', 'shortened', 'reframed'",
+    )
 
 
 class OptimisedBullets(BaseModel):
@@ -217,9 +218,7 @@ class OptimisedBullets(BaseModel):
 
     mode_used: RewriteMode
     bullets: list[OptimisedBullet]
-    summary_rewrite: str = Field(
-        default="", description="Rewritten professional summary"
-    )
+    summary_rewrite: str = Field(default="", description="Rewritten professional summary")
     original_summary: str = ""
 
 

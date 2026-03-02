@@ -85,9 +85,7 @@ class PipelineAnalytics:
 
             # Estimate cost (rough OpenRouter pricing)
             model = job["model"]
-            cost = self._estimate_cost(
-                model, job["prompt_tokens"], job["completion_tokens"]
-            )
+            cost = self._estimate_cost(model, job["prompt_tokens"], job["completion_tokens"])
             job["estimated_cost_usd"] = cost
 
             # Update global stats
@@ -114,9 +112,7 @@ class PipelineAnalytics:
             stats["tokens_by_model"] = dict(stats["tokens_by_model"])
             # Compute average cost per job
             if stats["total_jobs"] > 0:
-                stats["avg_cost_per_job"] = round(
-                    stats["total_cost_usd"] / stats["total_jobs"], 6
-                )
+                stats["avg_cost_per_job"] = round(stats["total_cost_usd"] / stats["total_jobs"], 6)
             else:
                 stats["avg_cost_per_job"] = 0.0
             return stats
@@ -124,9 +120,7 @@ class PipelineAnalytics:
     # ── Cost estimation ──────────────────────────────────────────────────────
 
     @staticmethod
-    def _estimate_cost(
-        model: str, prompt_tokens: int, completion_tokens: int
-    ) -> float:
+    def _estimate_cost(model: str, prompt_tokens: int, completion_tokens: int) -> float:
         """Rough cost estimate based on OpenRouter pricing.
 
         Prices are per **million** tokens (prompt / completion).
@@ -150,9 +144,7 @@ class PipelineAnalytics:
             "meta-llama/llama-4-maverick": (0.50, 0.70),
         }
         prices = PRICING.get(model, (1.0, 3.0))  # default estimate
-        cost = (
-            prompt_tokens * prices[0] + completion_tokens * prices[1]
-        ) / 1_000_000
+        cost = (prompt_tokens * prices[0] + completion_tokens * prices[1]) / 1_000_000
         return round(cost, 6)
 
 

@@ -32,12 +32,8 @@ class UsageTracker:
         with self._lock:
             now = time.time()
             hour_ago = now - 3600
-            active = sum(
-                1 for ts in self._requests.values() if any(t > hour_ago for t in ts)
-            )
-            recent = sum(
-                len([t for t in ts if t > hour_ago]) for ts in self._requests.values()
-            )
+            active = sum(1 for ts in self._requests.values() if any(t > hour_ago for t in ts))
+            recent = sum(len([t for t in ts if t > hour_ago]) for ts in self._requests.values())
             return {
                 "total_requests": self._total,
                 "requests_last_hour": recent,
@@ -58,18 +54,14 @@ class LoginRateLimiter:
     def is_blocked(self, ip: str) -> bool:
         with self._lock:
             now = time.time()
-            attempts = [
-                t for t in self._failures.get(ip, []) if t > now - self.WINDOW
-            ]
+            attempts = [t for t in self._failures.get(ip, []) if t > now - self.WINDOW]
             self._failures[ip] = attempts
             return len(attempts) >= self.MAX_ATTEMPTS
 
     def record_failure(self, ip: str) -> None:
         with self._lock:
             now = time.time()
-            attempts = [
-                t for t in self._failures.get(ip, []) if t > now - self.WINDOW
-            ]
+            attempts = [t for t in self._failures.get(ip, []) if t > now - self.WINDOW]
             attempts.append(now)
             self._failures[ip] = attempts
 

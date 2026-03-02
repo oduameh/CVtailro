@@ -8,12 +8,8 @@ from app.extensions import db as _db
 
 def pytest_configure(config):
     """Register custom markers."""
-    config.addinivalue_line(
-        "markers", "unit: Unit tests — isolated, fast, no DB/network"
-    )
-    config.addinivalue_line(
-        "markers", "integration: Integration tests — DB, API, auth flows"
-    )
+    config.addinivalue_line("markers", "unit: Unit tests — isolated, fast, no DB/network")
+    config.addinivalue_line("markers", "integration: Integration tests — DB, API, auth flows")
 
 
 @pytest.fixture(scope="session")

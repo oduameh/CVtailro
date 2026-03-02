@@ -135,9 +135,7 @@ class AdminConfigManager:
                 if CONFIG_FILE.exists():
                     try:
                         data = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
-                        config = AdminConfig(
-                            **{k: v for k, v in data.items() if hasattr(AdminConfig, k)}
-                        )
+                        config = AdminConfig(**{k: v for k, v in data.items() if hasattr(AdminConfig, k)})
                     except Exception as e:
                         logger.error(f"Failed to load admin config from file: {e}")
 
@@ -162,9 +160,7 @@ class AdminConfigManager:
             if not _save_to_db(config):
                 # Fall back to file
                 try:
-                    CONFIG_FILE.write_text(
-                        json.dumps(asdict(config), indent=2) + "\n", encoding="utf-8"
-                    )
+                    CONFIG_FILE.write_text(json.dumps(asdict(config), indent=2) + "\n", encoding="utf-8")
                 except OSError as e:
                     logger.error(f"Failed to write admin config to disk: {e}")
                     raise
@@ -208,6 +204,4 @@ class AdminConfigManager:
 
     @staticmethod
     def _hash_password(password: str) -> str:
-        return generate_password_hash(
-            password, method="pbkdf2:sha256", salt_length=16
-        )
+        return generate_password_hash(password, method="pbkdf2:sha256", salt_length=16)

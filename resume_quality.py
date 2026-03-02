@@ -14,26 +14,94 @@ from dataclasses import dataclass, field
 
 # Strong action verbs (curated list)
 STRONG_VERBS = {
-    "achieved", "accelerated", "architected", "automated", "built", "championed",
-    "consolidated", "created", "decreased", "delivered", "designed", "developed",
-    "directed", "drove", "eliminated", "enabled", "engineered", "established",
-    "exceeded", "expanded", "generated", "grew", "implemented", "improved",
-    "increased", "initiated", "integrated", "launched", "led", "managed",
-    "mentored", "migrated", "modernized", "negotiated", "optimized", "orchestrated",
-    "overhauled", "pioneered", "produced", "reduced", "refactored", "resolved",
-    "restructured", "revamped", "scaled", "secured", "simplified", "spearheaded",
-    "streamlined", "strengthened", "surpassed", "transformed", "unified", "upgraded",
+    "achieved",
+    "accelerated",
+    "architected",
+    "automated",
+    "built",
+    "championed",
+    "consolidated",
+    "created",
+    "decreased",
+    "delivered",
+    "designed",
+    "developed",
+    "directed",
+    "drove",
+    "eliminated",
+    "enabled",
+    "engineered",
+    "established",
+    "exceeded",
+    "expanded",
+    "generated",
+    "grew",
+    "implemented",
+    "improved",
+    "increased",
+    "initiated",
+    "integrated",
+    "launched",
+    "led",
+    "managed",
+    "mentored",
+    "migrated",
+    "modernized",
+    "negotiated",
+    "optimized",
+    "orchestrated",
+    "overhauled",
+    "pioneered",
+    "produced",
+    "reduced",
+    "refactored",
+    "resolved",
+    "restructured",
+    "revamped",
+    "scaled",
+    "secured",
+    "simplified",
+    "spearheaded",
+    "streamlined",
+    "strengthened",
+    "surpassed",
+    "transformed",
+    "unified",
+    "upgraded",
 }
 
 WEAK_VERBS = {
-    "helped", "worked", "assisted", "contributed", "participated", "supported",
-    "handled", "did", "made", "got", "used", "utilized", "was responsible for",
+    "helped",
+    "worked",
+    "assisted",
+    "contributed",
+    "participated",
+    "supported",
+    "handled",
+    "did",
+    "made",
+    "got",
+    "used",
+    "utilized",
+    "was responsible for",
 }
 
 FILLER_WORDS = {
-    "various", "multiple", "numerous", "several", "effectively", "successfully",
-    "responsible for", "duties included", "tasked with", "in charge of",
-    "served as", "acted as", "helped to", "worked on", "involved in",
+    "various",
+    "multiple",
+    "numerous",
+    "several",
+    "effectively",
+    "successfully",
+    "responsible for",
+    "duties included",
+    "tasked with",
+    "in charge of",
+    "served as",
+    "acted as",
+    "helped to",
+    "worked on",
+    "involved in",
 }
 
 
@@ -73,7 +141,7 @@ def analyze_bullet(text: str) -> BulletAnalysis:
     word_count = len(words)
 
     # Check for metrics (numbers, percentages, dollar amounts)
-    has_metrics = bool(re.search(r'\d+%|\$[\d,.]+|\d{2,}[+]?|\d+x\b', text))
+    has_metrics = bool(re.search(r"\d+%|\$[\d,.]+|\d{2,}[+]?|\d+x\b", text))
 
     # Extract action verb (first word, lowercase)
     action_verb = words[0].lower().rstrip("ed,s") if words else ""
@@ -136,10 +204,17 @@ def analyze_resume(bullets: list[str]) -> ResumeQualityReport:
     """Analyze all resume bullets and generate a quality report."""
     if not bullets:
         return ResumeQualityReport(
-            total_bullets=0, bullets_with_metrics=0, metrics_percentage=0,
-            unique_verbs=0, repeated_verbs=[], weak_verbs_used=[],
-            filler_words_found=[], avg_bullet_length=0,
-            too_long_bullets=0, too_short_bullets=0, overall_score=0,
+            total_bullets=0,
+            bullets_with_metrics=0,
+            metrics_percentage=0,
+            unique_verbs=0,
+            repeated_verbs=[],
+            weak_verbs_used=[],
+            filler_words_found=[],
+            avg_bullet_length=0,
+            too_long_bullets=0,
+            too_short_bullets=0,
+            overall_score=0,
         )
 
     analyses = [analyze_bullet(b) for b in bullets if b.strip()]

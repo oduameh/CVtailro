@@ -65,9 +65,6 @@ class AppConfig:
             ValueError: If api_key is empty or model is empty.
         """
         if not self.api_key or not self.api_key.strip():
-            raise ValueError(
-                "OpenRouter API key is required. "
-                "Enter your key in the settings panel."
-            )
+            raise ValueError("OpenRouter API key is required. Enter your key in the settings panel.")
         if not self.model or not self.model.strip():
             raise ValueError("Model ID is required.")

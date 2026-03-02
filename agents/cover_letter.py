@@ -19,12 +19,8 @@ from models import JobAnalysis
 class CoverLetterOutput(BaseModel):
     """Structured output from the Cover Letter Generator Agent."""
 
-    cover_letter_text: str = Field(
-        description="Plain text cover letter (no markdown formatting)"
-    )
-    cover_letter_md: str = Field(
-        description="Markdown formatted cover letter"
-    )
+    cover_letter_text: str = Field(description="Plain text cover letter (no markdown formatting)")
+    cover_letter_md: str = Field(description="Markdown formatted cover letter")
 
 
 class CoverLetterAgent(BaseAgent["CoverLetterOutput"]):

@@ -16,22 +16,22 @@ csrf.exempt(saved_resumes_bp)
 @login_required
 def list_saved_resumes():
     resumes = (
-        SavedResume.query.filter_by(user_id=current_user.id)
-        .order_by(SavedResume.updated_at.desc())
-        .all()
+        SavedResume.query.filter_by(user_id=current_user.id).order_by(SavedResume.updated_at.desc()).all()
     )
-    return jsonify({
-        "resumes": [
-            {
-                "id": r.id,
-                "name": r.name,
-                "preview": r.resume_text[:200] if r.resume_text else "",
-                "created_at": r.created_at.isoformat() if r.created_at else None,
-                "updated_at": r.updated_at.isoformat() if r.updated_at else None,
-            }
-            for r in resumes
-        ],
-    })
+    return jsonify(
+        {
+            "resumes": [
+                {
+                    "id": r.id,
+                    "name": r.name,
+                    "preview": r.resume_text[:200] if r.resume_text else "",
+                    "created_at": r.created_at.isoformat() if r.created_at else None,
+                    "updated_at": r.updated_at.isoformat() if r.updated_at else None,
+                }
+                for r in resumes
+            ],
+        }
+    )
 
 
 @saved_resumes_bp.route("/api/saved-resumes", methods=["POST"])
@@ -73,22 +73,20 @@ def save_resume():
 @saved_resumes_bp.route("/api/saved-resumes/<resume_id>", methods=["GET"])
 @login_required
 def get_saved_resume(resume_id: str):
-    resume = SavedResume.query.filter_by(
-        id=resume_id, user_id=current_user.id
-    ).first_or_404()
-    return jsonify({
-        "id": resume.id,
-        "name": resume.name,
-        "resume_text": resume.resume_text,
-    })
+    resume = SavedResume.query.filter_by(id=resume_id, user_id=current_user.id).first_or_404()
+    return jsonify(
+        {
+            "id": resume.id,
+            "name": resume.name,
+            "resume_text": resume.resume_text,
+        }
+    )
 
 
 @saved_resumes_bp.route("/api/saved-resumes/<resume_id>", methods=["DELETE"])
 @login_required
 def delete_saved_resume(resume_id: str):
-    resume = SavedResume.query.filter_by(
-        id=resume_id, user_id=current_user.id
-    ).first_or_404()
+    resume = SavedResume.query.filter_by(id=resume_id, user_id=current_user.id).first_or_404()
     try:
         db.session.delete(resume)
         db.session.commit()

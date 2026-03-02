@@ -62,18 +62,14 @@ class BulletOptimiserAgent(BaseAgent["OptimisedBullets"]):
         resume_bullets = []
         for role_idx, role in enumerate(resume_data.roles):
             bullets_text = "\n".join(
-                f"  [{role_idx},{bi}] {b.original_text}"
-                for bi, b in enumerate(role.bullets)
+                f"  [{role_idx},{bi}] {b.original_text}" for bi, b in enumerate(role.bullets)
             )
             resume_bullets.append(f"ROLE {role_idx}: {role.title} @ {role.company}\n{bullets_text}")
 
         # Compact gap — just the keywords to target
         missing = ", ".join(gap_report.missing_keywords[:25])
         weak = ", ".join(gap_report.weak_alignment[:15])
-        priority = ", ".join(
-            f"{p.skill} ({p.priority.value})"
-            for p in gap_report.optimisation_priority[:20]
-        )
+        priority = ", ".join(f"{p.skill} ({p.priority.value})" for p in gap_report.optimisation_priority[:20])
 
         return (
             "CURRENT RESUME BULLETS:\n"
@@ -105,21 +101,14 @@ class BulletOptimiserAgent(BaseAgent["OptimisedBullets"]):
                 rewrites it.  Only the first role call should set this.
         """
         bullets_text = "\n".join(
-            f"  [{role_idx},{bi}] {b.original_text}"
-            for bi, b in enumerate(role.bullets)
+            f"  [{role_idx},{bi}] {b.original_text}" for bi, b in enumerate(role.bullets)
         )
 
         missing = ", ".join(gap_report.missing_keywords[:25])
         weak = ", ".join(gap_report.weak_alignment[:15])
-        priority = ", ".join(
-            f"{p.skill} ({p.priority.value})"
-            for p in gap_report.optimisation_priority[:20]
-        )
+        priority = ", ".join(f"{p.skill} ({p.priority.value})" for p in gap_report.optimisation_priority[:20])
 
-        msg = (
-            f"CURRENT RESUME BULLETS:\n"
-            f"ROLE {role_idx}: {role.title} @ {role.company}\n{bullets_text}\n\n"
-        )
+        msg = f"CURRENT RESUME BULLETS:\nROLE {role_idx}: {role.title} @ {role.company}\n{bullets_text}\n\n"
 
         if include_summary:
             msg += f"CURRENT PROFESSIONAL SUMMARY:\n{summary}\n\n"
@@ -130,11 +119,7 @@ class BulletOptimiserAgent(BaseAgent["OptimisedBullets"]):
                 "You may return an empty string for summary_rewrite.)\n\n"
             )
 
-        msg += (
-            f"KEYWORDS TO INJECT: {missing}\n"
-            f"WEAK AREAS TO STRENGTHEN: {weak}\n"
-            f"PRIORITY ORDER: {priority}"
-        )
+        msg += f"KEYWORDS TO INJECT: {missing}\nWEAK AREAS TO STRENGTHEN: {weak}\nPRIORITY ORDER: {priority}"
         return msg
 
     # ── Single-role LLM call with retry (mirrors BaseAgent.run logic) ────────
@@ -156,10 +141,7 @@ class BulletOptimiserAgent(BaseAgent["OptimisedBullets"]):
         for attempt in range(1, self.MAX_RETRIES + 1):
             try:
                 raw_text = self._call_llm_api(system_prompt, user_message)
-                logger.debug(
-                    f"[{self.AGENT_NAME}] Role {role_idx} response: "
-                    f"{len(raw_text)} chars"
-                )
+                logger.debug(f"[{self.AGENT_NAME}] Role {role_idx} response: {len(raw_text)} chars")
                 parsed_json = self._extract_json(raw_text)
                 result = OptimisedBullets.model_validate(parsed_json)
                 return result
@@ -171,26 +153,24 @@ class BulletOptimiserAgent(BaseAgent["OptimisedBullets"]):
                     f"{attempt}/{self.MAX_RETRIES} failed (parse): {e}"
                 )
                 if attempt < self.MAX_RETRIES:
-                    delay = self.RETRY_DELAY_BASE ** attempt
+                    delay = self.RETRY_DELAY_BASE**attempt
                     time.sleep(delay)
 
             except AgentError as e:
                 last_error = e
                 logger.warning(
-                    f"[{self.AGENT_NAME}] Role {role_idx} attempt "
-                    f"{attempt}/{self.MAX_RETRIES} API error: {e}"
+                    f"[{self.AGENT_NAME}] Role {role_idx} attempt {attempt}/{self.MAX_RETRIES} API error: {e}"
                 )
                 if "Invalid OpenRouter API key" in str(e) or "Insufficient" in str(e):
                     break
                 if attempt < self.MAX_RETRIES:
-                    delay = self.RETRY_DELAY_BASE ** attempt
+                    delay = self.RETRY_DELAY_BASE**attempt
                     time.sleep(delay)
                 else:
                     break
 
         raise AgentError(
-            f"{self.AGENT_NAME} failed for role {role_idx} after "
-            f"{self.MAX_RETRIES} attempts: {last_error}"
+            f"{self.AGENT_NAME} failed for role {role_idx} after {self.MAX_RETRIES} attempts: {last_error}"
         )
 
     # ── Overridden run() with parallel splitting ─────────────────────────────
@@ -259,10 +239,7 @@ class BulletOptimiserAgent(BaseAgent["OptimisedBullets"]):
                 idx = future_to_idx[future]
                 result = future.result()  # raises on failure
 
-                logger.info(
-                    f"[{self.AGENT_NAME}] Role {idx} completed at "
-                    f"{time.time() - fanout_start:.1f}s"
-                )
+                logger.info(f"[{self.AGENT_NAME}] Role {idx} completed at {time.time() - fanout_start:.1f}s")
 
                 merged_bullets.extend(result.bullets)
 
@@ -276,14 +253,11 @@ class BulletOptimiserAgent(BaseAgent["OptimisedBullets"]):
 
         fanout_elapsed = time.time() - fanout_start
         logger.info(
-            f"[{self.AGENT_NAME}] Parallel fan-out completed in "
-            f"{fanout_elapsed:.1f}s for {num_roles} roles"
+            f"[{self.AGENT_NAME}] Parallel fan-out completed in {fanout_elapsed:.1f}s for {num_roles} roles"
         )
 
         # Sort bullets by (role_index, bullet_index) for deterministic order
-        merged_bullets.sort(
-            key=lambda b: (b.role_index, b.bullet_index)
-        )
+        merged_bullets.sort(key=lambda b: (b.role_index, b.bullet_index))
 
         merged = OptimisedBullets(
             mode_used=mode_used or RewriteMode.CONSERVATIVE,
@@ -292,8 +266,7 @@ class BulletOptimiserAgent(BaseAgent["OptimisedBullets"]):
         )
 
         logger.info(
-            f"[{self.AGENT_NAME}] Merged {len(merged_bullets)} bullets "
-            f"from {num_roles} parallel calls."
+            f"[{self.AGENT_NAME}] Merged {len(merged_bullets)} bullets from {num_roles} parallel calls."
         )
 
         # Apply the same post-processing safety checks
@@ -304,9 +277,7 @@ class BulletOptimiserAgent(BaseAgent["OptimisedBullets"]):
 
     # ── Post-processing (unchanged) ──────────────────────────────────────────
 
-    def post_process(
-        self, parsed: OptimisedBullets, input_data: Any
-    ) -> OptimisedBullets:
+    def post_process(self, parsed: OptimisedBullets, input_data: Any) -> OptimisedBullets:
         """Apply safety checks on the optimised bullets.
 
         In conservative mode, automatically revert any bullet where

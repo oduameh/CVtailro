@@ -95,13 +95,15 @@ def admin_get_config():
     masked_key = ""
     if config.api_key:
         masked_key = config.api_key[:8] + "..." if len(config.api_key) > 8 else config.api_key
-    return jsonify({
-        "api_key": masked_key,
-        "default_model": config.default_model,
-        "allow_user_model_selection": config.allow_user_model_selection,
-        "rate_limit_per_hour": config.rate_limit_per_hour,
-        "updated_at": config.updated_at,
-    })
+    return jsonify(
+        {
+            "api_key": masked_key,
+            "default_model": config.default_model,
+            "allow_user_model_selection": config.allow_user_model_selection,
+            "rate_limit_per_hour": config.rate_limit_per_hour,
+            "updated_at": config.updated_at,
+        }
+    )
 
 
 @admin_bp.route("/admin/api/config", methods=["POST"])
@@ -140,7 +142,10 @@ def admin_test_key():
             headers={"Authorization": f"Bearer {api_key}"},
             timeout=10,
         )
-        return jsonify({"valid": r.status_code == 200} | ({"error": f"HTTP {r.status_code}"} if r.status_code != 200 else {}))
+        return jsonify(
+            {"valid": r.status_code == 200}
+            | ({"error": f"HTTP {r.status_code}"} if r.status_code != 200 else {})
+        )
     except Exception as e:
         return jsonify({"valid": False, "error": str(e)})
 
@@ -177,22 +182,24 @@ def admin_users():
         .order_by(User.created_at.desc())
         .all()
     )
-    return jsonify({
-        "total": len(results),
-        "users": [
-            {
-                "id": u.id,
-                "email": u.email,
-                "name": u.name,
-                "picture": u.picture_url,
-                "is_admin": u.is_admin,
-                "created_at": u.created_at.isoformat() if u.created_at else None,
-                "last_login": u.last_login_at.isoformat() if u.last_login_at else None,
-                "jobs_count": jobs_count,
-            }
-            for u, jobs_count in results
-        ],
-    })
+    return jsonify(
+        {
+            "total": len(results),
+            "users": [
+                {
+                    "id": u.id,
+                    "email": u.email,
+                    "name": u.name,
+                    "picture": u.picture_url,
+                    "is_admin": u.is_admin,
+                    "created_at": u.created_at.isoformat() if u.created_at else None,
+                    "last_login": u.last_login_at.isoformat() if u.last_login_at else None,
+                    "jobs_count": jobs_count,
+                }
+                for u, jobs_count in results
+            ],
+        }
+    )
 
 
 @admin_bp.route("/admin/api/user-jobs/<user_id>")
@@ -204,35 +211,33 @@ def admin_user_jobs(user_id: str):
     user = db.session.get(User, user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
-    jobs_list = (
-        TailoringJob.query.filter_by(user_id=user_id)
-        .order_by(TailoringJob.created_at.desc())
-        .all()
+    jobs_list = TailoringJob.query.filter_by(user_id=user_id).order_by(TailoringJob.created_at.desc()).all()
+    return jsonify(
+        {
+            "user": {"id": user.id, "email": user.email, "name": user.name},
+            "jobs": [
+                {
+                    "id": j.id,
+                    "status": j.status,
+                    "job_title": j.job_title,
+                    "company": j.company,
+                    "match_score": j.match_score,
+                    "original_match_score": j.original_match_score,
+                    "rewrite_mode": j.rewrite_mode,
+                    "model_used": j.model_used,
+                    "job_description_snippet": j.job_description_snippet,
+                    "job_description_full": j.job_description_full,
+                    "original_resume_text": j.original_resume_text,
+                    "ats_resume_md": j.ats_resume_md,
+                    "talking_points_md": j.talking_points_md,
+                    "created_at": j.created_at.isoformat() if j.created_at else None,
+                    "duration_seconds": j.duration_seconds,
+                    "error_message": j.error_message,
+                }
+                for j in jobs_list
+            ],
+        }
     )
-    return jsonify({
-        "user": {"id": user.id, "email": user.email, "name": user.name},
-        "jobs": [
-            {
-                "id": j.id,
-                "status": j.status,
-                "job_title": j.job_title,
-                "company": j.company,
-                "match_score": j.match_score,
-                "original_match_score": j.original_match_score,
-                "rewrite_mode": j.rewrite_mode,
-                "model_used": j.model_used,
-                "job_description_snippet": j.job_description_snippet,
-                "job_description_full": j.job_description_full,
-                "original_resume_text": j.original_resume_text,
-                "ats_resume_md": j.ats_resume_md,
-                "talking_points_md": j.talking_points_md,
-                "created_at": j.created_at.isoformat() if j.created_at else None,
-                "duration_seconds": j.duration_seconds,
-                "error_message": j.error_message,
-            }
-            for j in jobs_list
-        ],
-    })
 
 
 @admin_bp.route("/admin/api/live-stats")
@@ -256,17 +261,19 @@ def admin_live_stats():
     with pipeline_errors_lock:
         recent_errors_count = len(pipeline_errors)
 
-    return jsonify({
-        "active_pipelines": active_pipelines,
-        "queue_depth": current_queue_depth,
-        "max_concurrent": MAX_CONCURRENT_PIPELINES,
-        "max_queue_depth": MAX_QUEUE_DEPTH,
-        "memory_mb": round(mem_mb, 1),
-        "thread_count": threading.active_count(),
-        "usage_stats": usage_tracker.get_stats(),
-        "analytics_stats": pipeline_analytics.get_global_stats(),
-        "recent_errors_count": recent_errors_count,
-    })
+    return jsonify(
+        {
+            "active_pipelines": active_pipelines,
+            "queue_depth": current_queue_depth,
+            "max_concurrent": MAX_CONCURRENT_PIPELINES,
+            "max_queue_depth": MAX_QUEUE_DEPTH,
+            "memory_mb": round(mem_mb, 1),
+            "thread_count": threading.active_count(),
+            "usage_stats": usage_tracker.get_stats(),
+            "analytics_stats": pipeline_analytics.get_global_stats(),
+            "recent_errors_count": recent_errors_count,
+        }
+    )
 
 
 @admin_bp.route("/admin/api/stats")
@@ -280,9 +287,7 @@ def admin_stats():
 
     # Jobs by status
     status_counts = (
-        db.session.query(TailoringJob.status, func.count(TailoringJob.id))
-        .group_by(TailoringJob.status)
-        .all()
+        db.session.query(TailoringJob.status, func.count(TailoringJob.id)).group_by(TailoringJob.status).all()
     )
     jobs_by_status = {s: c for s, c in status_counts}
 
@@ -298,20 +303,17 @@ def admin_stats():
     success_rate = (completed / total_finished * 100) if total_finished > 0 else 100.0
 
     # Match score improvement (avg before vs after)
-    score_improvement = (
-        db.session.query(
-            func.avg(
-                case(
-                    (
-                        (TailoringJob.match_score.isnot(None))
-                        & (TailoringJob.original_match_score.isnot(None)),
-                        TailoringJob.match_score - TailoringJob.original_match_score,
-                    ),
-                    else_=None,
-                )
+    score_improvement = db.session.query(
+        func.avg(
+            case(
+                (
+                    (TailoringJob.match_score.isnot(None)) & (TailoringJob.original_match_score.isnot(None)),
+                    TailoringJob.match_score - TailoringJob.original_match_score,
+                ),
+                else_=None,
             )
-        ).scalar()
-    )
+        )
+    ).scalar()
     avg_improvement = round(float(score_improvement or 0), 1)
 
     # Saved resumes count
@@ -319,47 +321,46 @@ def admin_stats():
 
     total_jobs = sum(jobs_by_status.values())
 
-    return jsonify({
-        "total_jobs": total_jobs,
-        "jobs_by_status": jobs_by_status,
-        "jobs_today": jobs_today,
-        "jobs_this_week": jobs_this_week,
-        "jobs_this_month": jobs_this_month,
-        "success_rate": round(success_rate, 1),
-        "avg_match_improvement": avg_improvement,
-        "saved_resumes_count": saved_resumes_count,
-    })
+    return jsonify(
+        {
+            "total_jobs": total_jobs,
+            "jobs_by_status": jobs_by_status,
+            "jobs_today": jobs_today,
+            "jobs_this_week": jobs_this_week,
+            "jobs_this_month": jobs_this_month,
+            "success_rate": round(success_rate, 1),
+            "avg_match_improvement": avg_improvement,
+            "saved_resumes_count": saved_resumes_count,
+        }
+    )
 
 
 @admin_bp.route("/admin/api/recent-jobs")
 @_admin_required
 def admin_recent_jobs():
     """Last 20 jobs across all users (for dashboard activity)."""
-    jobs = (
-        TailoringJob.query
-        .order_by(TailoringJob.created_at.desc())
-        .limit(20)
-        .all()
-    )
+    jobs = TailoringJob.query.order_by(TailoringJob.created_at.desc()).limit(20).all()
     user_ids = [j.user_id for j in jobs if j.user_id]
     users_by_id = {u.id: u for u in User.query.filter(User.id.in_(user_ids)).all()} if user_ids else {}
 
-    return jsonify({
-        "jobs": [
-            {
-                "id": j.id,
-                "status": j.status,
-                "job_title": j.job_title,
-                "company": j.company,
-                "match_score": j.match_score,
-                "user_email": (users_by_id[j.user_id].email if j.user_id in users_by_id else "Anonymous"),
-                "user_name": (users_by_id[j.user_id].name if j.user_id in users_by_id else "—"),
-                "created_at": j.created_at.isoformat() if j.created_at else None,
-                "duration_seconds": j.duration_seconds,
-            }
-            for j in jobs
-        ],
-    })
+    return jsonify(
+        {
+            "jobs": [
+                {
+                    "id": j.id,
+                    "status": j.status,
+                    "job_title": j.job_title,
+                    "company": j.company,
+                    "match_score": j.match_score,
+                    "user_email": (users_by_id[j.user_id].email if j.user_id in users_by_id else "Anonymous"),
+                    "user_name": (users_by_id[j.user_id].name if j.user_id in users_by_id else "—"),
+                    "created_at": j.created_at.isoformat() if j.created_at else None,
+                    "duration_seconds": j.duration_seconds,
+                }
+                for j in jobs
+            ],
+        }
+    )
 
 
 @admin_bp.route("/admin/api/errors/clear", methods=["POST"])
@@ -479,6 +480,7 @@ def admin_diagnostics():
     if redis_available():
         try:
             from app.services.cache import get_redis
+
             client = get_redis()
             if client:
                 client.ping()

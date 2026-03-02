@@ -140,9 +140,7 @@ def _register_security_headers(flask_app: Flask) -> None:
             "form-action 'self' https://accounts.google.com"
         )
         if request.is_secure:
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=31536000; includeSubDomains"
-            )
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         if response.content_type and "text/html" in response.content_type:
             response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
             response.headers["Pragma"] = "no-cache"
@@ -169,16 +167,16 @@ def _apply_column_migrations() -> None:
     # Ensure admin_settings table exists (added in app factory refactor)
     if not insp.has_table("admin_settings"):
         try:
-            db.session.execute(text(
-                "CREATE TABLE admin_settings ("
-                "id VARCHAR(32) PRIMARY KEY, "
-                "key VARCHAR(255) UNIQUE NOT NULL, "
-                "value TEXT, "
-                "updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW())"
-            ))
-            db.session.execute(text(
-                "CREATE INDEX idx_admin_settings_key ON admin_settings(key)"
-            ))
+            db.session.execute(
+                text(
+                    "CREATE TABLE admin_settings ("
+                    "id VARCHAR(32) PRIMARY KEY, "
+                    "key VARCHAR(255) UNIQUE NOT NULL, "
+                    "value TEXT, "
+                    "updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW())"
+                )
+            )
+            db.session.execute(text("CREATE INDEX idx_admin_settings_key ON admin_settings(key)"))
             db.session.commit()
             logger.info("Created admin_settings table")
         except Exception as e:
@@ -190,8 +188,13 @@ def _apply_column_migrations() -> None:
 
     columns = [c["name"] for c in insp.get_columns("tailoring_jobs")]
 
-    text_columns = ["job_description_snippet", "job_description_full", "original_resume_text",
-                    "cover_letter_md", "email_templates_md"]
+    text_columns = [
+        "job_description_snippet",
+        "job_description_full",
+        "original_resume_text",
+        "cover_letter_md",
+        "email_templates_md",
+    ]
     for col_name in text_columns:
         if col_name not in columns:
             col_type = "VARCHAR(500)" if col_name == "job_description_snippet" else "TEXT"
