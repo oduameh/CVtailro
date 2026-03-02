@@ -18,9 +18,62 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
 
-  test:
+  unit:
     runs-on: ubuntu-latest
-    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt pytest pytest-flask pytest-cov ruff
+      - name: Run unit tests
+        env:
+          FLASK_ENV: testing
+          FLASK_SECRET_KEY: ci-test-secret
+        run: |
+          pytest tests/ -m unit -v --tb=long -x
+      - name: Run unit tests (no fail-fast, for full report)
+        if: failure()
+        env:
+          FLASK_ENV: testing
+          FLASK_SECRET_KEY: ci-test-secret
+        run: |
+          pytest tests/ -m unit -v --tb=long --no-header -q 2>&1 | tail -80
+
+  integration:
+    runs-on: ubuntu-latest
+    needs: [lint, unit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install system dependencies (cairo for WeasyPrint)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf-2.0-0 libffi-dev
+      - name: Install Python dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-flask pytest-cov ruff
+      - name: Run integration tests
+        env:
+          FLASK_ENV: testing
+          FLASK_SECRET_KEY: ci-test-secret
+        run: |
+          pytest tests/ -m integration -v --tb=long -x
+      - name: Run integration tests (full report on failure)
+        if: failure()
+        env:
+          FLASK_ENV: testing
+          FLASK_SECRET_KEY: ci-test-secret
+        run: |
+          pytest tests/ -m integration -v --tb=long --no-header -q 2>&1 | tail -100
+
+  test-all:
+    runs-on: ubuntu-latest
+    needs: [lint, unit]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -33,9 +86,19 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install -r requirements.txt
-          pip install pytest pytest-flask ruff
-      - name: Run tests
+          pip install pytest pytest-flask pytest-cov ruff
+      - name: Run all tests with coverage
         env:
           FLASK_ENV: testing
           FLASK_SECRET_KEY: ci-test-secret
-        run: pytest tests/ -v --tb=short
+        run: |
+          pytest tests/ -v --tb=short \
+            --cov=app --cov=similarity --cov=resume_quality --cov=keyword_density --cov=email_templates \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-fail-under=30
+      - name: Upload coverage to summary
+        if: always()
+        run: |
+          echo "## Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "All tests completed. Check logs for details." >> $GITHUB_STEP_SUMMARY

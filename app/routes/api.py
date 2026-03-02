@@ -111,7 +111,7 @@ def start_tailoring():
         return jsonify({"error": "Unsupported file type. Use PDF, MD, or TXT."}), 400
 
     job_id = uuid.uuid4().hex[:16]
-    output_dir = create_output_dir()
+    output_dir = create_output_dir(job_id=job_id)
 
     resume_path = output_dir / f"input_resume{resume_ext}"
     resume_file.save(str(resume_path))
@@ -153,12 +153,15 @@ def start_tailoring():
 
 @api_bp.route("/api/progress/<job_id>")
 def progress_stream(job_id: str):
-    if current_user.is_authenticated:
-        with jobs_lock:
-            job_data = jobs.get(job_id)
-            if job_data and job_data.get("user_id") and job_data["user_id"] != current_user.id:
-                return jsonify({"error": "Job not found"}), 404
     with jobs_lock:
+        job_data = jobs.get(job_id)
+        if job_data is not None:
+            job_user_id = job_data.get("user_id")
+            if job_user_id is not None:
+                if not current_user.is_authenticated:
+                    return jsonify({"error": "Job not found"}), 404
+                if job_user_id != current_user.id:
+                    return jsonify({"error": "Job not found"}), 404
         if job_id not in jobs:
             return jsonify({"error": "Job not found"}), 404
 
@@ -209,6 +212,8 @@ def get_result(job_id: str):
         db_job = TailoringJob.query.filter_by(id=job_id, user_id=current_user.id).first()
     else:
         db_job = db.session.get(TailoringJob, job_id)
+        if db_job is not None and db_job.user_id is not None:
+            db_job = None  # Anonymous users cannot access authenticated users' jobs
     if db_job is None:
         return jsonify({"error": "Job not found"}), 404
 

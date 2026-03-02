@@ -83,9 +83,13 @@ CVtailro/
 ## Tests
 
 ```bash
-pytest tests/ -v
+pytest tests/ -v                    # All tests
+pytest tests/ -m unit -v             # Unit only (fast)
+pytest tests/ -m integration -v     # Integration only
 ruff check app/ tests/
 ```
+
+See [TESTING.md](TESTING.md) for troubleshooting and CI pipeline details.
 
 ## Documentation
 
@@ -93,3 +97,4 @@ ruff check app/ tests/
 |------|---------|
 | [CLAUDE.md](CLAUDE.md) | Full project context for AI assistants |
 | [SETUP.md](SETUP.md) | Infrastructure and deployment guide |
+| [TESTING.md](TESTING.md) | Testing guide and troubleshooting |

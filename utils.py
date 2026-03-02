@@ -7,6 +7,7 @@ import logging
 import sys
 from datetime import datetime
 from pathlib import Path
+from collections.abc import Callable
 from typing import Any
 
 import pdfplumber
@@ -14,12 +15,19 @@ import pdfplumber
 logger = logging.getLogger(__name__)
 
 
-def setup_logging(verbose: bool = False, log_file: Path | None = None) -> None:
+def setup_logging(
+    verbose: bool = False, log_file: Path | None = None
+) -> None | Callable[[], None]:
     """Configure logging with console and optional file handlers.
 
     Args:
         verbose: If True, console shows DEBUG; otherwise INFO.
         log_file: If provided, writes DEBUG-level logs to this file.
+                  Returns a cleanup callable to remove the handler when done.
+
+    Returns:
+        If log_file was provided, a callable that removes the file handler.
+        Call it when the job completes to avoid handler accumulation.
     """
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG)
@@ -35,7 +43,7 @@ def setup_logging(verbose: bool = False, log_file: Path | None = None) -> None:
         console.setFormatter(console_fmt)
         root_logger.addHandler(console)
 
-    # Per-job file handler (added without clearing existing handlers)
+    # Per-job file handler — caller must call the returned cleanup when done
     if log_file is not None:
         log_file.parent.mkdir(parents=True, exist_ok=True)
         file_handler = logging.FileHandler(log_file, encoding="utf-8")
@@ -45,6 +53,16 @@ def setup_logging(verbose: bool = False, log_file: Path | None = None) -> None:
         )
         file_handler.setFormatter(file_fmt)
         root_logger.addHandler(file_handler)
+
+        def remove_handler() -> None:
+            try:
+                root_logger.removeHandler(file_handler)
+                file_handler.close()
+            except Exception:
+                pass
+
+        return remove_handler
+    return None
 
 
 def extract_pdf_text(path: str | Path) -> str:
@@ -159,12 +177,14 @@ def save_markdown(text: str, path: str | Path) -> Path:
     return p
 
 
-def create_output_dir(base: str | None = None) -> Path:
-    """Create a timestamped output directory.
+def create_output_dir(base: str | None = None, job_id: str | None = None) -> Path:
+    """Create a unique output directory.
 
     Args:
         base: If provided, use this path directly. Otherwise, create
-              a new timestamped subdirectory under ``output/``.
+              a new subdirectory under ``output/``.
+        job_id: If provided (and base is None), include in path to avoid
+                collisions when multiple jobs start in the same second.
 
     Returns:
         Path to the output directory.
@@ -173,7 +193,8 @@ def create_output_dir(base: str | None = None) -> Path:
         out = Path(base)
     else:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        out = Path(__file__).parent / "output" / timestamp
+        suffix = f"_{job_id}" if job_id else ""
+        out = Path(__file__).parent / "output" / f"{timestamp}{suffix}"
 
     out.mkdir(parents=True, exist_ok=True)
     return out

@@ -35,11 +35,15 @@ def serve_download(job_id: str, filename: str):
 
     # 1. In-memory jobs (current session, files on disk)
     output_dir = None
+    job_user_id = None
     with jobs_lock:
         if job_id in jobs:
             output_dir = jobs[job_id]["output_dir"]
+            job_user_id = jobs[job_id].get("user_id")
 
     if output_dir:
+        if not _can_access_job(job_user_id, user_id, is_authed):
+            return jsonify({"error": "Access denied"}), 403
         file_path = Path(output_dir) / safe_name
         if file_path.exists():
             return send_from_directory(output_dir, safe_name, as_attachment=True)
@@ -48,10 +52,9 @@ def serve_download(job_id: str, filename: str):
     if r2_storage.is_configured:
         job_file = JobFile.query.filter_by(job_id=job_id, filename=safe_name).first()
         if job_file:
-            if is_authed:
-                job_record = TailoringJob.query.filter_by(id=job_id, user_id=user_id).first()
-                if not job_record:
-                    return jsonify({"error": "Access denied"}), 403
+            job_record = TailoringJob.query.filter_by(id=job_id).first()
+            if not job_record or not _can_access_job(job_record.user_id, user_id, is_authed):
+                return jsonify({"error": "Access denied"}), 403
             try:
                 url = r2_storage.generate_presigned_url(job_file.r2_key)
                 return redirect(url)
@@ -67,6 +70,17 @@ def serve_download(job_id: str, filename: str):
         )
 
     return _serve_from_db(db_job, safe_name)
+
+
+def _can_access_job(
+    job_user_id: str | None, request_user_id: str | None, is_authed: bool
+) -> bool:
+    """Return True if the current user may access a job (owned by job_user_id)."""
+    if job_user_id is None:
+        return True  # Anonymous job — anyone can access
+    if not is_authed:
+        return False  # Authenticated user's job — anonymous cannot access
+    return job_user_id == request_user_id
 
 
 def _resolve_job_ownership(
@@ -89,14 +103,15 @@ def _serve_from_db(db_job: TailoringJob, safe_name: str):
     # Markdown files
     if safe_name.endswith(".md"):
         md_content = None
+        lower_name = safe_name.lower()
         is_resume = (
-            "ats" in safe_name
-            or "recruiter" in safe_name
-            or ("resume" in safe_name.lower() and "talking" not in safe_name.lower())
+            "ats" in lower_name
+            or "recruiter" in lower_name
+            or ("resume" in lower_name and "talking" not in lower_name)
         )
         if is_resume:
             md_content = db_job.ats_resume_md
-        elif "talking" in safe_name:
+        elif "talking" in lower_name:
             md_content = db_job.talking_points_md
 
         if md_content:
@@ -137,8 +152,8 @@ def _serve_from_db(db_job: TailoringJob, safe_name: str):
             return _regenerate_docx(db_job.ats_resume_md, safe_name)
         return jsonify({"error": "Resume content not saved. Try re-running the pipeline."}), 404
 
-    # Match report JSON
-    if "match_report" in safe_name and safe_name.endswith(".json"):
+    # Match report JSON (case-insensitive: Match_Report.json, match_report.json, etc.)
+    if "match_report" in safe_name.lower() and safe_name.lower().endswith(".json"):
         report = {
             "job_title": db_job.job_title,
             "company": db_job.company,
@@ -156,13 +171,13 @@ def _serve_from_db(db_job: TailoringJob, safe_name: str):
 
 
 def _regenerate_pdf(source_md: str, filename: str, template: str):
+    tmp_path = None
     try:
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
             tmp_path = tmp.name
         generate_resume_pdf(source_md, tmp_path, template=template)
         with open(tmp_path, "rb") as f:
             pdf_data = f.read()
-        os.unlink(tmp_path)
         return Response(
             pdf_data,
             mimetype="application/pdf",
@@ -171,16 +186,22 @@ def _regenerate_pdf(source_md: str, filename: str, template: str):
     except Exception as e:
         logger.error(f"PDF regeneration failed for {filename}: {e}", exc_info=True)
         return jsonify({"error": "Could not generate PDF."}), 500
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
 
 
 def _regenerate_docx(source_md: str, filename: str):
+    tmp_path = None
     try:
         with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
             tmp_path = tmp.name
         generate_resume_docx(source_md, tmp_path)
         with open(tmp_path, "rb") as f:
             docx_data = f.read()
-        os.unlink(tmp_path)
         return Response(
             docx_data,
             mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -189,3 +210,9 @@ def _regenerate_docx(source_md: str, filename: str):
     except Exception as e:
         logger.error(f"DOCX regeneration failed for {filename}: {e}", exc_info=True)
         return jsonify({"error": "Could not generate DOCX."}), 500
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass

@@ -3700,6 +3700,11 @@
                     if (finished) { clearInterval(poll); return; }
                     try {
                         var r = await fetch('/api/result/' + jid);
+                        if (r.status === 404) {
+                            clearInterval(poll);
+                            onError('Job not found. It may have expired or been cleaned up.');
+                            return;
+                        }
                         var d = await r.json();
                         pollFailCount = 0;
                         if (d.status === "complete") { clearInterval(poll); onComplete(jid); }
@@ -3727,7 +3732,15 @@
         retryCount = retryCount || 0;
         try {
             var r = await fetch('/api/result/' + jobId);
+            if (r.status === 404) {
+                showError('Job not found. It may have expired or been cleaned up.');
+                return;
+            }
             var d = await r.json();
+            if (d.status === "error") {
+                showError(d.error || "The pipeline failed. Please try again.");
+                return;
+            }
             if (d.status !== "complete") {
                 // Job not complete yet — retry a few times
                 if (retryCount < 5) {
@@ -3757,8 +3770,9 @@
         var prevQuality = document.querySelector('.score-section + .card[style*="margin-top:20px"]');
         if (prevQuality) prevQuality.remove();
 
-        // --- Circular Score ---
-        var scoreVal = s.match_score.toFixed(0);
+        // --- Circular Score (use tailored score when available) ---
+        var primaryScore = s.tailored_match_score != null ? s.tailored_match_score : (s.match_score || 0);
+        var scoreVal = primaryScore.toFixed(0);
         var scoreNum = parseFloat(scoreVal);
         document.getElementById("matchScore").textContent = scoreVal + "%";
 
@@ -3785,7 +3799,7 @@
         if (typeof s.matched_keywords_count === 'number') {
             keywordsAddedCount = s.matched_keywords_count;
         } else {
-            keywordsAddedCount = Math.max(1, Math.round(s.match_score * 0.3));
+            keywordsAddedCount = Math.max(1, Math.round(primaryScore * 0.3));
         }
         document.getElementById("keywordsAdded").textContent = keywordsAddedCount;
 

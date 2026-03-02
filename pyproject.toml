@@ -30,3 +30,7 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short"
+markers = [
+    "unit: Unit tests — isolated, fast, no DB/network",
+    "integration: Integration tests — DB, API, auth flows",
+]

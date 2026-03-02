@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import platform as platform_mod
 import resource as resource_mod
 import threading
@@ -11,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 import requests as http_requests
 from flask import Blueprint, jsonify, render_template, request, session
 from flask_login import current_user
-from sqlalchemy import func, case
+from sqlalchemy import case, func, text
 
 from analytics import pipeline_analytics
 from app.extensions import csrf, db, limiter
@@ -368,6 +369,162 @@ def admin_clear_errors():
     with pipeline_errors_lock:
         pipeline_errors.clear()
     return jsonify({"ok": True})
+
+
+@admin_bp.route("/admin/api/diagnostics")
+@_admin_required
+def admin_diagnostics():
+    """Run health checks and return diagnostic info for troubleshooting."""
+    import platform
+    import sys
+
+    from app.services.cache import is_available as redis_available
+    from storage import r2_storage
+
+    results = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "overall": "healthy",
+        "checks": {},
+        "environment": {},
+        "recommendations": [],
+    }
+
+    # Database
+    try:
+        db.session.execute(text("SELECT 1"))
+        db_uri = str(db.engine.url)
+        if "@" in db_uri:
+            db_uri = db_uri.split("@")[-1]  # Hide credentials
+        results["checks"]["database"] = {
+            "status": "healthy",
+            "message": "Connected",
+            "type": "postgresql" if "postgresql" in str(db.engine.url) else "sqlite",
+            "detail": db_uri[:80] + "..." if len(db_uri) > 80 else db_uri,
+        }
+    except Exception as e:
+        results["checks"]["database"] = {
+            "status": "unhealthy",
+            "message": str(e),
+            "detail": None,
+        }
+        results["overall"] = "degraded"
+        results["recommendations"].append("Check DATABASE_URL and database connectivity.")
+
+    # OpenRouter API key
+    config = AdminConfigManager.load()
+    has_key = bool(config.api_key and config.api_key.strip())
+    if has_key:
+        try:
+            r = http_requests.get(
+                "https://openrouter.ai/api/v1/models",
+                headers={"Authorization": f"Bearer {config.api_key.strip()}"},
+                timeout=8,
+            )
+            if r.status_code == 200:
+                results["checks"]["openrouter"] = {
+                    "status": "healthy",
+                    "message": "API key valid",
+                    "detail": f"HTTP {r.status_code}",
+                }
+            else:
+                results["checks"]["openrouter"] = {
+                    "status": "unhealthy",
+                    "message": f"HTTP {r.status_code}",
+                    "detail": r.text[:200] if r.text else None,
+                }
+                results["overall"] = "degraded"
+                results["recommendations"].append("Verify OpenRouter API key at openrouter.ai/keys")
+        except Exception as e:
+            results["checks"]["openrouter"] = {
+                "status": "unhealthy",
+                "message": str(e),
+                "detail": None,
+            }
+            results["overall"] = "degraded"
+            results["recommendations"].append("Check network connectivity to openrouter.ai")
+    else:
+        results["checks"]["openrouter"] = {
+            "status": "unhealthy",
+            "message": "No API key configured",
+            "detail": "Set API key in Configuration tab",
+        }
+        results["overall"] = "degraded"
+        results["recommendations"].append("Configure OpenRouter API key in Configuration tab.")
+
+    # R2 storage
+    if r2_storage.is_configured:
+        try:
+            r2_storage._client.list_objects_v2(Bucket=r2_storage._bucket, MaxKeys=1)
+            results["checks"]["r2_storage"] = {
+                "status": "healthy",
+                "message": "Connected",
+                "detail": f"Bucket: {r2_storage._bucket}",
+            }
+        except Exception as e:
+            results["checks"]["r2_storage"] = {
+                "status": "unhealthy",
+                "message": str(e),
+                "detail": None,
+            }
+            if results["overall"] == "healthy":
+                results["overall"] = "degraded"
+            results["recommendations"].append("Check R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY.")
+    else:
+        results["checks"]["r2_storage"] = {
+            "status": "skipped",
+            "message": "Not configured",
+            "detail": "Using local storage (files stored on disk)",
+        }
+
+    # Redis
+    if redis_available():
+        try:
+            from app.services.cache import get_redis
+            client = get_redis()
+            if client:
+                client.ping()
+                results["checks"]["redis"] = {
+                    "status": "healthy",
+                    "message": "Connected",
+                    "detail": "Rate limiting and cache active",
+                }
+            else:
+                results["checks"]["redis"] = {"status": "skipped", "message": "N/A", "detail": None}
+        except Exception as e:
+            results["checks"]["redis"] = {
+                "status": "unhealthy",
+                "message": str(e),
+                "detail": None,
+            }
+    else:
+        results["checks"]["redis"] = {
+            "status": "skipped",
+            "message": "Not configured",
+            "detail": "Using in-memory rate limiting",
+        }
+
+    # Environment (no secrets)
+    results["environment"] = {
+        "python_version": sys.version.split()[0],
+        "flask_env": os.environ.get("FLASK_ENV", "production"),
+        "database_type": "postgresql" if "postgresql" in str(db.engine.url) else "sqlite",
+        "r2_configured": r2_storage.is_configured,
+        "redis_configured": redis_available(),
+        "admin_password_set": AdminConfigManager.has_password(),
+    }
+
+    # Pipeline health
+    with pipeline_errors_lock:
+        err_count = len(pipeline_errors)
+    results["checks"]["pipeline"] = {
+        "status": "healthy" if err_count < 10 else "warning",
+        "message": f"{err_count} recent errors in log",
+        "detail": "Check Errors tab for details" if err_count > 0 else "No recent errors",
+    }
+    if err_count >= 10 and results["overall"] == "healthy":
+        results["overall"] = "degraded"
+
+    return jsonify(results)
 
 
 @admin_bp.route("/admin/api/users/<user_id>/admin", methods=["POST"])

@@ -1,4 +1,4 @@
-"""Tests for the TF-IDF similarity module."""
+"""Unit tests for the TF-IDF similarity module."""
 
 import pytest
 
@@ -10,6 +10,7 @@ from similarity import (
 )
 
 
+@pytest.mark.unit
 def test_tokenize_basic():
     tokens = tokenize("Python developer with 5 years experience")
     assert "python" in tokens
@@ -19,26 +20,31 @@ def test_tokenize_basic():
     assert "with" not in tokens
 
 
+@pytest.mark.unit
 def test_tokenize_empty():
     assert tokenize("") == []
 
 
+@pytest.mark.unit
 def test_cosine_similarity_identical():
     vec = {"python": 1.0, "java": 0.5}
     assert cosine_similarity(vec, vec) == pytest.approx(1.0, abs=0.001)
 
 
+@pytest.mark.unit
 def test_cosine_similarity_orthogonal():
     vec_a = {"python": 1.0}
     vec_b = {"java": 1.0}
     assert cosine_similarity(vec_a, vec_b) == 0.0
 
 
+@pytest.mark.unit
 def test_cosine_similarity_empty():
     assert cosine_similarity({}, {"a": 1.0}) == 0.0
     assert cosine_similarity({}, {}) == 0.0
 
 
+@pytest.mark.unit
 def test_resume_job_similarity():
     resume = "Python developer experienced with Django REST APIs PostgreSQL"
     job = "Looking for Python developer with Django and PostgreSQL experience"
@@ -46,6 +52,7 @@ def test_resume_job_similarity():
     assert 0.0 < score <= 1.0
 
 
+@pytest.mark.unit
 def test_keyword_frequency():
     results = keyword_frequency_analysis(
         ["Python", "Django", "Java"],

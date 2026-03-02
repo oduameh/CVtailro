@@ -610,6 +610,30 @@
             50% { opacity: 0.4; }
         }
 
+        /* Diagnostics grid */
+        .diag-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+        }
+        .diag-check {
+            padding: 14px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            font-size: 13px;
+        }
+        .diag-check.healthy { border-left: 4px solid var(--success); }
+        .diag-check.unhealthy { border-left: 4px solid var(--error); }
+        .diag-check.warning { border-left: 4px solid var(--warning); }
+        .diag-check.skipped { border-left: 4px solid var(--text-secondary); opacity: 0.8; }
+        .diag-check-name { font-weight: 700; margin-bottom: 4px; }
+        .diag-check-msg { color: var(--text-secondary); font-size: 12px; }
+        .diag-overall { font-size: 16px; margin-bottom: 12px; }
+        .diag-overall.healthy .live-dot { background: var(--success); }
+        .diag-overall.degraded .live-dot { background: var(--warning); }
+        .diag-overall.unhealthy .live-dot { background: var(--error); }
+
         /* Empty state */
         .empty-state {
             text-align: center;
@@ -771,6 +795,10 @@
                     <span class="nav-text">Users &amp; Resumes</span>
                 </a>
                 <div class="nav-label">Monitoring</div>
+                <a class="nav-item" data-tab="diagnostics" onclick="switchTab('diagnostics')">
+                    <span class="nav-icon">&#128269;</span>
+                    <span class="nav-text">Diagnostics</span>
+                </a>
                 <a class="nav-item" data-tab="analytics" onclick="switchTab('analytics')">
                     <span class="nav-icon">&#128200;</span>
                     <span class="nav-text">Analytics</span>
@@ -863,6 +891,12 @@
                     <div class="card-header">
                         <h2>Service Snapshot</h2>
                         <button class="btn btn-sm btn-secondary" onclick="loadStats(); loadRecentJobs(); loadUsersList();">Refresh</button>
+                    </div>
+                    <div style="margin-bottom:16px;">
+                        <a href="#" onclick="switchTab('diagnostics'); runDiagnostics(); return false;" style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--accent);text-decoration:none;">
+                            <span style="width:8px;height:8px;border-radius:50%;background:var(--success);"></span>
+                            Run diagnostics &amp; troubleshooting
+                        </a>
                     </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
                         <div>
@@ -1002,6 +1036,65 @@
                         <button class="resume-tab-btn" id="btnViewJD" onclick="showResumeTab('jd')">Job Description</button>
                     </div>
                     <div id="resumeContent" style="max-height:600px;overflow-y:auto;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:20px;font-size:13px;line-height:1.7;white-space:pre-wrap;font-family:'Inter',monospace;"></div>
+                </div>
+            </div>
+
+            <!-- ═══ TAB: DIAGNOSTICS ═══ -->
+            <div class="tab-content" id="tab-diagnostics">
+                <div class="tab-header">
+                    <h1>Diagnostics &amp; Troubleshooting</h1>
+                    <p>Run health checks and diagnose service issues</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Health Checks</h2>
+                        <div class="btn-row">
+                            <button class="btn btn-primary" onclick="runDiagnostics()" id="diagRunBtn">
+                                &#128260; Run Diagnostics
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="copyDiagnostics()" id="diagCopyBtn">
+                                Copy for Support
+                            </button>
+                        </div>
+                    </div>
+                    <div id="diagStatus" style="margin-bottom:16px;">
+                        <div class="diag-overall" id="diagOverall" style="display:none;">
+                            <span class="live-dot" id="diagDot"></span>
+                            <strong id="diagOverallText">--</strong>
+                        </div>
+                    </div>
+                    <div id="diagChecks" class="diag-grid">
+                        <div class="empty-state" id="diagEmpty">
+                            <div class="empty-icon">&#128269;</div>
+                            <div>Click "Run Diagnostics" to check database, API, R2, and Redis</div>
+                        </div>
+                    </div>
+                    <div id="diagRecommendations" style="display:none;margin-top:16px;">
+                        <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px;">Recommendations</div>
+                        <ul id="diagRecList" style="margin:0;padding-left:20px;color:var(--error);font-size:13px;"></ul>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Quick Actions</h2>
+                    </div>
+                    <div class="btn-row" style="flex-wrap:wrap;gap:12px;">
+                        <button class="btn btn-secondary" onclick="testApiKey(); switchTab('config');">Test API Key</button>
+                        <button class="btn btn-secondary" onclick="window.open('/api/health','_blank')">View Public Health</button>
+                        <button class="btn btn-secondary" onclick="loadErrors(); switchTab('errors');">View Error Log</button>
+                        <button class="btn btn-danger" onclick="clearErrors(); runDiagnostics();">Clear Error Log</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Environment Info</h2>
+                    </div>
+                    <div id="diagEnv" style="font-size:13px;font-family:monospace;background:var(--bg);padding:16px;border-radius:10px;border:1px solid var(--border);">
+                        Run diagnostics to see environment details.
+                    </div>
                 </div>
             </div>
 
@@ -1152,6 +1245,7 @@
         } else {
             stopSystemRefresh();
         }
+
 
         // Close mobile menu if open
         var sidebar = document.getElementById('sidebarNav');
@@ -1739,6 +1833,91 @@
 
     function closeResumeViewer() {
         document.getElementById('resumeViewerPanel').style.display = 'none';
+    }
+
+    // ─── Diagnostics ───
+
+    var lastDiagnostics = null;
+
+    async function runDiagnostics() {
+        var btn = document.getElementById('diagRunBtn');
+        var empty = document.getElementById('diagEmpty');
+        var checks = document.getElementById('diagChecks');
+        var overall = document.getElementById('diagOverall');
+        var recDiv = document.getElementById('diagRecommendations');
+        var envEl = document.getElementById('diagEnv');
+
+        if (btn) { btn.disabled = true; btn.textContent = 'Running...'; }
+        if (empty) empty.style.display = 'none';
+
+        try {
+            var r = await fetch('/admin/api/diagnostics');
+            if (!r.ok) throw new Error('Request failed');
+            var d = await r.json();
+            lastDiagnostics = d;
+
+            // Overall status
+            overall.style.display = 'block';
+            overall.className = 'diag-overall ' + (d.overall || 'healthy');
+            var dot = document.getElementById('diagDot');
+            var text = document.getElementById('diagOverallText');
+            if (text) text.textContent = 'Overall: ' + (d.overall === 'healthy' ? 'All systems operational' : d.overall === 'degraded' ? 'Some issues detected' : 'Issues detected');
+
+            // Checks grid
+            var html = '';
+            var names = { database: 'Database', openrouter: 'OpenRouter API', r2_storage: 'R2 Storage', redis: 'Redis', pipeline: 'Pipeline' };
+            for (var key in names) {
+                var c = d.checks && d.checks[key];
+                if (!c) continue;
+                var status = c.status || 'unknown';
+                var msg = c.message || '';
+                var detail = c.detail ? '<div class="diag-check-msg" style="margin-top:4px;">' + escapeHtml(c.detail) + '</div>' : '';
+                html += '<div class="diag-check ' + status + '">' +
+                    '<div class="diag-check-name">' + names[key] + '</div>' +
+                    '<div class="diag-check-msg">' + escapeHtml(msg) + '</div>' + detail +
+                    '</div>';
+            }
+            checks.innerHTML = html;
+
+            // Recommendations
+            if (d.recommendations && d.recommendations.length > 0) {
+                recDiv.style.display = 'block';
+                document.getElementById('diagRecList').innerHTML = d.recommendations.map(function(r) {
+                    return '<li>' + escapeHtml(r) + '</li>';
+                }).join('');
+            } else {
+                recDiv.style.display = 'none';
+            }
+
+            // Environment
+            var env = d.environment || {};
+            envEl.innerHTML = '<div style="display:grid;grid-template-columns:auto 1fr;gap:8px 20px;">' +
+                (env.python_version ? '<span style="color:var(--text-secondary);">Python</span><span>' + escapeHtml(env.python_version) + '</span>' : '') +
+                (env.flask_env ? '<span style="color:var(--text-secondary);">FLASK_ENV</span><span>' + escapeHtml(env.flask_env) + '</span>' : '') +
+                (env.database_type ? '<span style="color:var(--text-secondary);">Database</span><span>' + escapeHtml(env.database_type) + '</span>' : '') +
+                (env.r2_configured !== undefined ? '<span style="color:var(--text-secondary);">R2</span><span>' + (env.r2_configured ? 'Yes' : 'No') + '</span>' : '') +
+                (env.redis_configured !== undefined ? '<span style="color:var(--text-secondary);">Redis</span><span>' + (env.redis_configured ? 'Yes' : 'No') + '</span>' : '') +
+                (env.admin_password_set !== undefined ? '<span style="color:var(--text-secondary);">Admin password</span><span>' + (env.admin_password_set ? 'Set' : 'Not set') + '</span>' : '') +
+                '</div>';
+        } catch (e) {
+            checks.innerHTML = '<div class="diag-check unhealthy"><div class="diag-check-name">Error</div><div class="diag-check-msg">' + escapeHtml(e.message) + '</div></div>';
+            overall.style.display = 'block';
+            overall.className = 'diag-overall unhealthy';
+            document.getElementById('diagOverallText').textContent = 'Diagnostics failed';
+        }
+        if (btn) { btn.disabled = false; btn.textContent = '\u2315 Run Diagnostics';  // refresh icon }
+    }
+
+    function copyDiagnostics() {
+        if (!lastDiagnostics) {
+            alert('Run diagnostics first.');
+            return;
+        }
+        var text = JSON.stringify(lastDiagnostics, null, 2);
+        navigator.clipboard.writeText(text).then(function() {
+            var btn = document.getElementById('diagCopyBtn');
+            if (btn) { var t = btn.textContent; btn.textContent = 'Copied!'; setTimeout(function() { btn.textContent = t; }, 2000); }
+        }).catch(function() { alert('Could not copy.'); });
     }
 
     // ─── Init ───

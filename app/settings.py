@@ -64,6 +64,7 @@ class TestingSettings(BaseSettings):
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"  # type: ignore[assignment]
     SQLALCHEMY_ENGINE_OPTIONS = {}  # type: ignore[assignment]
     WTF_CSRF_ENABLED = False
+    RATELIMIT_ENABLED = False  # Disable for predictable integration tests
 
 
 settings_map = {

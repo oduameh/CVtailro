@@ -114,6 +114,7 @@ def run_pipeline_job(
     with pipeline_queue_lock:
         pipeline_queue_depth -= 1
 
+    log_cleanup = None
     try:
         pipeline_config = AppConfig(
             rewrite_mode=RewriteMode(mode),
@@ -136,7 +137,7 @@ def run_pipeline_job(
             db.session.commit()
 
         pipeline_analytics.start_job(job_id, model)
-        setup_logging(log_file=output_dir / "pipeline.log")
+        log_cleanup = setup_logging(log_file=output_dir / "pipeline.log")
         pipeline_start = time.time()
 
         resume_text = load_resume(resume_path)
@@ -539,13 +540,11 @@ def run_pipeline_job(
                 db.session.commit()
                 logger.info(f"Job {job_id} persisted to database")
 
-        if r2_storage.is_configured:
+        def _cleanup_output(path: Path, delay: int = 300) -> None:
+            time.sleep(delay)
+            shutil.rmtree(str(path), ignore_errors=True)
 
-            def _cleanup_output(path: Path, delay: int = 300) -> None:
-                time.sleep(delay)
-                shutil.rmtree(str(path), ignore_errors=True)
-
-            threading.Thread(target=_cleanup_output, args=(output_dir,), daemon=True).start()
+        threading.Thread(target=_cleanup_output, args=(output_dir,), daemon=True).start()
 
         with jobs_lock:
             jobs[job_id]["status"] = "complete"
@@ -617,4 +616,9 @@ def run_pipeline_job(
         progress_queue.put({"status": "error", "detail": f"[{model}] {error_msg}"})
 
     finally:
+        try:
+            if log_cleanup is not None:
+                log_cleanup()
+        except Exception:
+            pass
         pipeline_semaphore.release()
