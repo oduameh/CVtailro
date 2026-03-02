@@ -478,18 +478,81 @@ def run_pipeline_job(
             ats_resume.markdown_content,
             job_analysis.raw_text_for_similarity
         )
-        # Count how many job keywords appear in the tailored resume
+        # Count how many job keywords appear in the tailored resume (improved matching)
         tailored_text_lower = ats_resume.markdown_content.lower()
         all_job_skills = list(set(
             job_analysis.required_skills + job_analysis.preferred_skills + job_analysis.tools
         ))
-        tailored_missing = [s for s in all_job_skills if s.lower() not in tailored_text_lower]
-        total_skills = len(all_job_skills)
-        tailored_coverage = max(0.0, 1.0 - (len(tailored_missing) / max(total_skills, 1)))
-        tailored_match_score = round((tailored_cos_sim * 40) + (tailored_coverage * 40) + 20, 1)
+        tailored_found = 0
+        tailored_missing = []
+        for s in all_job_skills:
+            s_lower = s.lower().strip()
+            if not s_lower:
+                continue
+            # Use substring match for multi-word, word boundary for single word
+            if len(s_lower.split()) > 1:
+                if s_lower in tailored_text_lower:
+                    tailored_found += 1
+                else:
+                    tailored_missing.append(s)
+            else:
+                if re.search(r'\b' + re.escape(s_lower) + r'\b', tailored_text_lower):
+                    tailored_found += 1
+                else:
+                    tailored_missing.append(s)
+        total_skills = len(all_job_skills) or 1
+        tailored_coverage = tailored_found / total_skills
+        # Improved formula: higher weight on keyword coverage (most actionable)
+        # cos_sim typically 0.15-0.40, so scale it up
+        scaled_cos = min(tailored_cos_sim * 2.5, 1.0)  # Scale cosine to 0-1 range
+        tailored_match_score = round((scaled_cos * 25) + (tailored_coverage * 60) + 15, 1)
         tailored_match_score = max(0.0, min(100.0, tailored_match_score))
 
         logger.info(f"[Pipeline] Original score: {gap_report.match_score:.0f}% -> Tailored score: {tailored_match_score:.0f}%")
+
+        # Recompute section scores against the TAILORED resume (not original)
+        tailored_section_scores = {}
+        try:
+            sections = {
+                "summary": "",
+                "experience": "",
+                "skills": "",
+                "education": "",
+            }
+            # Parse sections from the tailored markdown
+            current_section = ""
+            for line in ats_resume.markdown_content.split("\n"):
+                stripped = line.strip().lower()
+                if stripped.startswith("##"):
+                    heading = stripped.lstrip("#").strip()
+                    if "summary" in heading or "profile" in heading or "objective" in heading:
+                        current_section = "summary"
+                    elif "experience" in heading or "employment" in heading or "work" in heading:
+                        current_section = "experience"
+                    elif "skill" in heading:
+                        current_section = "skills"
+                    elif "education" in heading:
+                        current_section = "education"
+                    else:
+                        current_section = ""
+                elif current_section:
+                    sections[current_section] += " " + line
+
+            for sec_name, sec_text in sections.items():
+                sec_lower = sec_text.lower()
+                found = 0
+                for kw in all_job_skills:
+                    kw_lower = kw.lower().strip()
+                    if not kw_lower:
+                        continue
+                    if kw_lower in sec_lower:
+                        found += 1
+                tailored_section_scores[sec_name] = round((found / total_skills) * 100, 1)
+            # Override the gap_report section_scores with tailored ones
+            gap_report.section_scores = tailored_section_scores
+            logger.info(f"[Pipeline] Tailored section scores: {tailored_section_scores}")
+        except Exception as e:
+            logger.warning(f"[Pipeline] Failed to compute tailored section scores: {e}")
 
         # ── Assemble final output (deterministic, instant) ──
         from models import MatchReport
