@@ -26,8 +26,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Create output directory with proper permissions
-RUN mkdir -p /app/output && chown -R app:app /app/output
+# Create output and font cache directories (WeasyPrint/fontconfig need writable cache)
+RUN mkdir -p /app/output /app/.cache/fontconfig && chown -R app:app /app/output /app/.cache
 
 # Switch to non-root user
 USER app
@@ -35,7 +35,8 @@ USER app
 EXPOSE 5050
 
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    XDG_CACHE_HOME=/app/.cache
 
 # Health check (uses PORT at runtime; Railway injects PORT)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
