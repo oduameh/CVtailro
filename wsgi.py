@@ -1,14 +1,23 @@
 """WSGI entry point — used by Gunicorn in production.
 
-Logging is configured by create_app() via init_structured_logging().
+Wraps create_app() with error handling so startup failures are visible
+in Railway deployment logs instead of silently crashing the worker.
 """
 
 import logging
 import os
+import sys
+import traceback
 
-from app import create_app
+try:
+    from app import create_app
 
-application = create_app()
+    application = create_app()
+    print("[wsgi] Application created successfully", flush=True)
+except Exception:
+    traceback.print_exc()
+    print("[wsgi] FATAL: Application failed to start", file=sys.stderr, flush=True)
+    sys.exit(1)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5050))
