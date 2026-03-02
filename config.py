@@ -9,14 +9,20 @@ from models import RewriteMode
 # Curated models that reliably produce structured JSON output.
 # Only 24B+ parameter models included — smaller ones fail on complex prompts.
 RECOMMENDED_MODELS: dict[str, str] = {
-    # ── Free models (no credits needed, 24B+ params) ─────────────
-    "Llama 3.3 70B (Free)": "meta-llama/llama-3.3-70b-instruct:free",
+    # ── Free models (no credits needed) ───────────────────────────
+    # Best free options for structured JSON resume output, ranked by reliability
     "Qwen3 Coder 480B (Free)": "qwen/qwen3-coder:free",
+    "Qwen3 Next 80B (Free)": "qwen/qwen3-next-80b-a3b-instruct:free",
     "Hermes 3 Llama 405B (Free)": "nousresearch/hermes-3-llama-3.1-405b:free",
     "GPT-OSS 120B (Free)": "openai/gpt-oss-120b:free",
+    "Llama 3.3 70B (Free)": "meta-llama/llama-3.3-70b-instruct:free",
+    "Trinity Large (Free)": "arcee-ai/trinity-large-preview:free",
+    "NVIDIA Nemotron 30B (Free)": "nvidia/nemotron-3-nano-30b-a3b:free",
+    "StepFun 3.5 Flash (Free)": "stepfun/step-3.5-flash:free",
     "Mistral Small 3.1 24B (Free)": "mistralai/mistral-small-3.1-24b-instruct:free",
     "Gemma 3 27B (Free)": "google/gemma-3-27b-it:free",
-    "NVIDIA Nemotron 30B (Free)": "nvidia/nemotron-3-nano-30b-a3b:free",
+    "Solar Pro 3 (Free)": "upstage/solar-pro-3:free",
+    "Auto Router (Free)": "openrouter/free",
     # ── Paid models (requires credits) ───────────────────────────
     "GPT-4o Mini": "openai/gpt-4o-mini",
     "GPT-4o": "openai/gpt-4o",
