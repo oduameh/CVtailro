@@ -13,7 +13,7 @@ main_bp = Blueprint("main", __name__)
 
 @main_bp.route("/")
 def index():
-    blog_posts = list_posts()[:4]
+    blog_posts = list_posts()[:6]
     return render_template("index.html", blog_posts=blog_posts)
 
 
