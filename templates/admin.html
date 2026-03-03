@@ -732,7 +732,20 @@
             letter-spacing: -0.5px;
             line-height: 1.2;
             font-variant-numeric: tabular-nums;
+            transition: color 0.3s;
         }
+        @keyframes kpiPulse {
+            0% { box-shadow: inset 0 0 0 0 rgba(99,102,241,0.15); }
+            50% { box-shadow: inset 0 0 0 100px rgba(99,102,241,0.06); }
+            100% { box-shadow: inset 0 0 0 0 rgba(99,102,241,0); }
+        }
+        .kpi-card.updated { animation: kpiPulse 0.8s ease-out; }
+        @keyframes activitySlideIn {
+            from { opacity:0; transform:translateY(-12px); max-height:0; }
+            to { opacity:1; transform:translateY(0); max-height:100px; }
+        }
+        .activity-item.new-item { animation: activitySlideIn 0.4s ease-out; }
+        .dash-last-updated { font-size:11px; color:var(--text-tertiary); font-weight:400; }
         .kpi-card .kpi-value.accent { color: var(--accent); }
         .kpi-card .kpi-value.success { color: var(--success); }
         .kpi-card .kpi-value.warning { color: var(--warning); }
@@ -938,8 +951,9 @@
                         </p>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;">
-                        <a href="#" onclick="switchTab('diagnostics'); return false;" class="btn btn-sm btn-secondary">Diagnostics</a>
-                        <button class="btn btn-sm btn-primary" onclick="loadDashboardData(); loadRecentJobs(); loadUsersList(); loadStats();">Refresh All</button>
+                        <span class="dash-last-updated" id="dashLastUpdated"></span>
+                        <button class="btn btn-sm btn-secondary" onclick="toggleDashView()" id="dashViewToggle" title="Toggle view">Table</button>
+                        <button class="btn btn-sm btn-primary" onclick="refreshDashboard()">Refresh</button>
                     </div>
                 </div>
 
@@ -1336,11 +1350,16 @@
 
         activeTab = tabName;
 
-        // Start/stop system auto-refresh
+        // Start/stop auto-refresh per tab
         if (tabName === 'system') {
             startSystemRefresh();
         } else {
             stopSystemRefresh();
+        }
+        if (tabName === 'dashboard') {
+            startDashboardRefresh();
+        } else {
+            stopDashboardRefresh();
         }
 
         // Refresh dashboard when switching to it
@@ -1356,6 +1375,78 @@
     function toggleMobileMenu() {
         var sidebar = document.getElementById('sidebarNav');
         if (sidebar) sidebar.classList.toggle('mobile-open');
+    }
+
+    // ─── Animated Counter ───
+
+    function animateValue(el, end, opts) {
+        if (!el) return;
+        opts = opts || {};
+        var prefix = opts.prefix || '';
+        var suffix = opts.suffix || '';
+        var duration = opts.duration || 800;
+        var decimals = opts.decimals || 0;
+        var startVal = parseFloat(el.dataset.currentVal) || 0;
+        if (startVal === end) return;
+        el.dataset.currentVal = end;
+        var startTime = null;
+        var card = el.closest('.kpi-card');
+        if (card && startVal !== 0) { card.classList.remove('updated'); void card.offsetWidth; card.classList.add('updated'); }
+        function step(ts) {
+            if (!startTime) startTime = ts;
+            var progress = Math.min((ts - startTime) / duration, 1);
+            var eased = 1 - Math.pow(1 - progress, 3);
+            var val = startVal + (end - startVal) * eased;
+            el.textContent = prefix + val.toFixed(decimals) + suffix;
+            if (progress < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+    }
+
+    // ─── Dashboard Auto-Refresh ───
+
+    var dashRefreshInterval = null;
+    var dashLastUpdate = 0;
+
+    function startDashboardRefresh() {
+        refreshDashboard();
+        dashRefreshInterval = setInterval(refreshDashboard, 30000);
+    }
+
+    function stopDashboardRefresh() {
+        if (dashRefreshInterval) { clearInterval(dashRefreshInterval); dashRefreshInterval = null; }
+    }
+
+    function refreshDashboard() {
+        loadDashboardData();
+        loadRecentJobs();
+        dashLastUpdate = Date.now();
+        updateLastUpdatedLabel();
+    }
+
+    function updateLastUpdatedLabel() {
+        var el = document.getElementById('dashLastUpdated');
+        if (!el) return;
+        var ago = Math.round((Date.now() - dashLastUpdate) / 1000);
+        el.textContent = ago < 5 ? 'Just now' : ago + 's ago';
+    }
+    setInterval(updateLastUpdatedLabel, 5000);
+
+    // ─── Dashboard View Toggle ───
+
+    function toggleDashView() {
+        var kpiRows = document.querySelectorAll('#tab-dashboard .kpi-row');
+        var btn = document.getElementById('dashViewToggle');
+        var isTable = localStorage.getItem('dashView') === 'table';
+        if (isTable) {
+            kpiRows.forEach(function(r) { r.style.gridTemplateColumns = ''; });
+            localStorage.setItem('dashView', 'cards');
+            btn.textContent = 'Table';
+        } else {
+            kpiRows.forEach(function(r) { r.style.gridTemplateColumns = 'repeat(auto-fill, minmax(120px, 1fr))'; });
+            localStorage.setItem('dashView', 'table');
+            btn.textContent = 'Cards';
+        }
     }
 
     // ─── System Auto-Refresh ───
@@ -1743,28 +1834,23 @@
             if (statsRes.ok) {
                 var stats = await statsRes.json();
                 var el = function(id) { return document.getElementById(id); };
-                if (el('dashUsers')) el('dashUsers').textContent = stats.total_users ?? '--';
-                if (el('dashJobs')) el('dashJobs').textContent = stats.total_jobs ?? '--';
-                if (el('dashJobsToday')) el('dashJobsToday').textContent = stats.jobs_today ?? 0;
-                if (el('dashJobsWeek')) el('dashJobsWeek').textContent = stats.jobs_this_week ?? 0;
-                if (el('dashJobsMonth')) el('dashJobsMonth').textContent = stats.jobs_this_month ?? 0;
-                if (el('dashSuccessRate')) {
-                    el('dashSuccessRate').textContent = (stats.success_rate ?? 0) + '%';
-                    el('dashSuccessRate').className = 'kpi-value ' + (stats.success_rate >= 90 ? 'success' : stats.success_rate >= 70 ? '' : 'warning');
-                }
-                if (el('dashMatchImprovement')) {
-                    var imp = stats.avg_match_improvement ?? 0;
-                    el('dashMatchImprovement').textContent = (imp >= 0 ? '+' : '') + imp + '%';
-                    el('dashMatchImprovement').className = 'kpi-value ' + (imp > 0 ? 'success' : '');
-                }
-                if (el('dashSavedResumes')) el('dashSavedResumes').textContent = stats.saved_resumes_count ?? 0;
+                animateValue(el('dashUsers'), stats.total_users ?? 0);
+                animateValue(el('dashJobs'), stats.total_jobs ?? 0);
+                animateValue(el('dashJobsToday'), stats.jobs_today ?? 0);
+                animateValue(el('dashJobsWeek'), stats.jobs_this_week ?? 0);
+                animateValue(el('dashJobsMonth'), stats.jobs_this_month ?? 0);
+                animateValue(el('dashSavedResumes'), stats.saved_resumes_count ?? 0);
+                var sr = stats.success_rate ?? 0;
+                animateValue(el('dashSuccessRate'), sr, {suffix: '%', decimals: 1});
+                if (el('dashSuccessRate')) el('dashSuccessRate').className = 'kpi-value ' + (sr >= 90 ? 'success' : sr >= 70 ? '' : 'warning');
+                var imp = stats.avg_match_improvement ?? 0;
+                animateValue(el('dashMatchImprovement'), imp, {prefix: imp >= 0 ? '+' : '', suffix: '%', decimals: 1});
+                if (el('dashMatchImprovement')) el('dashMatchImprovement').className = 'kpi-value ' + (imp > 0 ? 'success' : '');
             }
             if (analyticsRes.ok) {
                 var analytics = await analyticsRes.json();
-                var dc = document.getElementById('dashCost');
-                if (dc) dc.textContent = '$' + (analytics.total_cost_usd || 0).toFixed(2);
-                var dj = document.getElementById('dashJobs');
-                if (dj && !statsRes.ok) dj.textContent = analytics.total_jobs ?? '--';
+                animateValue(document.getElementById('dashCost'), analytics.total_cost_usd || 0, {prefix: '$', decimals: 2});
+                if (!statsRes.ok) animateValue(document.getElementById('dashJobs'), analytics.total_jobs ?? 0);
                 renderJobsChart(analytics.jobs_over_time || []);
                 renderStatusChart(analytics.jobs_by_status || {});
             }

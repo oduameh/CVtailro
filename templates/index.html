@@ -778,11 +778,34 @@
 
         .stage.is-running {
             background: var(--primary-bg);
+            animation: stageGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes stageGlow {
+            0%, 100% { box-shadow: inset 0 0 0 0 rgba(99,102,241,0); }
+            50% { box-shadow: inset 0 0 0 100px rgba(99,102,241,0.04); }
         }
 
         .stage.is-running .stage-name {
             color: var(--primary);
             font-weight: 700;
+        }
+
+        @keyframes stageDone {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+        .stage.is-done.just-completed {
+            animation: stageDone 0.3s ease-out;
+        }
+
+        .elapsed-timer {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            text-align: center;
+            margin-top: 8px;
+            font-variant-numeric: tabular-nums;
         }
 
         /* --- Results Section --- */
@@ -839,6 +862,15 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             color: var(--text-secondary);
+        }
+
+        @keyframes scoreGlow {
+            0% { filter: drop-shadow(0 0 0 transparent); }
+            50% { filter: drop-shadow(0 0 12px rgba(16,185,129,0.4)); }
+            100% { filter: drop-shadow(0 0 0 transparent); }
+        }
+        .score-ring-wrap.celebrate svg {
+            animation: scoreGlow 1s ease-out;
         }
 
         .score-stats {
@@ -4602,7 +4634,10 @@
                     }
                     if (row) {
                         row.className = 'stage';
-                        if (m.status === 'done') row.classList.add('is-done');
+                        if (m.status === 'done') {
+                            row.classList.add('is-done', 'just-completed');
+                            setTimeout(function() { row.classList.remove('just-completed'); }, 400);
+                        }
                         else if (m.status === 'running') row.classList.add('is-running');
                     }
                     if (det) det.textContent = m.detail || "";
@@ -4745,24 +4780,39 @@
         var prevQuality = document.querySelector('.score-section + .card[style*="margin-top:20px"]');
         if (prevQuality) prevQuality.remove();
 
-        // --- Circular Score (use tailored score when available) ---
+        // --- Circular Score with animated counter ---
         var primaryScore = s.tailored_match_score != null ? s.tailored_match_score : (s.match_score || 0);
-        var scoreVal = primaryScore.toFixed(0);
-        var scoreNum = parseFloat(scoreVal);
-        document.getElementById("matchScore").textContent = scoreVal + "%";
+        var scoreNum = parseFloat(primaryScore.toFixed(0));
+        var scoreEl = document.getElementById("matchScore");
+
+        // Animate counter from 0 to score
+        var counterStart = null;
+        var counterDuration = 1200;
+        function animateScoreCounter(ts) {
+            if (!counterStart) counterStart = ts;
+            var progress = Math.min((ts - counterStart) / counterDuration, 1);
+            var eased = 1 - Math.pow(1 - progress, 3);
+            scoreEl.textContent = Math.round(scoreNum * eased) + "%";
+            if (progress < 1) requestAnimationFrame(animateScoreCounter);
+        }
+        requestAnimationFrame(animateScoreCounter);
 
         // Animate the ring
-        var circumference = 2 * Math.PI * 68; // r=60
+        var circumference = 2 * Math.PI * 68;
         var offset = circumference - (scoreNum / 100) * circumference;
         var ring = document.getElementById("scoreRing");
         ring.style.strokeDasharray = circumference;
-        // Determine color
         var scoreColor = scoreNum >= 80 ? 'var(--score-high)' : scoreNum >= 50 ? 'var(--score-mid)' : 'var(--score-low)';
         ring.style.stroke = scoreColor;
-        // Trigger animation after a short delay
         setTimeout(function() {
             ring.style.strokeDashoffset = offset;
         }, 100);
+
+        // Celebration glow for high scores
+        if (scoreNum >= 80) {
+            var wrap = document.querySelector('.score-ring-wrap');
+            if (wrap) { wrap.classList.add('celebrate'); setTimeout(function() { wrap.classList.remove('celebrate'); }, 1500); }
+        }
 
         // Keyword Match
         var kwMatchPct = Math.round(s.cosine_similarity * 100);
