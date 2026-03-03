@@ -1072,6 +1072,39 @@
         .folder-name .dl-icon { color: var(--text-secondary); transition: color 0.2s; }
         .folder-wrap:hover .folder-name .dl-icon { color: var(--primary); }
 
+        .folder-downloads {
+            display: none;
+            flex-direction: row;
+            gap: 6px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+        .folder-wrap.open .folder-downloads {
+            display: flex;
+            animation: fadeInUp 0.25s ease-out;
+        }
+        .folder-wrap.open .folder-name { display: none; }
+        .folder-dl-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--text);
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+        .folder-dl-btn:hover {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
         @media (max-width: 480px) {
             .template-grid { gap: 12px; }
             .folder-wrap { transform: scale(0.85); }
@@ -2849,7 +2882,7 @@
                         </div>
                         <div>
                             <div class="upload-label" id="uploadLabel"><strong>Upload Your Resume</strong></div>
-                            <div class="upload-label-sub">PDF, Markdown, or plain text &middot; Max 5MB</div>
+                            <div class="upload-label-sub">PDF (incl. LinkedIn export), Markdown, or plain text &middot; Max 5MB</div>
                         </div>
                         <div class="file-name" id="fileName" style="display:none"></div>
                     </div>
@@ -2976,53 +3009,8 @@
             <div class="card">
                 <div class="downloads-heading">Download Your Resume</div>
 
-                <div class="template-grid" id="templateGrid">
-                    <!-- Modern Folder -->
-                    <div class="folder-wrap" onclick="toggleFolder(this)" ondblclick="downloadTemplate('modern')">
-                        <div class="folder-body" style="background:#1a3a5c;">
-                            <div class="folder-tab" style="background:#1a3a5c;"></div>
-                            <div class="folder-paper" style="width:75px;height:65px;background:#e8e8e8;"><div class="paper-lines"><span style="width:70%"></span><span style="width:50%"></span><span style="width:60%"></span></div></div>
-                            <div class="folder-paper" style="width:85px;height:70px;background:#f0f0f0;"><div class="paper-lines"><span style="width:60%"></span><span style="width:80%"></span><span style="width:40%"></span></div></div>
-                            <div class="folder-paper" style="width:95px;height:75px;background:#ffffff;"><div class="paper-lines"><span style="width:75%;height:3px"></span><span></span><span></span><span style="width:50%"></span></div></div>
-                            <div class="folder-flap-l" style="background:#2a5a8c;"></div>
-                            <div class="folder-flap-r" style="background:#2a5a8c;">
-                                <span class="folder-label">Modern</span>
-                            </div>
-                        </div>
-                        <div class="folder-name">Modern <svg class="dl-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>
-                    </div>
-                    <!-- Executive Folder -->
-                    <div class="folder-wrap" onclick="toggleFolder(this)" ondblclick="downloadTemplate('executive')">
-                        <div class="folder-body" style="background:#6B5335;">
-                            <div class="folder-tab" style="background:#6B5335;"></div>
-                            <div class="folder-paper" style="width:75px;height:65px;background:#e8e8e8;"><div class="paper-lines" style="align-items:center;"><span style="width:40%"></span><span></span><span></span></div></div>
-                            <div class="folder-paper" style="width:85px;height:70px;background:#f0f0f0;"><div class="paper-lines" style="align-items:center;"><span style="width:35%"></span><span></span><span></span></div></div>
-                            <div class="folder-paper" style="width:95px;height:75px;background:#ffffff;"><div class="paper-lines" style="align-items:center;"><span style="width:30%;height:3px"></span><span></span><span></span><span style="width:60%"></span></div></div>
-                            <div class="folder-flap-l" style="background:#8B7355;"></div>
-                            <div class="folder-flap-r" style="background:#8B7355;">
-                                <span class="folder-label">Executive</span>
-                            </div>
-                        </div>
-                        <div class="folder-name">Executive <svg class="dl-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>
-                    </div>
-                    <!-- Minimal Folder -->
-                    <div class="folder-wrap" onclick="toggleFolder(this)" ondblclick="downloadTemplate('minimal')">
-                        <div class="folder-body" style="background:#555;">
-                            <div class="folder-tab" style="background:#555;"></div>
-                            <div class="folder-paper" style="width:75px;height:65px;background:#e8e8e8;"><div class="paper-lines"><span style="width:30%"></span><span style="width:90%;height:1px;opacity:0.5"></span><span style="width:90%;height:1px;opacity:0.5"></span></div></div>
-                            <div class="folder-paper" style="width:85px;height:70px;background:#f5f5f5;"><div class="paper-lines"><span style="width:25%"></span><span style="width:80%;height:1px;opacity:0.4"></span></div></div>
-                            <div class="folder-paper" style="width:95px;height:75px;background:#ffffff;"><div class="paper-lines"><span style="width:20%;height:3px"></span><span style="width:90%;height:1px;opacity:0.3"></span><span style="width:85%;height:1px;opacity:0.3"></span></div></div>
-                            <div class="folder-flap-l" style="background:#777;"></div>
-                            <div class="folder-flap-r" style="background:#777;">
-                                <span class="folder-label">Minimal</span>
-                            </div>
-                        </div>
-                        <div class="folder-name">Minimal <svg class="dl-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>
-                    </div>
-                </div>
-                <div class="dl-usage-hint" style="text-align:center;">Click a folder to peek inside. Double-click to download.</div>
-
-                <div class="dl-usage-hint">Your resume has been optimised for both ATS screening and recruiter appeal. Pick any template above to download as PDF.</div>
+                <div class="template-grid" id="templateGrid"></div>
+                <div class="dl-usage-hint">Click a folder to open it and choose your download format.</div>
 
                 <button class="additional-toggle" id="additionalToggle" onclick="toggleAdditional()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
@@ -3051,20 +3039,164 @@
                 <div class="talking-points-content collapsible-content collapsed" id="emailTemplatesContent"></div>
             </div>
 
-            <!-- Preview -->
+            <!-- Preview with Editor and Side-by-Side -->
             <div class="card">
                 <div class="preview-header">
-                    <h2 class="collapsible-header" style="margin-bottom:0" onclick="toggleCollapsible(this)">Resume Preview <span class="collapsible-chevron">&#9662;</span></h2>
-                    <button class="copy-btn" onclick="copyPreview()">Copy</button>
+                    <h2 style="margin-bottom:0;font-size:16px;font-weight:700;">Resume Preview</h2>
+                    <div style="display:flex;gap:6px;align-items:center;">
+                        <button class="preview-mode-btn active" id="btnModePreview" onclick="setPreviewMode('preview')" style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--border);background:var(--primary);color:#fff;cursor:pointer;">Preview</button>
+                        <button class="preview-mode-btn" id="btnModeEdit" onclick="setPreviewMode('edit')" style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--border);background:var(--primary-bg);color:var(--text);cursor:pointer;">Edit</button>
+                        <button class="preview-mode-btn" id="btnModeCompare" onclick="setPreviewMode('compare')" style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--border);background:var(--primary-bg);color:var(--text);cursor:pointer;">Compare</button>
+                        <button class="copy-btn" onclick="copyPreview()">Copy</button>
+                    </div>
                 </div>
-                <div class="collapsible-content">
+                <!-- Preview mode -->
+                <div id="previewPane" style="margin-top:12px;">
                     <div id="previewContent"></div>
+                </div>
+                <!-- Edit mode -->
+                <div id="editPane" style="display:none;margin-top:12px;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;height:500px;">
+                        <div style="display:flex;flex-direction:column;">
+                            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;">Markdown Editor</div>
+                            <textarea id="resumeEditor" style="flex:1;width:100%;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'Courier New',monospace;font-size:12px;line-height:1.5;background:var(--card);color:var(--text);resize:none;outline:none;" oninput="updateEditPreview()"></textarea>
+                        </div>
+                        <div style="display:flex;flex-direction:column;">
+                            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;">Live Preview</div>
+                            <div id="editPreviewContent" style="flex:1;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:14px;line-height:1.7;"></div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;">
+                        <button onclick="applyEdits()" style="padding:8px 16px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">Apply Changes</button>
+                        <button onclick="discardEdits()" style="padding:8px 16px;background:var(--primary-bg);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;">Discard</button>
+                    </div>
+                </div>
+                <!-- Compare mode (side-by-side) -->
+                <div id="comparePane" style="display:none;margin-top:12px;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div>
+                            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;text-align:center;">Original Resume</div>
+                            <div id="compareOriginal" style="max-height:500px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;line-height:1.6;background:rgba(239,68,68,0.02);"></div>
+                        </div>
+                        <div>
+                            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;text-align:center;">Tailored Resume</div>
+                            <div id="compareTailored" style="max-height:500px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;line-height:1.6;background:rgba(0,184,148,0.02);"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div class="again-wrap">
                 <button class="btn-again" onclick="resetForm()">Tailor Another Resume</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Tools Section -->
+    <div class="container" id="toolsSection" style="margin-top:40px;">
+        <h2 style="text-align:center;font-size:20px;font-weight:700;margin-bottom:24px;color:var(--text);">More Tools</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:32px;">
+            <!-- Score My Resume -->
+            <div class="card" style="cursor:pointer;" onclick="document.getElementById('scorerPanel').style.display=document.getElementById('scorerPanel').style.display==='none'?'block':'none'">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+                    <div style="width:40px;height:40px;background:var(--primary-bg);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;">&#128200;</div>
+                    <div>
+                        <div style="font-size:14px;font-weight:700;color:var(--text);">Score My Resume</div>
+                        <div style="font-size:12px;color:var(--text-secondary);">Get instant quality feedback</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Achievement Booster -->
+            <div class="card" style="cursor:pointer;" onclick="document.getElementById('boosterPanel').style.display=document.getElementById('boosterPanel').style.display==='none'?'block':'none'">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+                    <div style="width:40px;height:40px;background:rgba(139,92,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;">&#9889;</div>
+                    <div>
+                        <div style="font-size:14px;font-weight:700;color:var(--text);">Achievement Booster</div>
+                        <div style="font-size:12px;color:var(--text-secondary);">Supercharge bullet points</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Job Tracker -->
+            <div class="card" style="cursor:pointer;" onclick="document.getElementById('trackerPanel').style.display=document.getElementById('trackerPanel').style.display==='none'?'block':'none'">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+                    <div style="width:40px;height:40px;background:rgba(0,184,148,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;">&#128203;</div>
+                    <div>
+                        <div style="font-size:14px;font-weight:700;color:var(--text);">Job Tracker</div>
+                        <div style="font-size:12px;color:var(--text-secondary);">Track your applications</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Batch Tailoring -->
+            <div class="card" style="cursor:pointer;" onclick="document.getElementById('batchPanel').style.display=document.getElementById('batchPanel').style.display==='none'?'block':'none'">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+                    <div style="width:40px;height:40px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;">&#128640;</div>
+                    <div>
+                        <div style="font-size:14px;font-weight:700;color:var(--text);">Batch Tailoring</div>
+                        <div style="font-size:12px;color:var(--text-secondary);">Tailor to multiple jobs at once</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Score My Resume Panel -->
+        <div id="scorerPanel" class="card" style="display:none;margin-bottom:16px;">
+            <h3 style="font-size:16px;font-weight:700;margin-bottom:12px;">Score My Resume</h3>
+            <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">Upload your resume to get an instant quality score with actionable feedback. No job description needed.</p>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                <input type="file" id="scorerFile" accept=".pdf,.md,.txt" style="font-size:13px;">
+                <button id="btnScore" onclick="scoreResume()" style="padding:10px 20px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Score Resume</button>
+            </div>
+            <div id="scorerResults" style="margin-top:16px;"></div>
+        </div>
+
+        <!-- Achievement Booster Panel -->
+        <div id="boosterPanel" class="card" style="display:none;margin-bottom:16px;">
+            <h3 style="font-size:16px;font-weight:700;margin-bottom:12px;">Achievement Booster</h3>
+            <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">Paste a bullet point and get an AI-improved version with stronger verbs and metrics.</p>
+            <textarea id="boosterInput" placeholder="Paste a resume bullet point here..." style="width:100%;height:60px;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;font-family:inherit;background:var(--card);color:var(--text);resize:vertical;"></textarea>
+            <div style="display:flex;gap:12px;align-items:center;margin-top:8px;flex-wrap:wrap;">
+                <input type="text" id="boosterJobTitle" placeholder="Target job title (optional)" style="flex:1;min-width:180px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--card);color:var(--text);">
+                <button id="btnBoost" onclick="boostBullet()" style="padding:10px 20px;background:#8b5cf6;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Boost It</button>
+            </div>
+            <div id="boosterResults" style="margin-top:16px;"></div>
+        </div>
+
+        <!-- Job Tracker Panel -->
+        <div id="trackerPanel" class="card" style="display:none;margin-bottom:16px;">
+            <h3 style="font-size:16px;font-weight:700;margin-bottom:12px;">Job Application Tracker</h3>
+            <div id="trackerAuth" style="display:none;font-size:13px;color:var(--text-secondary);margin-bottom:12px;">
+                <a href="/auth/google/login" style="color:var(--primary);font-weight:600;">Sign in</a> to track your job applications.
+            </div>
+            <div id="trackerContent" style="display:none;">
+                <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+                    <input type="text" id="trackerCompany" placeholder="Company" style="flex:1;min-width:120px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--card);color:var(--text);">
+                    <input type="text" id="trackerTitle" placeholder="Job Title" style="flex:1;min-width:120px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--card);color:var(--text);">
+                    <select id="trackerStatus" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--card);color:var(--text);">
+                        <option value="saved">Saved</option>
+                        <option value="applied">Applied</option>
+                        <option value="interview">Interview</option>
+                        <option value="offer">Offer</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                    <button onclick="addTrackerApp()" style="padding:8px 16px;background:var(--score-high);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Add</button>
+                </div>
+                <div id="trackerList"></div>
+            </div>
+        </div>
+
+        <!-- Batch Tailoring Panel -->
+        <div id="batchPanel" class="card" style="display:none;margin-bottom:16px;">
+            <h3 style="font-size:16px;font-weight:700;margin-bottom:12px;">Batch Tailoring</h3>
+            <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">Upload your resume once and tailor it to multiple job descriptions. Separate each job description with "---" on its own line.</p>
+            <div style="margin-bottom:12px;">
+                <input type="file" id="batchFile" accept=".pdf,.md,.txt" style="font-size:13px;">
+            </div>
+            <textarea id="batchJobDescs" placeholder="Paste job description 1 here...&#10;---&#10;Paste job description 2 here...&#10;---&#10;Paste job description 3 here..." style="width:100%;height:200px;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;font-family:inherit;background:var(--card);color:var(--text);resize:vertical;"></textarea>
+            <div style="display:flex;gap:12px;align-items:center;margin-top:10px;">
+                <button id="btnBatch" onclick="startBatchTailoring()" style="padding:10px 20px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Start Batch Tailoring</button>
+                <span style="font-size:12px;color:var(--text-secondary);">Max 5 job descriptions</span>
+            </div>
+            <div id="batchResults" style="margin-top:16px;"></div>
         </div>
     </div>
 
@@ -3464,10 +3596,73 @@
     window.toggleDarkMode = toggleDarkMode;
 
     // --- Interactive Folder ---
-    function toggleFolder(el) {
-        el.classList.toggle('open');
+    var TEMPLATE_FOLDERS = [
+        { id: 'modern', label: 'Modern', color: '#1a3a5c', flap: '#2a5a8c' },
+        { id: 'executive', label: 'Executive', color: '#6B5335', flap: '#8B7355' },
+        { id: 'minimal', label: 'Minimal', color: '#555', flap: '#777' },
+        { id: 'creative', label: 'Creative', color: '#0d9488', flap: '#14b8a6' },
+        { id: 'compact', label: 'Compact', color: '#374151', flap: '#4b5563' },
+        { id: 'professional', label: 'Professional', color: '#334155', flap: '#475569' },
+        { id: 'tech', label: 'Tech', color: '#0f172a', flap: '#1e293b' },
+        { id: 'elegant', label: 'Elegant', color: '#7c2d36', flap: '#9f3d48' }
+    ];
+
+    function buildTemplateFolders() {
+        var grid = document.getElementById('templateGrid');
+        if (!grid) return;
+        grid.innerHTML = TEMPLATE_FOLDERS.map(function(t) {
+            return '<div class="folder-wrap" data-tpl="' + t.id + '" onclick="toggleFolder(this)">' +
+                '<div class="folder-body" style="background:' + t.color + ';">' +
+                    '<div class="folder-tab" style="background:' + t.color + ';"></div>' +
+                    '<div class="folder-paper" style="width:75px;height:65px;background:#e8e8e8;"></div>' +
+                    '<div class="folder-paper" style="width:85px;height:70px;background:#f0f0f0;"></div>' +
+                    '<div class="folder-paper" style="width:95px;height:75px;background:#fff;"></div>' +
+                    '<div class="folder-flap-l" style="background:' + t.flap + ';"></div>' +
+                    '<div class="folder-flap-r" style="background:' + t.flap + ';">' +
+                        '<span class="folder-label">' + t.label + '</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="folder-name">' + t.label + '</div>' +
+                '<div class="folder-downloads">' +
+                    '<button class="folder-dl-btn" onclick="event.stopPropagation();downloadFormat(\'' + t.id + '\',\'pdf\')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> PDF</button>' +
+                    '<button class="folder-dl-btn" onclick="event.stopPropagation();downloadFormat(\'' + t.id + '\',\'docx\')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> DOCX</button>' +
+                    '<button class="folder-dl-btn" onclick="event.stopPropagation();downloadFormat(\'' + t.id + '\',\'md\')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> TXT</button>' +
+                '</div>' +
+            '</div>';
+        }).join('');
     }
-    // Drift effect on papers when folder is open
+    buildTemplateFolders();
+
+    function toggleFolder(el) {
+        var wasOpen = el.classList.contains('open');
+        // Close all other folders
+        document.querySelectorAll('.folder-wrap.open').forEach(function(f) { f.classList.remove('open'); });
+        if (!wasOpen) el.classList.add('open');
+    }
+
+    function downloadFormat(tpl, format) {
+        if (!currentFileList || !currentJobId) { showError('No resume ready yet. Run a tailoring job first.'); return; }
+        var target = null;
+        for (var i = 0; i < currentFileList.length; i++) {
+            var f = typeof currentFileList[i] === 'string' ? currentFileList[i] : currentFileList[i].filename;
+            var fl = f.toLowerCase();
+            if (format === 'pdf' && fl.indexOf(tpl) !== -1 && fl.endsWith('.pdf')) { target = f; break; }
+            if (format === 'docx' && fl.endsWith('.docx') && fl.indexOf('cover') === -1) { target = f; break; }
+            if (format === 'md' && fl.endsWith('.md') && fl.indexOf('talking') === -1) { target = f; break; }
+        }
+        if (target) {
+            safeDownload('/api/download/' + currentJobId + '/' + target, target);
+        } else {
+            // Fallback: request the template-specific PDF from DB regeneration
+            var fallbackName = tpl.charAt(0).toUpperCase() + tpl.slice(1) + '.' + (format === 'md' ? 'md' : format);
+            safeDownload('/api/download/' + currentJobId + '/' + fallbackName, fallbackName);
+        }
+    }
+
+    // Legacy compat
+    function downloadTemplate(tpl) { downloadFormat(tpl, 'pdf'); }
+
+    // Simplified paper drift (no complex mouse tracking)
     document.addEventListener('mousemove', function(e) {
         var folders = document.querySelectorAll('.folder-wrap.open');
         folders.forEach(function(folder) {
@@ -4289,8 +4484,63 @@
                 qualityHtml += '<div style="flex:1;min-width:120px;text-align:center;padding:16px;background:rgba(0,184,148,0.08);border-radius:12px;">';
                 qualityHtml += '<div style="font-size:28px;font-weight:800;color:var(--score-high);">+' + (rq.improvement || 0) + '</div>';
                 qualityHtml += '<div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">IMPROVEMENT</div></div>';
-                qualityHtml += '</div></div>';
+                qualityHtml += '</div>';
+                // Detail drill-down
+                if (rq.before && rq.after) {
+                    qualityHtml += '<div style="margin-top:16px;"><div>';
+                    qualityHtml += '<h3 class="collapsible-header" onclick="toggleCollapsible(this)" style="font-size:13px;font-weight:600;color:var(--text-secondary);cursor:pointer;">Quality Details <span class="collapsible-chevron">&#9662;</span></h3>';
+                    qualityHtml += '</div><div class="collapsible-content collapsed">';
+                    qualityHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;">';
+                    qualityHtml += '<div style="padding:12px;background:var(--primary-bg);border-radius:8px;"><div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">METRICS USAGE</div>';
+                    qualityHtml += '<div style="font-size:13px;color:var(--text);">Before: ' + (rq.before.metrics_pct || 0) + '% of bullets</div>';
+                    qualityHtml += '<div style="font-size:13px;color:var(--primary);">After: ' + (rq.after.metrics_pct || 0) + '% of bullets</div></div>';
+                    qualityHtml += '<div style="padding:12px;background:var(--primary-bg);border-radius:8px;"><div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">BULLET COUNT</div>';
+                    qualityHtml += '<div style="font-size:13px;color:var(--text);">' + ((rq.after.metrics_pct || 0) > (rq.before.metrics_pct || 0) ? 'More bullets now include numbers and metrics' : 'Consider adding more quantifiable results') + '</div></div>';
+                    qualityHtml += '</div>';
+                    if (rq.after.weak_verbs && rq.after.weak_verbs.length > 0) {
+                        qualityHtml += '<div style="margin-top:12px;padding:12px;background:rgba(239,68,68,0.05);border-radius:8px;border:1px solid rgba(239,68,68,0.15);">';
+                        qualityHtml += '<div style="font-size:11px;font-weight:600;color:#ef4444;margin-bottom:6px;">WEAK VERBS REMAINING</div>';
+                        qualityHtml += '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
+                        rq.after.weak_verbs.forEach(function(v) { qualityHtml += '<span style="padding:2px 8px;background:rgba(239,68,68,0.1);border-radius:4px;font-size:12px;color:#ef4444;">' + escapeHtml(v) + '</span>'; });
+                        qualityHtml += '</div></div>';
+                    }
+                    if (rq.after.filler_words && rq.after.filler_words.length > 0) {
+                        qualityHtml += '<div style="margin-top:8px;padding:12px;background:rgba(245,158,11,0.05);border-radius:8px;border:1px solid rgba(245,158,11,0.15);">';
+                        qualityHtml += '<div style="font-size:11px;font-weight:600;color:#f59e0b;margin-bottom:6px;">FILLER WORDS REMAINING</div>';
+                        qualityHtml += '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
+                        rq.after.filler_words.forEach(function(v) { qualityHtml += '<span style="padding:2px 8px;background:rgba(245,158,11,0.1);border-radius:4px;font-size:12px;color:#f59e0b;">' + escapeHtml(v) + '</span>'; });
+                        qualityHtml += '</div></div>';
+                    }
+                    qualityHtml += '</div></div>';
+                }
+                qualityHtml += '</div>';
                 document.querySelector('.score-section').insertAdjacentHTML('afterend', qualityHtml);
+            }
+
+            // Keyword Density (if available)
+            if (s.keyword_density && s.keyword_density.keywords) {
+                var kd = s.keyword_density;
+                var kdHtml = '<div class="card" style="margin-top:20px;">';
+                kdHtml += '<h2 class="collapsible-header" onclick="toggleCollapsible(this)">Keyword Density Analysis <span class="collapsible-chevron">&#9662;</span></h2>';
+                kdHtml += '<div class="collapsible-content">';
+                kdHtml += '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">';
+                kdHtml += '<div style="flex:1;min-width:100px;text-align:center;padding:12px;background:var(--primary-bg);border-radius:12px;"><div style="font-size:24px;font-weight:800;color:var(--text);">' + kd.total + '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">JD Keywords</div></div>';
+                kdHtml += '<div style="flex:1;min-width:100px;text-align:center;padding:12px;background:var(--primary-bg);border-radius:12px;"><div style="font-size:24px;font-weight:800;color:var(--text-secondary);">' + kd.matched_before + '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Matched Before</div></div>';
+                kdHtml += '<div style="flex:1;min-width:100px;text-align:center;padding:12px;background:var(--primary-bg);border-radius:12px;"><div style="font-size:24px;font-weight:800;color:var(--primary);">' + kd.matched_after + '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Matched After</div></div>';
+                kdHtml += '<div style="flex:1;min-width:100px;text-align:center;padding:12px;background:rgba(0,184,148,0.08);border-radius:12px;"><div style="font-size:24px;font-weight:800;color:var(--score-high);">+' + kd.improvement + '%</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Improvement</div></div>';
+                kdHtml += '</div>';
+                kdHtml += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+                kd.keywords.forEach(function(kw) {
+                    var statusColor = kw.status === 'matched' ? 'var(--primary)' : kw.status === 'improved' ? 'var(--score-high)' : kw.status === 'new' ? '#8b5cf6' : '#ef4444';
+                    var statusBg = kw.status === 'matched' ? 'var(--primary-bg)' : kw.status === 'improved' ? 'rgba(0,184,148,0.08)' : kw.status === 'new' ? 'rgba(139,92,246,0.08)' : 'rgba(239,68,68,0.08)';
+                    var statusIcon = kw.status === 'matched' ? '&#10003;' : kw.status === 'improved' ? '&#9650;' : kw.status === 'new' ? '&#10010;' : '&#10007;';
+                    kdHtml += '<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;color:' + statusColor + ';background:' + statusBg + ';border:1px solid ' + statusColor + '22;">' + statusIcon + ' ' + escapeHtml(kw.keyword) + '</span>';
+                });
+                kdHtml += '</div>';
+                kdHtml += '<div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--text-secondary);">';
+                kdHtml += '<span>&#10003; Matched</span><span style="color:var(--score-high);">&#9650; Improved</span><span style="color:#8b5cf6;">&#10010; New</span><span style="color:#ef4444;">&#10007; Missing</span>';
+                kdHtml += '</div></div></div>';
+                document.querySelector('.score-section').parentElement.insertAdjacentHTML('afterend', kdHtml);
             }
 
             // --- Downloads ---
@@ -4345,6 +4595,7 @@
                 document.getElementById("coverLetterContent").innerHTML =
                     '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">' +
                     '<a href="/api/download/' + effectiveJobId + '/' + clPrefix + '_Cover_Letter.pdf" style="padding:10px 18px;background:var(--primary);color:#fff;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;">Download PDF</a>' +
+                    '<a href="/api/download/' + effectiveJobId + '/' + clPrefix + '_Cover_Letter.docx" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--primary);border-radius:10px;font-size:13px;font-weight:600;color:var(--primary);text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;">Download DOCX</a>' +
                     '<button onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.textContent).then(function(){showToast(\'Cover letter copied!\',\'success\');})" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;">Copy Text</button>' +
                     '<button onclick="this.parentElement.nextElementSibling.style.display=this.parentElement.nextElementSibling.style.display===\'none\'?\'block\':\'none\';this.textContent=this.parentElement.nextElementSibling.style.display===\'none\'?\'Show Preview\':\'Hide Preview\'" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;">Show Preview</button>' +
                     '</div>' +
@@ -4381,7 +4632,10 @@
             document.getElementById("whatChangedContent").innerHTML = buildChangesPanel(s);
 
             // --- Preview ---
-            document.getElementById("previewContent").innerHTML = renderMarkdown(s.ats_resume_md || '');
+            currentResumeMd = s.ats_resume_md || '';
+            originalResumeMd = s.original_resume_text || '';
+            document.getElementById("previewContent").innerHTML = renderMarkdown(currentResumeMd);
+            setPreviewMode('preview');
 
             document.getElementById("resultsSection").classList.add("active");
             document.getElementById("resultsSection").scrollIntoView({behavior: "smooth"});
@@ -4460,14 +4714,14 @@
     function getFileInfo(fname) {
         var ext = fname.split('.').pop().toUpperCase();
         var lower = fname.toLowerCase();
-        // Template-based PDFs (new pipeline): Modern.pdf, Executive.pdf, Minimal.pdf
-        var isModern = lower.indexOf('modern') !== -1;
-        var isExec = lower.indexOf('executive') !== -1;
-        var isMinimal = lower.indexOf('minimal') !== -1;
-        var isTemplatePdf = (isModern || isExec || isMinimal) && ext === 'PDF';
-        if (isTemplatePdf) {
-            var tplName = isModern ? 'Modern' : isExec ? 'Executive' : 'Minimal';
-            return {l: tplName + " PDF", b: "PDF", cat: "template_pdf", primary: false, template: tplName.toLowerCase()};
+        var templateNames = ['modern','executive','minimal','creative','compact','professional','tech','elegant'];
+        var matchedTpl = null;
+        for (var ti = 0; ti < templateNames.length; ti++) {
+            if (lower.indexOf(templateNames[ti]) !== -1) { matchedTpl = templateNames[ti]; break; }
+        }
+        if (matchedTpl && ext === 'PDF') {
+            var tplLabel = matchedTpl.charAt(0).toUpperCase() + matchedTpl.slice(1);
+            return {l: tplLabel + " PDF", b: "PDF", cat: "template_pdf", primary: false, template: matchedTpl};
         }
         // Unified resume (new pipeline) — check for "resume" but not "ats"/"recruiter"
         var isResume = lower.indexOf('resume') !== -1;
@@ -4535,9 +4789,9 @@
     (function setUploadLabel() {
         var label = document.getElementById('uploadLabel');
         if (isTouchDevice()) {
-            label.innerHTML = '<strong>Tap to upload</strong><br>PDF, Markdown, or plain text';
+            label.innerHTML = '<strong>Tap to upload</strong><br>PDF (incl. LinkedIn), Markdown, or plain text';
         } else {
-            label.innerHTML = '<strong>Click to upload</strong> or drag and drop<br>PDF, Markdown, or plain text';
+            label.innerHTML = '<strong>Click to upload</strong> or drag and drop<br>PDF (incl. LinkedIn), Markdown, or plain text';
         }
     })();
 
@@ -5036,8 +5290,63 @@
             qualityHtml += '<div style="flex:1;min-width:120px;text-align:center;padding:16px;background:rgba(0,184,148,0.08);border-radius:12px;">';
             qualityHtml += '<div style="font-size:28px;font-weight:800;color:var(--score-high);">+' + (rq.improvement || 0) + '</div>';
             qualityHtml += '<div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">IMPROVEMENT</div></div>';
-            qualityHtml += '</div></div>';
+            qualityHtml += '</div>';
+            // Detail drill-down
+            if (rq.before && rq.after) {
+                qualityHtml += '<div style="margin-top:16px;"><div>';
+                qualityHtml += '<h3 class="collapsible-header" onclick="toggleCollapsible(this)" style="font-size:13px;font-weight:600;color:var(--text-secondary);cursor:pointer;">Quality Details <span class="collapsible-chevron">&#9662;</span></h3>';
+                qualityHtml += '</div><div class="collapsible-content collapsed">';
+                qualityHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;">';
+                qualityHtml += '<div style="padding:12px;background:var(--primary-bg);border-radius:8px;"><div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">METRICS USAGE</div>';
+                qualityHtml += '<div style="font-size:13px;color:var(--text);">Before: ' + (rq.before.metrics_pct || 0) + '% of bullets</div>';
+                qualityHtml += '<div style="font-size:13px;color:var(--primary);">After: ' + (rq.after.metrics_pct || 0) + '% of bullets</div></div>';
+                qualityHtml += '<div style="padding:12px;background:var(--primary-bg);border-radius:8px;"><div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">BULLET COUNT</div>';
+                qualityHtml += '<div style="font-size:13px;color:var(--text);">' + ((rq.after.metrics_pct || 0) > (rq.before.metrics_pct || 0) ? 'More bullets now include numbers and metrics' : 'Consider adding more quantifiable results') + '</div></div>';
+                qualityHtml += '</div>';
+                if (rq.after.weak_verbs && rq.after.weak_verbs.length > 0) {
+                    qualityHtml += '<div style="margin-top:12px;padding:12px;background:rgba(239,68,68,0.05);border-radius:8px;border:1px solid rgba(239,68,68,0.15);">';
+                    qualityHtml += '<div style="font-size:11px;font-weight:600;color:#ef4444;margin-bottom:6px;">WEAK VERBS REMAINING</div>';
+                    qualityHtml += '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
+                    rq.after.weak_verbs.forEach(function(v) { qualityHtml += '<span style="padding:2px 8px;background:rgba(239,68,68,0.1);border-radius:4px;font-size:12px;color:#ef4444;">' + escapeHtml(v) + '</span>'; });
+                    qualityHtml += '</div></div>';
+                }
+                if (rq.after.filler_words && rq.after.filler_words.length > 0) {
+                    qualityHtml += '<div style="margin-top:8px;padding:12px;background:rgba(245,158,11,0.05);border-radius:8px;border:1px solid rgba(245,158,11,0.15);">';
+                    qualityHtml += '<div style="font-size:11px;font-weight:600;color:#f59e0b;margin-bottom:6px;">FILLER WORDS REMAINING</div>';
+                    qualityHtml += '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
+                    rq.after.filler_words.forEach(function(v) { qualityHtml += '<span style="padding:2px 8px;background:rgba(245,158,11,0.1);border-radius:4px;font-size:12px;color:#f59e0b;">' + escapeHtml(v) + '</span>'; });
+                    qualityHtml += '</div></div>';
+                }
+                qualityHtml += '</div></div>';
+            }
+            qualityHtml += '</div>';
             document.querySelector('.score-section').insertAdjacentHTML('afterend', qualityHtml);
+        }
+
+        // Keyword Density (if available)
+        if (s.keyword_density && s.keyword_density.keywords) {
+            var kd = s.keyword_density;
+            var kdHtml = '<div class="card" style="margin-top:20px;">';
+            kdHtml += '<h2 class="collapsible-header" onclick="toggleCollapsible(this)">Keyword Density Analysis <span class="collapsible-chevron">&#9662;</span></h2>';
+            kdHtml += '<div class="collapsible-content">';
+            kdHtml += '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">';
+            kdHtml += '<div style="flex:1;min-width:100px;text-align:center;padding:12px;background:var(--primary-bg);border-radius:12px;"><div style="font-size:24px;font-weight:800;color:var(--text);">' + kd.total + '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">JD Keywords</div></div>';
+            kdHtml += '<div style="flex:1;min-width:100px;text-align:center;padding:12px;background:var(--primary-bg);border-radius:12px;"><div style="font-size:24px;font-weight:800;color:var(--text-secondary);">' + kd.matched_before + '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Matched Before</div></div>';
+            kdHtml += '<div style="flex:1;min-width:100px;text-align:center;padding:12px;background:var(--primary-bg);border-radius:12px;"><div style="font-size:24px;font-weight:800;color:var(--primary);">' + kd.matched_after + '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Matched After</div></div>';
+            kdHtml += '<div style="flex:1;min-width:100px;text-align:center;padding:12px;background:rgba(0,184,148,0.08);border-radius:12px;"><div style="font-size:24px;font-weight:800;color:var(--score-high);">+' + kd.improvement + '%</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Improvement</div></div>';
+            kdHtml += '</div>';
+            kdHtml += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+            kd.keywords.forEach(function(kw) {
+                var statusColor = kw.status === 'matched' ? 'var(--primary)' : kw.status === 'improved' ? 'var(--score-high)' : kw.status === 'new' ? '#8b5cf6' : '#ef4444';
+                var statusBg = kw.status === 'matched' ? 'var(--primary-bg)' : kw.status === 'improved' ? 'rgba(0,184,148,0.08)' : kw.status === 'new' ? 'rgba(139,92,246,0.08)' : 'rgba(239,68,68,0.08)';
+                var statusIcon = kw.status === 'matched' ? '&#10003;' : kw.status === 'improved' ? '&#9650;' : kw.status === 'new' ? '&#10010;' : '&#10007;';
+                kdHtml += '<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;color:' + statusColor + ';background:' + statusBg + ';border:1px solid ' + statusColor + '22;">' + statusIcon + ' ' + escapeHtml(kw.keyword) + '</span>';
+            });
+            kdHtml += '</div>';
+            kdHtml += '<div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--text-secondary);">';
+            kdHtml += '<span>&#10003; Matched</span><span style="color:var(--score-high);">&#9650; Improved</span><span style="color:#8b5cf6;">&#10010; New</span><span style="color:#ef4444;">&#10007; Missing</span>';
+            kdHtml += '</div></div></div>';
+            document.querySelector('.score-section').parentElement.insertAdjacentHTML('afterend', kdHtml);
         }
 
         // --- Downloads ---
@@ -5092,6 +5401,7 @@
             document.getElementById("coverLetterContent").innerHTML =
                 '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">' +
                 '<a href="/api/download/' + jobId + '/' + clPrefix + '_Cover_Letter.pdf" style="padding:10px 18px;background:var(--primary);color:#fff;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;">Download PDF</a>' +
+                '<a href="/api/download/' + jobId + '/' + clPrefix + '_Cover_Letter.docx" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--primary);border-radius:10px;font-size:13px;font-weight:600;color:var(--primary);text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;">Download DOCX</a>' +
                 '<button onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.textContent).then(function(){showToast(\'Cover letter copied!\',\'success\');})" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;">Copy Text</button>' +
                 '<button onclick="this.parentElement.nextElementSibling.style.display=this.parentElement.nextElementSibling.style.display===\'none\'?\'block\':\'none\';this.textContent=this.parentElement.nextElementSibling.style.display===\'none\'?\'Show Preview\':\'Hide Preview\'" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;">Show Preview</button>' +
                 '</div>' +
@@ -5128,7 +5438,10 @@
         document.getElementById("whatChangedContent").innerHTML = buildChangesPanel(s);
 
         // --- Preview: resume only (no tabs) ---
-        document.getElementById("previewContent").innerHTML = renderMarkdown(s.ats_resume_md || '');
+        currentResumeMd = s.ats_resume_md || '';
+        originalResumeMd = s.original_resume_text || '';
+        document.getElementById("previewContent").innerHTML = renderMarkdown(currentResumeMd);
+        setPreviewMode('preview');
 
         document.getElementById("resultsSection").classList.add("active");
         document.getElementById("resultsSection").scrollIntoView({behavior: "smooth"});
@@ -5213,6 +5526,9 @@
         document.getElementById('pnl-' + id).classList.add("active");
     }
 
+    var currentResumeMd = '';
+    var originalResumeMd = '';
+
     function copyPreview() {
         var p = document.getElementById("previewContent");
         if (!p || !p.textContent) return;
@@ -5221,6 +5537,56 @@
             b.textContent = "Copied!";
             setTimeout(function() { b.textContent = "Copy"; }, 2000);
         });
+    }
+
+    function setPreviewMode(mode) {
+        document.getElementById('previewPane').style.display = mode === 'preview' ? 'block' : 'none';
+        document.getElementById('editPane').style.display = mode === 'edit' ? 'block' : 'none';
+        document.getElementById('comparePane').style.display = mode === 'compare' ? 'block' : 'none';
+        ['Preview','Edit','Compare'].forEach(function(m) {
+            var btn = document.getElementById('btnMode' + m);
+            if (m.toLowerCase() === mode) {
+                btn.style.background = 'var(--primary)';
+                btn.style.color = '#fff';
+            } else {
+                btn.style.background = 'var(--primary-bg)';
+                btn.style.color = 'var(--text)';
+            }
+        });
+        if (mode === 'edit') {
+            var editor = document.getElementById('resumeEditor');
+            if (editor && currentResumeMd) {
+                editor.value = currentResumeMd;
+                updateEditPreview();
+            }
+        }
+        if (mode === 'compare') {
+            document.getElementById('compareOriginal').innerHTML = originalResumeMd ? renderMarkdown(originalResumeMd) : '<div style="color:var(--text-secondary);font-style:italic;">Original resume not available</div>';
+            document.getElementById('compareTailored').innerHTML = currentResumeMd ? renderMarkdown(currentResumeMd) : '<div style="color:var(--text-secondary);font-style:italic;">Tailored resume not available</div>';
+        }
+    }
+
+    var editDebounce = null;
+    function updateEditPreview() {
+        clearTimeout(editDebounce);
+        editDebounce = setTimeout(function() {
+            var md = document.getElementById('resumeEditor').value;
+            document.getElementById('editPreviewContent').innerHTML = renderMarkdown(md);
+        }, 300);
+    }
+
+    function applyEdits() {
+        var md = document.getElementById('resumeEditor').value;
+        currentResumeMd = md;
+        document.getElementById('previewContent').innerHTML = renderMarkdown(md);
+        setPreviewMode('preview');
+        showToast('Changes applied to preview', 'success');
+    }
+
+    function discardEdits() {
+        document.getElementById('resumeEditor').value = currentResumeMd;
+        updateEditPreview();
+        setPreviewMode('preview');
     }
 
     function toggleAdditional() {
@@ -5259,28 +5625,28 @@
         // Reset template grid to initial state
         var templateGrid = document.getElementById("templateGrid");
         if (templateGrid) {
-            templateGrid.innerHTML =
-                '<div class="folder-wrap" onclick="toggleFolder(this)" ondblclick="downloadTemplate(\'modern\')">' +
-                    '<div class="folder-body" style="background:#1a3a5c;"><div class="folder-tab" style="background:#1a3a5c;"></div>' +
-                    '<div class="folder-paper" style="width:75px;height:65px;background:#e8e8e8;"><div class="paper-lines"><span style="width:70%"></span><span style="width:50%"></span><span style="width:60%"></span></div></div>' +
-                    '<div class="folder-paper" style="width:85px;height:70px;background:#f0f0f0;"><div class="paper-lines"><span style="width:60%"></span><span style="width:80%"></span></div></div>' +
-                    '<div class="folder-paper" style="width:95px;height:75px;background:#fff;"><div class="paper-lines"><span style="width:75%;height:3px"></span><span></span><span></span></div></div>' +
-                    '<div class="folder-flap-l" style="background:#2a5a8c;"></div><div class="folder-flap-r" style="background:#2a5a8c;"><span class="folder-label">Modern</span></div></div>' +
-                    '<div class="folder-name">Modern <svg class="dl-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div></div>' +
-                '<div class="folder-wrap" onclick="toggleFolder(this)" ondblclick="downloadTemplate(\'executive\')">' +
-                    '<div class="folder-body" style="background:#6B5335;"><div class="folder-tab" style="background:#6B5335;"></div>' +
-                    '<div class="folder-paper" style="width:75px;height:65px;background:#e8e8e8;"><div class="paper-lines" style="align-items:center;"><span style="width:40%"></span><span></span></div></div>' +
-                    '<div class="folder-paper" style="width:85px;height:70px;background:#f0f0f0;"><div class="paper-lines" style="align-items:center;"><span style="width:35%"></span><span></span></div></div>' +
-                    '<div class="folder-paper" style="width:95px;height:75px;background:#fff;"><div class="paper-lines" style="align-items:center;"><span style="width:30%;height:3px"></span><span></span><span style="width:60%"></span></div></div>' +
-                    '<div class="folder-flap-l" style="background:#8B7355;"></div><div class="folder-flap-r" style="background:#8B7355;"><span class="folder-label">Executive</span></div></div>' +
-                    '<div class="folder-name">Executive <svg class="dl-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div></div>' +
-                '<div class="folder-wrap" onclick="toggleFolder(this)" ondblclick="downloadTemplate(\'minimal\')">' +
-                    '<div class="folder-body" style="background:#555;"><div class="folder-tab" style="background:#555;"></div>' +
-                    '<div class="folder-paper" style="width:75px;height:65px;background:#e8e8e8;"><div class="paper-lines"><span style="width:30%"></span><span style="width:90%;height:1px;opacity:0.5"></span></div></div>' +
-                    '<div class="folder-paper" style="width:85px;height:70px;background:#f5f5f5;"><div class="paper-lines"><span style="width:25%"></span><span style="width:80%;height:1px;opacity:0.4"></span></div></div>' +
-                    '<div class="folder-paper" style="width:95px;height:75px;background:#fff;"><div class="paper-lines"><span style="width:20%;height:3px"></span><span style="width:90%;height:1px;opacity:0.3"></span></div></div>' +
-                    '<div class="folder-flap-l" style="background:#777;"></div><div class="folder-flap-r" style="background:#777;"><span class="folder-label">Minimal</span></div></div>' +
-                    '<div class="folder-name">Minimal <svg class="dl-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div></div>';
+            var folderData = [
+                {name:'Modern',bg:'#1a3a5c',flap:'#2a5a8c'},
+                {name:'Executive',bg:'#6B5335',flap:'#8B7355'},
+                {name:'Minimal',bg:'#555',flap:'#777'},
+                {name:'Creative',bg:'#0d9488',flap:'#14b8a6'},
+                {name:'Compact',bg:'#374151',flap:'#4b5563'},
+                {name:'Professional',bg:'#334155',flap:'#475569'},
+                {name:'Tech',bg:'#0f172a',flap:'#1e293b'},
+                {name:'Elegant',bg:'#7c2d36',flap:'#9f3d48'}
+            ];
+            var gridHtml = '';
+            folderData.forEach(function(f) {
+                var tplKey = f.name.toLowerCase();
+                gridHtml += '<div class="folder-wrap" onclick="toggleFolder(this)" ondblclick="downloadTemplate(\'' + tplKey + '\')">' +
+                    '<div class="folder-body" style="background:' + f.bg + ';"><div class="folder-tab" style="background:' + f.bg + ';"></div>' +
+                    '<div class="folder-paper" style="width:75px;height:65px;background:#e8e8e8;"><div class="paper-lines"><span style="width:70%"></span><span style="width:50%"></span></div></div>' +
+                    '<div class="folder-paper" style="width:85px;height:70px;background:#f0f0f0;"><div class="paper-lines"><span style="width:60%"></span><span style="width:70%"></span></div></div>' +
+                    '<div class="folder-paper" style="width:95px;height:75px;background:#fff;"><div class="paper-lines"><span style="width:65%;height:3px"></span><span></span><span style="width:50%"></span></div></div>' +
+                    '<div class="folder-flap-l" style="background:' + f.flap + ';"></div><div class="folder-flap-r" style="background:' + f.flap + ';"><span class="folder-label">' + f.name + '</span></div></div>' +
+                    '<div class="folder-name">' + f.name + ' <svg class="dl-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div></div>';
+            });
+            templateGrid.innerHTML = gridHtml;
         }
 
         // Clear stored file/job references
@@ -5335,7 +5701,7 @@
                     dlHtml += '<div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Download</div>';
                     dlHtml += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
                     var btnStyle = 'padding:8px 14px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;color:var(--text);text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:4px;';
-                    ['Modern', 'Executive', 'Minimal'].forEach(function(tpl) {
+                    ['Modern', 'Executive', 'Minimal', 'Creative', 'Compact', 'Professional', 'Tech', 'Elegant'].forEach(function(tpl) {
                         var fname = prefix + '_' + tpl + '.pdf';
                         dlHtml += '<a href="/api/download/' + jobId + '/' + fname + '" style="' + btnStyle + '" onmouseover="this.style.borderColor=\'var(--primary)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' + tpl + ' PDF</a>';
                     });
@@ -5463,7 +5829,7 @@
                         var pPrefix = pTitle + (pCo ? '_' + pCo : '');
                         var dlBtnStyle = 'padding:4px 10px;background:var(--primary-bg);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;color:var(--primary);text-decoration:none;transition:all 0.2s;display:inline-block;';
                         html += '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">';
-                        ['Modern', 'Executive', 'Minimal'].forEach(function(tpl) {
+                        ['Modern', 'Executive', 'Minimal', 'Creative', 'Compact', 'Professional', 'Tech', 'Elegant'].forEach(function(tpl) {
                             html += '<a href="/api/download/' + j.id + '/' + pPrefix + '_' + tpl + '.pdf" style="' + dlBtnStyle + '">' + tpl + '</a>';
                         });
                         html += '<a href="/api/download/' + j.id + '/' + pPrefix + '_Resume.docx" style="' + dlBtnStyle + '">DOCX</a>';
@@ -5484,6 +5850,241 @@
         var overlay = document.getElementById('profileOverlay');
         overlay.classList.remove('active', 'dark');
         document.body.style.overflow = '';
+    }
+
+    // ── Score My Resume ──────────────────────────────────────────────────
+    function scoreResume() {
+        var fileInput = document.getElementById('scorerFile');
+        if (!fileInput.files || !fileInput.files[0]) {
+            showToast('Please select a resume file', 'error');
+            return;
+        }
+        var btn = document.getElementById('btnScore');
+        btn.disabled = true;
+        btn.textContent = 'Scoring...';
+        var fd = new FormData();
+        fd.append('resume', fileInput.files[0]);
+        fetch('/api/score-resume', {method: 'POST', body: fd})
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                btn.disabled = false;
+                btn.textContent = 'Score Resume';
+                if (data.error) { showToast(data.error, 'error'); return; }
+                var html = '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">';
+                html += '<div style="flex:1;min-width:100px;text-align:center;padding:16px;background:var(--primary-bg);border-radius:12px;"><div style="font-size:32px;font-weight:800;color:var(--primary);">' + data.overall_score + '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">QUALITY SCORE</div></div>';
+                html += '<div style="flex:1;min-width:100px;text-align:center;padding:16px;background:var(--primary-bg);border-radius:12px;"><div style="font-size:32px;font-weight:800;color:var(--text);">' + data.total_bullets + '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">BULLETS</div></div>';
+                html += '<div style="flex:1;min-width:100px;text-align:center;padding:16px;background:var(--primary-bg);border-radius:12px;"><div style="font-size:32px;font-weight:800;color:var(--score-high);">' + data.metrics_percentage + '%</div><div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">WITH METRICS</div></div>';
+                html += '</div>';
+                if (data.improvement_summary && data.improvement_summary.length > 0) {
+                    html += '<div style="margin-bottom:12px;">';
+                    data.improvement_summary.forEach(function(s) {
+                        html += '<div style="padding:8px 12px;margin-bottom:4px;background:rgba(245,158,11,0.06);border-left:3px solid #f59e0b;border-radius:0 6px 6px 0;font-size:12px;color:var(--text);">' + escapeHtml(s) + '</div>';
+                    });
+                    html += '</div>';
+                }
+                if (data.weak_verbs_used && data.weak_verbs_used.length > 0) {
+                    html += '<div style="margin-bottom:8px;"><span style="font-size:11px;font-weight:600;color:#ef4444;">Weak verbs: </span>';
+                    data.weak_verbs_used.forEach(function(v) { html += '<span style="display:inline-block;padding:2px 8px;margin:2px;background:rgba(239,68,68,0.1);border-radius:4px;font-size:12px;color:#ef4444;">' + escapeHtml(v) + '</span>'; });
+                    html += '</div>';
+                }
+                if (data.filler_words_found && data.filler_words_found.length > 0) {
+                    html += '<div style="margin-bottom:8px;"><span style="font-size:11px;font-weight:600;color:#f59e0b;">Filler words: </span>';
+                    data.filler_words_found.forEach(function(v) { html += '<span style="display:inline-block;padding:2px 8px;margin:2px;background:rgba(245,158,11,0.1);border-radius:4px;font-size:12px;color:#f59e0b;">' + escapeHtml(v) + '</span>'; });
+                    html += '</div>';
+                }
+                document.getElementById('scorerResults').innerHTML = html;
+            })
+            .catch(function() {
+                btn.disabled = false;
+                btn.textContent = 'Score Resume';
+                showToast('Failed to score resume', 'error');
+            });
+    }
+
+    // ── Achievement Booster ──────────────────────────────────────────────
+    function boostBullet() {
+        var bullet = document.getElementById('boosterInput').value.trim();
+        if (!bullet || bullet.length < 10) {
+            showToast('Enter a bullet point (at least 10 characters)', 'error');
+            return;
+        }
+        var btn = document.getElementById('btnBoost');
+        btn.disabled = true;
+        btn.textContent = 'Boosting...';
+        var jobTitle = document.getElementById('boosterJobTitle').value.trim();
+        fetch('/api/boost-bullet', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({bullet: bullet, job_title: jobTitle})
+        })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                btn.disabled = false;
+                btn.textContent = 'Boost It';
+                if (data.error) { showToast(data.error, 'error'); return; }
+                var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
+                html += '<div style="padding:12px;background:var(--primary-bg);border-radius:8px;"><div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">ORIGINAL (Score: ' + data.original_score + '/10)</div><div style="font-size:13px;color:var(--text);line-height:1.5;">' + escapeHtml(data.original) + '</div></div>';
+                html += '<div style="padding:12px;background:rgba(0,184,148,0.06);border-radius:8px;border:1px solid rgba(0,184,148,0.2);"><div style="font-size:11px;font-weight:600;color:var(--score-high);margin-bottom:6px;">IMPROVED (Score: ' + data.improved_score + '/10)</div><div style="font-size:13px;color:var(--text);line-height:1.5;">' + escapeHtml(data.improved) + '</div></div>';
+                html += '</div>';
+                html += '<button onclick="navigator.clipboard.writeText(\'' + escapeHtml(data.improved).replace(/'/g, "\\'") + '\').then(function(){showToast(\'Copied!\',\'success\')})" style="margin-top:8px;padding:6px 14px;background:var(--primary-bg);border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;">Copy Improved Bullet</button>';
+                document.getElementById('boosterResults').innerHTML = html;
+            })
+            .catch(function() {
+                btn.disabled = false;
+                btn.textContent = 'Boost It';
+                showToast('Failed to boost bullet', 'error');
+            });
+    }
+
+    // ── Job Tracker ──────────────────────────────────────────────────────
+    function initTracker() {
+        if (authUser && authUser.email) {
+            document.getElementById('trackerContent').style.display = 'block';
+            document.getElementById('trackerAuth').style.display = 'none';
+            loadTrackerApps();
+        } else {
+            document.getElementById('trackerContent').style.display = 'none';
+            document.getElementById('trackerAuth').style.display = 'block';
+        }
+    }
+
+    function loadTrackerApps() {
+        fetch('/api/tracker')
+            .then(function(r) { return r.json(); })
+            .then(function(apps) {
+                if (!Array.isArray(apps)) { document.getElementById('trackerList').innerHTML = ''; return; }
+                if (apps.length === 0) {
+                    document.getElementById('trackerList').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px;">No applications tracked yet. Add your first one above.</div>';
+                    return;
+                }
+                var statusColors = {saved:'var(--text-secondary)',applied:'var(--primary)',interview:'#f59e0b',offer:'var(--score-high)',rejected:'#ef4444'};
+                var html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+                apps.forEach(function(a) {
+                    var sColor = statusColors[a.status] || 'var(--text-secondary)';
+                    html += '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--primary-bg);border-radius:8px;border:1px solid var(--border);">';
+                    html += '<div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--text);">' + escapeHtml(a.job_title) + '</div><div style="font-size:12px;color:var(--text-secondary);">' + escapeHtml(a.company) + '</div></div>';
+                    html += '<select onchange="updateTrackerStatus(\'' + a.id + '\',this.value)" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--card);color:' + sColor + ';font-weight:600;">';
+                    ['saved','applied','interview','offer','rejected'].forEach(function(st) {
+                        html += '<option value="' + st + '"' + (a.status === st ? ' selected' : '') + '>' + st.charAt(0).toUpperCase() + st.slice(1) + '</option>';
+                    });
+                    html += '</select>';
+                    html += '<button onclick="deleteTrackerApp(\'' + a.id + '\')" style="padding:4px 8px;background:none;border:1px solid var(--border);border-radius:6px;font-size:11px;color:#ef4444;cursor:pointer;">&#10005;</button>';
+                    html += '</div>';
+                });
+                html += '</div>';
+                document.getElementById('trackerList').innerHTML = html;
+            })
+            .catch(function() {});
+    }
+
+    function addTrackerApp() {
+        var company = document.getElementById('trackerCompany').value.trim();
+        var title = document.getElementById('trackerTitle').value.trim();
+        var status = document.getElementById('trackerStatus').value;
+        if (!company || !title) { showToast('Company and job title required', 'error'); return; }
+        fetch('/api/tracker', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({company: company, job_title: title, status: status})
+        })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.error) { showToast(data.error, 'error'); return; }
+                document.getElementById('trackerCompany').value = '';
+                document.getElementById('trackerTitle').value = '';
+                loadTrackerApps();
+                showToast('Application added', 'success');
+            })
+            .catch(function() { showToast('Failed to add application', 'error'); });
+    }
+
+    function updateTrackerStatus(appId, status) {
+        fetch('/api/tracker/' + appId, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({status: status})
+        }).then(function() { loadTrackerApps(); });
+    }
+
+    function deleteTrackerApp(appId) {
+        fetch('/api/tracker/' + appId, {method: 'DELETE'})
+            .then(function() { loadTrackerApps(); showToast('Removed', 'success'); });
+    }
+
+    // Init tracker after auth check completes
+    var _origRenderAuthUI = renderAuthUI;
+    renderAuthUI = function() {
+        _origRenderAuthUI();
+        try { initTracker(); } catch(e) {}
+    };
+
+    // ── Batch Tailoring ──────────────────────────────────────────────────
+    function startBatchTailoring() {
+        var fileInput = document.getElementById('batchFile');
+        if (!fileInput.files || !fileInput.files[0]) {
+            showToast('Please select a resume file', 'error');
+            return;
+        }
+        var jobDescs = document.getElementById('batchJobDescs').value.trim();
+        if (!jobDescs || jobDescs.length < 50) {
+            showToast('Enter at least 2 job descriptions separated by ---', 'error');
+            return;
+        }
+        var btn = document.getElementById('btnBatch');
+        btn.disabled = true;
+        btn.textContent = 'Starting...';
+        var fd = new FormData();
+        fd.append('resume', fileInput.files[0]);
+        fd.append('job_descriptions', jobDescs);
+        fd.append('mode', 'conservative');
+        fd.append('template', 'modern');
+        fetch('/api/batch-tailor', {method: 'POST', body: fd})
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                btn.disabled = false;
+                btn.textContent = 'Start Batch Tailoring';
+                if (data.error) { showToast(data.error, 'error'); return; }
+                var html = '<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;">' + data.count + ' tailoring jobs started</div>';
+                html += '<div style="display:flex;flex-direction:column;gap:8px;">';
+                data.job_ids.forEach(function(jid, i) {
+                    html += '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--primary-bg);border-radius:8px;border:1px solid var(--border);">';
+                    html += '<div style="flex:1;font-size:13px;color:var(--text);">Job ' + (i+1) + '</div>';
+                    html += '<span id="batchStatus_' + jid + '" style="font-size:12px;color:var(--text-secondary);">Running...</span>';
+                    html += '<a href="#" onclick="loadHistoryJob(\'' + jid + '\');return false;" style="font-size:12px;color:var(--primary);font-weight:600;">View Results</a>';
+                    html += '</div>';
+                });
+                html += '</div>';
+                document.getElementById('batchResults').innerHTML = html;
+                // Poll for completion
+                data.job_ids.forEach(function(jid) {
+                    pollBatchJob(jid);
+                });
+            })
+            .catch(function() {
+                btn.disabled = false;
+                btn.textContent = 'Start Batch Tailoring';
+                showToast('Failed to start batch tailoring', 'error');
+            });
+    }
+
+    function pollBatchJob(jobId) {
+        fetch('/api/result/' + jobId)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var el = document.getElementById('batchStatus_' + jobId);
+                if (!el) return;
+                if (data.status === 'complete') {
+                    var score = data.result ? (data.result.tailored_match_score || data.result.match_score || '--') : '--';
+                    el.innerHTML = '<span style="color:var(--score-high);font-weight:600;">Done (' + score + '%)</span>';
+                } else if (data.status === 'error') {
+                    el.innerHTML = '<span style="color:#ef4444;">Failed</span>';
+                } else {
+                    setTimeout(function() { pollBatchJob(jobId); }, 5000);
+                }
+            })
+            .catch(function() {
+                setTimeout(function() { pollBatchJob(jobId); }, 10000);
+            });
     }
     </script>
 </body>
