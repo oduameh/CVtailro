@@ -5,6 +5,7 @@ from sqlalchemy import text
 
 from app.extensions import db
 from app.services.admin_config import AdminConfigManager
+from app.services.blog_content import list_posts
 from config import DEFAULT_MODEL, RECOMMENDED_MODELS
 
 main_bp = Blueprint("main", __name__)
@@ -12,7 +13,8 @@ main_bp = Blueprint("main", __name__)
 
 @main_bp.route("/")
 def index():
-    return render_template("index.html")
+    blog_posts = list_posts()[:4]
+    return render_template("index.html", blog_posts=blog_posts)
 
 
 @main_bp.route("/privacy")

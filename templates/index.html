@@ -1298,6 +1298,27 @@
             font-size: 13px;
         }
 
+        /* --- Blog Cards --- */
+        .blog-section { max-width: 720px; margin: 48px auto 0; padding: 0 16px; }
+        .blog-section-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 16px; text-align: center; }
+        .blog-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        @media (max-width: 480px) { .blog-grid { grid-template-columns: 1fr; } }
+        .blog-card { border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: var(--card); transition: border-color 0.2s, box-shadow 0.2s; text-decoration: none; display: block; }
+        .blog-card:hover { border-color: var(--primary); box-shadow: 0 2px 12px rgba(99,102,241,0.08); }
+        .blog-card-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; line-height: 1.3; }
+        .blog-card-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .blog-card-meta { font-size: 11px; color: var(--text-tertiary); margin-top: 8px; }
+        .blog-view-all { text-align: center; margin-top: 14px; }
+        .blog-view-all a { font-size: 13px; font-weight: 600; color: var(--primary); text-decoration: none; }
+        .blog-view-all a:hover { text-decoration: underline; }
+        .related-articles { margin-top: 12px; }
+        .related-articles-title { font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+        .related-articles-list { display: flex; flex-direction: column; gap: 8px; }
+        .related-article-link { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; text-decoration: none; transition: border-color 0.2s; background: var(--card); }
+        .related-article-link:hover { border-color: var(--primary); }
+        .related-article-link .ra-title { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; }
+        .related-article-link .ra-meta { font-size: 11px; color: var(--text-tertiary); white-space: nowrap; }
+
         .footer-brand {
             color: var(--text);
             font-weight: 700;
@@ -2994,6 +3015,12 @@
                 <div class="talking-points-content collapsible-content collapsed" id="emailTemplatesContent"></div>
             </div>
 
+            <!-- Related Articles -->
+            <div class="card" id="relatedArticlesCard" style="display:none">
+                <div class="related-articles-title">Recommended Reading</div>
+                <div class="related-articles-list" id="relatedArticlesList"></div>
+            </div>
+
             <!-- Preview with Editor and Side-by-Side (premium) -->
             <div class="card" id="previewCard">
                 <div class="preview-header">
@@ -3154,6 +3181,23 @@
             <div id="batchResults" style="margin-top:16px;"></div>
         </div>
     </div>
+
+    <!-- Blog Section -->
+    {% if blog_posts %}
+    <div class="blog-section">
+        <div class="blog-section-title">Latest from our Blog</div>
+        <div class="blog-grid">
+            {% for post in blog_posts %}
+            <a href="/blog/{{ post.slug }}" class="blog-card">
+                <div class="blog-card-title">{{ post.title }}</div>
+                <div class="blog-card-desc">{{ post.description or post.excerpt }}</div>
+                <div class="blog-card-meta">{{ post.category }} · {{ post.reading_time }}</div>
+            </a>
+            {% endfor %}
+        </div>
+        <div class="blog-view-all"><a href="/blog/">View all articles →</a></div>
+    </div>
+    {% endif %}
 
     <!-- Footer -->
     <footer class="site-footer">
@@ -3586,6 +3630,36 @@
         var wasActive = el.classList.contains('active');
         document.querySelectorAll('.tpl-card.active').forEach(function(c) { c.classList.remove('active'); });
         if (!wasActive) el.classList.add('active');
+    }
+
+    // --- Related Articles ---
+    async function loadRelatedArticles(jobTitle) {
+        try {
+            var r = await fetch('/blog/api/posts');
+            if (!r.ok) return;
+            var posts = await r.json();
+            var card = document.getElementById('relatedArticlesCard');
+            var list = document.getElementById('relatedArticlesList');
+            if (!card || !list || !posts.length) return;
+            // Simple keyword matching: pick posts whose keywords overlap with job title
+            var titleWords = (jobTitle || '').toLowerCase().split(/\s+/);
+            var scored = posts.map(function(p) {
+                var score = 0;
+                (p.keywords || []).forEach(function(kw) {
+                    titleWords.forEach(function(tw) { if (tw.length > 2 && kw.toLowerCase().indexOf(tw) !== -1) score++; });
+                });
+                return { post: p, score: score };
+            });
+            scored.sort(function(a, b) { return b.score - a.score; });
+            var top = scored.slice(0, 3).map(function(s) { return s.post; });
+            list.innerHTML = top.map(function(p) {
+                return '<a href="/blog/' + p.slug + '" class="related-article-link" target="_blank">' +
+                    '<span class="ra-title">' + escapeHtml(p.title) + '</span>' +
+                    '<span class="ra-meta">' + escapeHtml(p.reading_time) + '</span>' +
+                '</a>';
+            }).join('');
+            card.style.display = 'block';
+        } catch(e) {}
     }
 
     function downloadFormat(tpl, format) {
@@ -4580,6 +4654,9 @@
             } else {
                 document.getElementById("previewCard").style.display = "none";
             }
+
+            // --- Related Articles ---
+            loadRelatedArticles(s.job_title || '');
 
             document.getElementById("resultsSection").classList.add("active");
             document.getElementById("resultsSection").scrollIntoView({behavior: "smooth"});

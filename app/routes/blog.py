@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from flask import Blueprint, abort, current_app, render_template, request
+from flask import Blueprint, abort, current_app, jsonify, render_template, request
 
 from app.services.blog_content import available_categories, get_post, list_posts
 
@@ -35,6 +35,25 @@ def blog_index():
         active_audience=audience,
         active_category=category,
         ads_config=ads_config,
+    )
+
+
+@blog_bp.route("/api/posts")
+def api_posts():
+    """Return latest blog posts as JSON for dynamic rendering."""
+    posts = list_posts()[:6]
+    return jsonify(
+        [
+            {
+                "slug": p.slug,
+                "title": p.title,
+                "description": p.description,
+                "category": p.category,
+                "reading_time": p.reading_time,
+                "keywords": p.keywords[:5],
+            }
+            for p in posts
+        ]
     )
 
 
