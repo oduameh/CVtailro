@@ -127,17 +127,23 @@ def _serve_from_db(db_job: TailoringJob, safe_name: str):
             return _regenerate_pdf(source_md, safe_name, "modern")
 
         lower_safe = safe_name.lower()
-        is_resume_pdf = any(
-            k in lower_safe for k in ("ats", "recruiter", "resume", "modern", "executive", "minimal")
+        all_templates = (
+            "executive",
+            "modern",
+            "minimal",
+            "creative",
+            "compact",
+            "professional",
+            "tech",
+            "elegant",
         )
+        is_resume_pdf = any(k in lower_safe for k in ("ats", "recruiter", "resume") + all_templates)
         if is_resume_pdf and db_job.ats_resume_md:
-            template = "modern"
-            for tpl in ("executive", "modern", "minimal"):
+            template = db_job.template or "modern"
+            for tpl in all_templates:
                 if tpl in lower_safe:
                     template = tpl
                     break
-            else:
-                template = db_job.template or "modern"
             return _regenerate_pdf(db_job.ats_resume_md, safe_name, template)
 
         return jsonify({"error": "Resume content not saved. Try re-running the pipeline."}), 404
