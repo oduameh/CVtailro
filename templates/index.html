@@ -969,51 +969,51 @@
 
         .template-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin: 16px 0;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin: 12px 0 4px;
         }
-        @media (max-width: 640px) { .template-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 480px) { .template-grid { grid-template-columns: repeat(2, 1fr); } }
 
         .tpl-card {
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 10px;
             overflow: hidden;
             cursor: pointer;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: all 0.2s;
             background: var(--card);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
         }
-        .tpl-card:hover { border-color: var(--primary); box-shadow: 0 2px 12px rgba(99,102,241,0.1); }
-        .tpl-card.active { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary); }
+        .tpl-card:hover { border-color: var(--primary); background: var(--primary-bg); }
+        .tpl-card:active { transform: scale(0.97); }
         .tpl-card-swatch {
-            height: 6px;
-            width: 100%;
+            width: 6px;
+            height: 28px;
+            border-radius: 3px;
+            flex-shrink: 0;
         }
         .tpl-card-body {
-            padding: 12px;
-            text-align: center;
+            flex: 1;
+            min-width: 0;
         }
         .tpl-card-name {
-            font-size: 12px;
-            font-weight: 700;
+            font-size: 13px;
+            font-weight: 600;
             color: var(--text);
-            letter-spacing: 0.3px;
         }
         .tpl-card-desc {
             font-size: 10px;
             color: var(--text-tertiary);
-            margin-top: 2px;
         }
-        .tpl-card-actions {
-            display: none;
-            gap: 6px;
-            padding: 0 12px 12px;
-            justify-content: center;
+        .tpl-card-dl {
+            flex-shrink: 0;
+            color: var(--text-tertiary);
+            transition: color 0.2s;
         }
-        .tpl-card.active .tpl-card-actions {
-            display: flex;
-            animation: fadeInUp 0.2s ease-out;
-        }
+        .tpl-card:hover .tpl-card-dl { color: var(--primary); }
         .tpl-dl-btn {
             display: inline-flex;
             align-items: center;
@@ -2929,20 +2929,22 @@
                 </div>
             </div>
 
-            <!-- What Changed - prominent card right after score -->
+            <!-- Downloads (right after score) -->
+            <div class="card" id="downloadCard">
+                <div class="downloads-heading">Download Your Resume</div>
+                <div class="template-grid" id="templateGrid"></div>
+                <div class="dl-usage-hint" style="text-align:center;margin-top:4px;">Tap a template to download as PDF</div>
+            </div>
+
+            <!-- What Changed -->
             <div class="card what-changed-card" id="whatChangedCard" style="display:none">
                 <h2 class="what-changed-heading">What Changed</h2>
                 <div id="whatChangedContent"></div>
             </div>
 
-            <!-- Downloads -->
-            <div class="card">
-                <div class="downloads-heading">Download Your Resume</div>
-
-                <div class="template-grid" id="templateGrid"></div>
-                <div class="dl-usage-hint">Click a folder to open it and choose your download format.</div>
-
-                <button class="additional-toggle" id="additionalToggle" onclick="toggleAdditional()">
+            <!-- Additional files (collapsed) -->
+            <div class="card" id="additionalCard" style="display:none">
+                <button class="additional-toggle" id="additionalToggle" onclick="toggleAdditional()" style="margin:0;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
                     Additional files (DOCX, Markdown, Report)
                 </button>
@@ -3544,17 +3546,13 @@
         var freeTemplates = ['modern', 'executive', 'minimal'];
         var cards = isAdmin ? TEMPLATE_CARDS : TEMPLATE_CARDS.filter(function(t) { return freeTemplates.indexOf(t.id) !== -1; });
         grid.innerHTML = cards.map(function(t) {
-            return '<div class="tpl-card" data-tpl="' + t.id + '" onclick="selectTemplate(this)">' +
+            return '<div class="tpl-card" data-tpl="' + t.id + '" onclick="downloadFormat(\'' + t.id + '\',\'pdf\')">' +
                 '<div class="tpl-card-swatch" style="background:' + t.color + ';"></div>' +
                 '<div class="tpl-card-body">' +
                     '<div class="tpl-card-name">' + t.label + '</div>' +
                     '<div class="tpl-card-desc">' + t.desc + '</div>' +
                 '</div>' +
-                '<div class="tpl-card-actions">' +
-                    '<button class="tpl-dl-btn" onclick="event.stopPropagation();downloadFormat(\'' + t.id + '\',\'pdf\')">PDF</button>' +
-                    (isAdmin ? '<button class="tpl-dl-btn" onclick="event.stopPropagation();downloadFormat(\'' + t.id + '\',\'docx\')">DOCX</button>' : '') +
-                    (isAdmin ? '<button class="tpl-dl-btn" onclick="event.stopPropagation();downloadFormat(\'' + t.id + '\',\'md\')">TXT</button>' : '') +
-                '</div>' +
+                '<div class="tpl-card-dl"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>' +
             '</div>';
         }).join('');
     }
@@ -4485,6 +4483,9 @@
             }
 
             document.getElementById("dlGridSecondary").innerHTML = secondaryHtml;
+            if (secondaryHtml && isPremiumUser) {
+                document.getElementById("additionalCard").style.display = "block";
+            }
 
             // --- Premium features (admin-only for now) ---
             var isPremiumUser = authUser && authUser.is_admin;
@@ -5299,6 +5300,9 @@
         });
 
         document.getElementById("dlGridSecondary").innerHTML = secondaryHtml;
+        if (secondaryHtml && isPremiumUser2) {
+            document.getElementById("additionalCard").style.display = "block";
+        }
 
         // --- Premium features (admin-only for now) ---
         var isPremiumUser2 = authUser && authUser.is_admin;
