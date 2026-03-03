@@ -332,22 +332,21 @@ class TestIDORHistory:
 class TestAdminAuthorization:
     """Admin panel must require proper authentication."""
 
-    def test_admin_set_user_admin_requires_session_admin(self, client, flask_app, user, admin_user):
-        """Promoting/demoting users requires admin session, not just is_admin."""
+    def test_admin_set_user_admin_allows_db_admin(self, client, flask_app, user, admin_user):
+        """Promoting/demoting users allowed for is_admin users (unified decorator)."""
         _login(client, admin_user)
-        # Admin user logged in via Google, but admin panel uses session password
         resp = client.post(
             f"/admin/api/users/{user.id}/admin",
             json={"is_admin": True},
             content_type="application/json",
         )
-        assert resp.status_code == 401
+        assert resp.status_code == 200
 
-    def test_admin_config_requires_session_auth(self, client, admin_user):
-        """Admin config GET requires session auth."""
+    def test_admin_config_allows_db_admin(self, client, admin_user):
+        """Admin config GET allowed for is_admin users (unified decorator)."""
         _login(client, admin_user)
         resp = client.get("/admin/api/config")
-        assert resp.status_code == 401
+        assert resp.status_code == 200
 
     def test_admin_users_allows_db_admin(self, client, admin_user, flask_app):
         """Admin users list allows DB is_admin users (alternative auth)."""

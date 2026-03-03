@@ -9,8 +9,8 @@ services:
       - PYTHONUNBUFFERED=1
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
-      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-dev-secret-change-in-production}
-      - DATABASE_URL=postgresql://cvtailro:${POSTGRES_PASSWORD:-cvtailro}@postgres:5432/cvtailro
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:?Set FLASK_SECRET_KEY in .env}
+      - DATABASE_URL=postgresql://cvtailro:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/cvtailro
       - REDIS_URL=redis://redis:6379/0
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
@@ -35,7 +35,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: cvtailro
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cvtailro}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: cvtailro
     ports:
       - "5432:5432"

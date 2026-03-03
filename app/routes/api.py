@@ -27,6 +27,7 @@ from app.services.pipeline import (
     pipeline_queue_lock,
     run_pipeline_job,
 )
+from app.services.telemetry import track
 from app.services.usage import usage_tracker
 from config import DEFAULT_MODEL
 from utils import create_output_dir
@@ -35,8 +36,30 @@ logger = logging.getLogger("cvtailro.api")
 
 api_bp = Blueprint("api", __name__)
 
-# Exempt multipart upload and SSE from CSRF (they use custom auth)
-csrf.exempt(api_bp)
+
+def _validate_resume_file(resume_file) -> tuple[str | None, str]:
+    """Validate resume file. Returns (error_message, extension). error_message is None if valid."""
+    ext = Path(resume_file.filename).suffix.lower()
+    if ext == ".pdf":
+        resume_file.stream.seek(0)
+        magic_bytes = resume_file.stream.read(5)
+        resume_file.stream.seek(0)
+        if magic_bytes != b"%PDF-":
+            return "File does not appear to be a valid PDF (bad magic bytes)", ext
+        try:
+            resume_file.stream.seek(0)
+            with pdfplumber.open(resume_file.stream) as pdf:
+                if not pdf.pages:
+                    return "PDF is empty (no pages)", ext
+                test_text = pdf.pages[0].extract_text()
+                if not test_text or len(test_text.strip()) < 20:
+                    return "PDF appears to be image-based or empty. Please use a text-based PDF.", ext
+            resume_file.stream.seek(0)
+        except Exception:
+            return "Could not read PDF. Please ensure the file is a valid text-based PDF.", ext
+    elif ext not in (".md", ".txt"):
+        return "Unsupported file type. Use PDF, MD, or TXT.", ext
+    return None, ext
 
 
 @api_bp.route("/api/tailor", methods=["POST"])
@@ -48,7 +71,10 @@ def start_tailoring():
 
     admin_config = AdminConfigManager.load()
     api_key = admin_config.api_key.strip()
+    uid = current_user.id if current_user.is_authenticated else None
+
     if not api_key:
+        track("tailor.request.rejected", category="tailor", user_id=uid, metadata={"reason": "no_api_key"})
         return jsonify({"error": "Service not configured. An admin must set the API key at /admin."}), 400
 
     if admin_config.allow_user_model_selection:
@@ -58,11 +84,13 @@ def start_tailoring():
 
     with pipeline_queue_lock:
         if pipeline_queue_depth >= MAX_QUEUE_DEPTH:
+            track("tailor.request.rejected", category="tailor", user_id=uid, metadata={"reason": "queue_full"})
             return jsonify({"error": "Server is at capacity. Please try again in a few minutes."}), 503
 
     client_ip = request.remote_addr or "unknown"
     rate_key = f"user:{current_user.id}" if current_user.is_authenticated else f"ip:{client_ip}"
     if not usage_tracker.check_and_record(rate_key, admin_config.rate_limit_per_hour):
+        track("tailor.request.rejected", category="tailor", user_id=uid, metadata={"reason": "rate_limited"})
         return jsonify({"error": "Rate limit exceeded. Please try again later."}), 429
 
     if "resume" not in request.files:
@@ -88,31 +116,9 @@ def start_tailoring():
     if template not in ALL_TEMPLATE_NAMES:
         return jsonify({"error": "Invalid template"}), 400
 
-    resume_ext = Path(resume_file.filename).suffix.lower()
-    if resume_ext == ".pdf":
-        resume_file.stream.seek(0)
-        magic_bytes = resume_file.stream.read(5)
-        resume_file.stream.seek(0)
-        if magic_bytes != b"%PDF-":
-            return jsonify({"error": "File does not appear to be a valid PDF (bad magic bytes)"}), 400
-        try:
-            resume_file.stream.seek(0)
-            with pdfplumber.open(resume_file.stream) as pdf:
-                if not pdf.pages:
-                    return jsonify({"error": "PDF is empty (no pages)"}), 400
-                test_text = pdf.pages[0].extract_text()
-                if not test_text or len(test_text.strip()) < 20:
-                    return (
-                        jsonify(
-                            {"error": "PDF appears to be image-based or empty. Please use a text-based PDF."}
-                        ),
-                        400,
-                    )
-            resume_file.stream.seek(0)
-        except Exception as e:
-            return jsonify({"error": f"Could not read PDF: {e}"}), 400
-    elif resume_ext not in (".md", ".txt"):
-        return jsonify({"error": "Unsupported file type. Use PDF, MD, or TXT."}), 400
+    error, resume_ext = _validate_resume_file(resume_file)
+    if error:
+        return jsonify({"error": error}), 400
 
     job_id = uuid.uuid4().hex[:16]
     output_dir = create_output_dir(job_id=job_id)
@@ -152,10 +158,13 @@ def start_tailoring():
     )
     thread.start()
 
+    track("tailor.job.created", category="tailor", user_id=uid, job_id=job_id,
+          metadata={"model": model, "mode": mode, "template": template, "resume_ext": resume_ext})
     return jsonify({"job_id": job_id})
 
 
 @api_bp.route("/api/progress/<job_id>")
+@csrf.exempt
 def progress_stream(job_id: str):
     with jobs_lock:
         job_data = jobs.get(job_id)
@@ -392,8 +401,9 @@ def boost_bullet():
                 "suggestions": improved_analysis.suggestions,
             }
         )
-    except Exception as e:
-        return jsonify({"error": f"Failed to improve bullet: {str(e)}"}), 500
+    except Exception:
+        logger.exception("Bullet boost failed")
+        return jsonify({"error": "Failed to improve bullet"}), 500
 
 
 @api_bp.route("/api/batch-tailor", methods=["POST"])
@@ -430,11 +440,10 @@ def start_batch_tailoring():
     mode = request.form.get("mode", "conservative")
     template = request.form.get("template", "modern")
 
-    resume_ext = Path(resume_file.filename).suffix.lower()
-    if resume_ext not in (".pdf", ".md", ".txt"):
-        return jsonify({"error": "Unsupported file type"}), 400
+    error, resume_ext = _validate_resume_file(resume_file)
+    if error:
+        return jsonify({"error": error}), 400
 
-    # Start individual tailoring jobs
     job_ids = []
     for i, jd in enumerate(job_descriptions):
         job_id = uuid.uuid4().hex[:16]
@@ -483,7 +492,13 @@ def start_batch_tailoring():
 
 
 @api_bp.route("/api/download/<job_id>/<filename>")
+@csrf.exempt
+@limiter.limit("30 per minute")
 def download_file(job_id: str, filename: str):
+    uid = current_user.id if current_user.is_authenticated else None
+    ext = Path(filename).suffix.lower()
+    track("download.requested", category="download", user_id=uid, job_id=job_id,
+          metadata={"filename_ext": ext, "filename": filename})
     return serve_download(job_id, filename)
 
 
@@ -504,7 +519,6 @@ def download_check(job_id: str):
         "db_has_ats_md": False,
         "db_has_rec_md": False,
         "db_has_tp_md": False,
-        "db_user_id": None,
     }
 
     with jobs_lock:
@@ -522,14 +536,12 @@ def download_check(job_id: str):
         job_files = JobFile.query.filter_by(job_id=job_id).all()
         result["r2_files"] = [jf.filename for jf in job_files]
 
-    db_job = db.session.get(TailoringJob, job_id)
+    db_job = TailoringJob.query.filter_by(id=job_id, user_id=current_user.id).first()
     if db_job:
         result["db_found"] = True
         result["db_status"] = db_job.status
         result["db_has_ats_md"] = bool(db_job.ats_resume_md)
         result["db_has_rec_md"] = bool(db_job.recruiter_resume_md)
         result["db_has_tp_md"] = bool(db_job.talking_points_md)
-        result["db_user_id"] = db_job.user_id
-        result["db_user_match"] = db_job.user_id == current_user.id
 
     return jsonify(result)

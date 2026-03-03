@@ -5,11 +5,11 @@ from datetime import datetime, timezone
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 
-from app.extensions import csrf, db
+from app.extensions import db
 from app.models import SavedResume
+from app.services.telemetry import track
 
 saved_resumes_bp = Blueprint("saved_resumes", __name__)
-csrf.exempt(saved_resumes_bp)
 
 
 @saved_resumes_bp.route("/api/saved-resumes", methods=["GET"])
@@ -67,6 +67,8 @@ def save_resume():
     except Exception:
         db.session.rollback()
         return jsonify({"error": "Failed to save resume"}), 500
+    action = "saved_resume.updated" if resume_id else "saved_resume.created"
+    track(action, category="feature", user_id=current_user.id)
     return jsonify({"ok": True, "id": resume.id})
 
 
@@ -93,4 +95,5 @@ def delete_saved_resume(resume_id: str):
     except Exception:
         db.session.rollback()
         return jsonify({"error": "Failed to delete resume"}), 500
+    track("saved_resume.deleted", category="feature", user_id=current_user.id)
     return jsonify({"ok": True})

@@ -1,6 +1,7 @@
 """Flask application settings — one class per environment."""
 
 import os
+from datetime import timedelta
 
 
 def _database_uri() -> str:
@@ -38,6 +39,13 @@ class BaseSettings:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = 3600  # 1 hour
+    WTF_CSRF_HEADERS = ["X-CSRFToken"]
+    WTF_CSRF_CHECK_DEFAULT = True
+
+    REMEMBER_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_SAMESITE = "Lax"
+    REMEMBER_COOKIE_SECURE = True
+    REMEMBER_COOKIE_DURATION = timedelta(days=14)
 
     # Blog + AdSense
     ADSENSE_CLIENT_ID = os.environ.get("ADSENSE_CLIENT_ID", "")
@@ -55,17 +63,27 @@ class BaseSettings:
 class DevelopmentSettings(BaseSettings):
     DEBUG = True
     SESSION_COOKIE_SECURE = False
+    REMEMBER_COOKIE_SECURE = False
 
 
 class ProductionSettings(BaseSettings):
     DEBUG = False
     SESSION_COOKIE_SECURE = True
 
+    @classmethod
+    def _check_secret_key(cls):
+        if not os.environ.get("FLASK_SECRET_KEY"):
+            raise RuntimeError(
+                "FLASK_SECRET_KEY must be set in production. "
+                'Generate one with: python -c "import secrets; print(secrets.token_hex(32))"'
+            )
+
 
 class TestingSettings(BaseSettings):
     TESTING = True
     DEBUG = True
     SESSION_COOKIE_SECURE = False
+    REMEMBER_COOKIE_SECURE = False
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     SQLALCHEMY_ENGINE_OPTIONS = {}  # type: ignore[assignment]
     WTF_CSRF_ENABLED = False

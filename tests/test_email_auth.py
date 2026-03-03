@@ -425,11 +425,13 @@ def test_change_password_wrong_current(client):
 
 @pytest.mark.integration
 def test_set_password_google_user(client):
-    """Google user without password can set one (no current_password required)."""
+    """Google user without password can set one after recent OAuth login."""
+    from datetime import datetime, timezone
+
     user = _create_google_user()
-    # Simulate being logged in
     with client.session_transaction() as sess:
         sess["_user_id"] = user.id
+        sess["last_oauth_login_at"] = datetime.now(timezone.utc).isoformat()
 
     resp = client.post(
         "/auth/profile/change-password",

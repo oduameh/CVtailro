@@ -757,9 +757,16 @@ def _render_skills(text: str) -> str:
 
 def _inline_md(text: str) -> str:
     """Process inline markdown: bold, italic, links."""
+    text = _escape(text)
     text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
     text = re.sub(r"\*(.+?)\*", r"<em>\1</em>", text)
-    text = re.sub(r"\[([^\]]+)\]\(([^)]+(?:\([^)]*\))*[^)]*)\)", r'<a href="\2">\1</a>', text)
+    text = re.sub(
+        r"\[([^\]]+)\]\(([^)]+(?:\([^)]*\))*[^)]*)\)",
+        lambda m: f'<a href="{m.group(2)}">{m.group(1)}</a>'
+        if m.group(2).startswith(("http://", "https://", "mailto:"))
+        else m.group(1),
+        text,
+    )
     return text
 
 

@@ -36,9 +36,13 @@ def create_app(config_name: str | None = None) -> Flask:
     settings_cls = settings_map.get(config_name, settings_map["production"])
     flask_app.config.from_object(settings_cls())
 
-    flask_app.wsgi_app = ProxyFix(  # type: ignore[assignment]
-        flask_app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
-    )
+    if config_name == "production":
+        settings_cls._check_secret_key()
+
+    if config_name != "development" and not flask_app.config.get("TESTING"):
+        flask_app.wsgi_app = ProxyFix(  # type: ignore[assignment]
+            flask_app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
+        )
 
     from app.middleware import init_request_id, init_sentry, init_structured_logging
 
@@ -116,7 +120,7 @@ def _register_error_handlers(flask_app: Flask) -> None:
     def handle_exception(e):
         logger.exception("Unhandled exception in %s %s", request.method, request.path)
         if request.path.startswith("/api/") or request.path.startswith("/admin/api/"):
-            return _jsonify({"error": str(e) or "Internal server error"}), 500
+            return _jsonify({"error": "Internal server error"}), 500
         return e
 
 
@@ -150,6 +154,18 @@ def _register_security_headers(flask_app: Flask) -> None:
             response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
+
+        # Double-submit CSRF cookie for SPA requests
+        if "csrf_token" not in request.cookies:
+            from flask_wtf.csrf import generate_csrf
+
+            response.set_cookie(
+                "csrf_token",
+                generate_csrf(),
+                httponly=False,
+                samesite="Lax",
+                secure=request.is_secure,
+            )
         return response
 
 
@@ -233,6 +249,15 @@ def _apply_column_migrations() -> None:
                 db.session.commit()
             except Exception:
                 db.session.rollback()
+
+    # --- Analytics tables ---
+    for tbl_name in ("analytics_events", "daily_metrics"):
+        if not insp.has_table(tbl_name):
+            try:
+                db.create_all()
+                logger.info(f"Created table {tbl_name}")
+            except Exception as e:
+                logger.warning(f"Failed to create {tbl_name}: {e}")
 
     # --- User table: email/password auth columns ---
     if insp.has_table("users"):

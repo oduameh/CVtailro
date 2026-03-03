@@ -19,12 +19,12 @@ from app.services.email import (
     send_reset_email,
     send_verification_email,
 )
+from app.services.telemetry import track
 from app.services.usage import login_rate_limiter
 
 logger = logging.getLogger(__name__)
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
-csrf.exempt(auth_bp)  # OAuth callbacks + SPA JSON posts don't include CSRF tokens
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -64,18 +64,21 @@ def _client_ip() -> str:
 
 
 @auth_bp.route("/google/login")
+@csrf.exempt
 def google_login():
     redirect_uri = url_for("auth.google_callback", _external=True)
     return oauth.google.authorize_redirect(redirect_uri)
 
 
 @auth_bp.route("/google/callback")
+@csrf.exempt
 def google_callback():
     try:
         token = oauth.google.authorize_access_token()
         userinfo = token.get("userinfo") or oauth.google.userinfo()
     except Exception as e:
         logger.error(f"OAuth callback failed: {e}")
+        track("auth.login.failed", category="auth", metadata={"provider": "google", "reason": "oauth_callback_error"})
         return redirect("/?auth_error=oauth_failed")
 
     google_id = userinfo["sub"]
@@ -121,7 +124,11 @@ def google_callback():
     user.last_login_at = datetime.now(timezone.utc)
     db.session.commit()
     login_user(user, remember=True)
+    from flask import session
+
+    session["last_oauth_login_at"] = datetime.now(timezone.utc).isoformat()
     logger.info(f"User logged in via Google: {email} (admin={user.is_admin})")
+    track("auth.login.succeeded", category="auth", user_id=user.id, metadata={"provider": "google", "is_admin": user.is_admin})
     return redirect("/")
 
 
@@ -163,6 +170,7 @@ def register():
 
     send_verification_email(email, name)
     logger.info(f"New email registration: {email}")
+    track("auth.register.succeeded", category="auth", user_id=user.id, metadata={"provider": "email"})
     return jsonify({"ok": True, "message": "Account created. Please check your email to verify."}), 201
 
 
@@ -189,13 +197,16 @@ def login():
 
     if user is None or not user.password_hash:
         login_rate_limiter.record_failure(ip)
+        track("auth.login.failed", category="auth", metadata={"provider": "email", "reason": "invalid_credentials"})
         return jsonify({"error": "Invalid email or password."}), 401
 
     if not check_password_hash(user.password_hash, password):
         login_rate_limiter.record_failure(ip)
+        track("auth.login.failed", category="auth", metadata={"provider": "email", "reason": "wrong_password"})
         return jsonify({"error": "Invalid email or password."}), 401
 
     if not user.email_verified:
+        track("auth.login.failed", category="auth", user_id=user.id, metadata={"provider": "email", "reason": "email_not_verified"})
         return jsonify(
             {
                 "error": "Please verify your email before signing in.",
@@ -208,6 +219,7 @@ def login():
     db.session.commit()
     login_user(user, remember=True)
     logger.info(f"User logged in via email: {email}")
+    track("auth.login.succeeded", category="auth", user_id=user.id, metadata={"provider": "email"})
     return jsonify({"ok": True})
 
 
@@ -217,6 +229,7 @@ def login():
 
 
 @auth_bp.route("/verify/<token>")
+@csrf.exempt
 def verify_email(token: str):
     email = confirm_verification_token(token)
     if email is None:
@@ -275,6 +288,7 @@ def forgot_password():
 
 
 @auth_bp.route("/reset-password/<token>")
+@csrf.exempt
 def reset_password_page(token: str):
     """Redirect to the SPA with the reset token as a query param."""
     email = confirm_reset_token(token)
@@ -312,6 +326,7 @@ def reset_password():
     db.session.commit()
 
     logger.info(f"Password reset for: {email}")
+    track("auth.password_reset.completed", category="auth", user_id=user.id)
     return jsonify({"ok": True, "message": "Password updated successfully."})
 
 
@@ -344,12 +359,20 @@ def change_password():
     if pw_error:
         return jsonify({"error": pw_error}), 400
 
-    # If user already has a password, require the current one
     if current_user.password_hash:
         if not current_pw:
             return jsonify({"error": "Current password is required."}), 400
         if not check_password_hash(current_user.password_hash, current_pw):
             return jsonify({"error": "Current password is incorrect."}), 401
+    else:
+        from flask import session
+
+        last_oauth = session.get("last_oauth_login_at")
+        if not last_oauth:
+            return jsonify({"error": "Please sign in with Google again before setting a password."}), 403
+        elapsed = (datetime.now(timezone.utc) - datetime.fromisoformat(last_oauth)).total_seconds()
+        if elapsed > 300:
+            return jsonify({"error": "Session expired. Please sign in with Google again before setting a password."}), 403
 
     current_user.password_hash = generate_password_hash(new_pw)
     db.session.commit()
@@ -364,7 +387,9 @@ def change_password():
 
 @auth_bp.route("/logout", methods=["POST"])
 def logout():
+    uid = current_user.id if current_user.is_authenticated else None
     logout_user()
+    track("auth.logout", category="auth", user_id=uid)
     return jsonify({"ok": True})
 
 
@@ -388,8 +413,11 @@ def me():
 
 
 @auth_bp.route("/dev-login")
+@csrf.exempt
 def dev_login():
-    if os.environ.get("DEV_AUTH_BYPASS") != "1":
+    from flask import current_app
+
+    if not current_app.debug or os.environ.get("DEV_AUTH_BYPASS") != "1":
         return redirect("/")
 
     email = os.environ.get("DEV_AUTH_EMAIL", "dev@example.com").lower()

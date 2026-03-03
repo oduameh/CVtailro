@@ -994,13 +994,34 @@
                     <span class="nav-icon">&#128101;</span>
                     <span class="nav-text">Users &amp; Resumes</span>
                 </a>
+                <div class="nav-label">Observability</div>
+                <a class="nav-item" data-tab="product-usage" onclick="switchTab('product-usage')">
+                    <span class="nav-icon">&#128200;</span>
+                    <span class="nav-text">Product Usage</span>
+                </a>
+                <a class="nav-item" data-tab="reliability" onclick="switchTab('reliability')">
+                    <span class="nav-icon">&#9889;</span>
+                    <span class="nav-text">Reliability</span>
+                </a>
+                <a class="nav-item" data-tab="cost" onclick="switchTab('cost')">
+                    <span class="nav-icon">&#128176;</span>
+                    <span class="nav-text">Cost &amp; Models</span>
+                </a>
+                <a class="nav-item" data-tab="audit" onclick="switchTab('audit')">
+                    <span class="nav-icon">&#128274;</span>
+                    <span class="nav-text">Audit Trail</span>
+                </a>
+                <a class="nav-item" data-tab="events" onclick="switchTab('events')">
+                    <span class="nav-icon">&#128196;</span>
+                    <span class="nav-text">Event Feed</span>
+                </a>
                 <div class="nav-label">Monitoring</div>
                 <a class="nav-item" data-tab="diagnostics" onclick="switchTab('diagnostics')">
                     <span class="nav-icon">&#128269;</span>
                     <span class="nav-text">Diagnostics</span>
                 </a>
                 <a class="nav-item" data-tab="analytics" onclick="switchTab('analytics')">
-                    <span class="nav-icon">&#128200;</span>
+                    <span class="nav-icon">&#128202;</span>
                     <span class="nav-text">Analytics</span>
                 </a>
                 <a class="nav-item" data-tab="errors" onclick="switchTab('errors')">
@@ -1023,14 +1044,17 @@
         <!-- Main Content Area -->
         <div class="main-content">
 
+            <!-- Alert Banner (shown when SLO alerts are active) -->
+            <div id="alertBanner" style="display:none;margin-bottom:12px;"></div>
+
             <!-- ═══ TAB: DASHBOARD ═══ -->
             <div class="tab-content active" id="tab-dashboard">
                 <div class="tab-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
                     <div>
                         <h1>Dashboard</h1>
                         <p style="display:flex;align-items:center;gap:8px;">
-                            <span style="width:7px;height:7px;border-radius:50%;background:var(--success);display:inline-block;"></span>
-                            Service running
+                            <span id="dashHealthDot" style="width:7px;height:7px;border-radius:50%;background:var(--success);display:inline-block;"></span>
+                            <span id="dashHealthLabel">Service running</span>
                         </p>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;">
@@ -1402,10 +1426,227 @@
                 </div>
             </div>
 
+            <!-- ═══ TAB: PRODUCT USAGE ═══ -->
+            <div class="tab-content" id="tab-product-usage">
+                <div class="tab-header">
+                    <h1>Product Usage</h1>
+                    <p>User activity, feature adoption, and engagement metrics</p>
+                </div>
+                <div class="kpi-row" style="grid-template-columns:repeat(4,1fr);">
+                    <div class="kpi-card"><div class="kpi-value accent" id="puDAU">--</div><div class="kpi-label">Daily Active Users</div></div>
+                    <div class="kpi-card"><div class="kpi-value" id="puWAU">--</div><div class="kpi-label">Weekly Active</div></div>
+                    <div class="kpi-card"><div class="kpi-value" id="puMAU">--</div><div class="kpi-label">Monthly Active</div></div>
+                    <div class="kpi-card"><div class="kpi-value accent" id="puNewUsers">--</div><div class="kpi-label">New Users (30d)</div></div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+                    <div class="card">
+                        <div class="card-header"><h2>Jobs Per Day (30d)</h2></div>
+                        <canvas id="puJobsChart" height="200"></canvas>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h2>Active Users Per Day</h2></div>
+                        <canvas id="puUsersChart" height="200"></canvas>
+                    </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+                    <div class="card">
+                        <div class="card-header"><h2>Feature Adoption</h2></div>
+                        <div id="puFeatureAdoption" style="padding:12px;font-size:14px;color:var(--text-secondary);">Loading...</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h2>Tracker Funnel</h2></div>
+                        <canvas id="puTrackerChart" height="180"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ TAB: RELIABILITY ═══ -->
+            <div class="tab-content" id="tab-reliability">
+                <div class="tab-header">
+                    <h1>Reliability</h1>
+                    <p>Pipeline health, failure rates, and performance</p>
+                </div>
+                <div class="kpi-row" style="grid-template-columns:repeat(4,1fr);">
+                    <div class="kpi-card"><div class="kpi-value accent" id="relSuccessRate">--</div><div class="kpi-label">Success Rate (30d)</div></div>
+                    <div class="kpi-card"><div class="kpi-value" id="relP50">--</div><div class="kpi-label">Duration P50</div></div>
+                    <div class="kpi-card"><div class="kpi-value" id="relP95">--</div><div class="kpi-label">Duration P95</div></div>
+                    <div class="kpi-card"><div class="kpi-value" id="relErrors30d">--</div><div class="kpi-label">Errors (30d)</div></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+                    <div class="card">
+                        <div class="card-header"><h2>Failure Rate By Day</h2></div>
+                        <canvas id="relFailuresChart" height="200"></canvas>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h2>Errors By Model</h2></div>
+                        <canvas id="relModelErrorsChart" height="200"></canvas>
+                    </div>
+                </div>
+                <div class="card" style="margin-top:16px;">
+                    <div class="card-header"><h2>Live Pipeline Status</h2></div>
+                    <div id="relLiveStatus" style="padding:12px;font-size:14px;">Loading...</div>
+                </div>
+                <div class="card" style="margin-top:16px;">
+                    <div class="card-header"><h2>Recent Errors (DB-backed)</h2></div>
+                    <div style="overflow-x:auto;">
+                        <table class="data-table" id="relErrorsTable">
+                            <thead><tr><th>Time</th><th>Model</th><th>Error</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ TAB: COST & MODELS ═══ -->
+            <div class="tab-content" id="tab-cost">
+                <div class="tab-header">
+                    <h1>Cost &amp; Models</h1>
+                    <p>Token usage, spend tracking, and model economics</p>
+                </div>
+                <div class="kpi-row" style="grid-template-columns:repeat(4,1fr);">
+                    <div class="kpi-card"><div class="kpi-value accent" id="costTotal30d">--</div><div class="kpi-label">Est. Cost (30d)</div></div>
+                    <div class="kpi-card"><div class="kpi-value" id="costTokens30d">--</div><div class="kpi-label">Tokens (30d)</div></div>
+                    <div class="kpi-card"><div class="kpi-value" id="costPerResume">--</div><div class="kpi-label">Cost/Resume</div></div>
+                    <div class="kpi-card"><div class="kpi-value" id="costJobsDone30d">--</div><div class="kpi-label">Completed (30d)</div></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+                    <div class="card">
+                        <div class="card-header"><h2>Model Usage (All Time)</h2></div>
+                        <canvas id="costModelAllChart" height="200"></canvas>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h2>Model Usage (30d)</h2></div>
+                        <canvas id="costModel30dChart" height="200"></canvas>
+                    </div>
+                </div>
+                <div class="card" style="margin-top:16px;">
+                    <div class="card-header"><h2>Cost By Model (30d)</h2></div>
+                    <div style="overflow-x:auto;">
+                        <table class="data-table" id="costModelTable">
+                            <thead><tr><th>Model</th><th>Jobs</th><th>Est. Cost</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card" style="margin-top:16px;">
+                    <div class="card-header"><h2>Session Stats (in-memory)</h2></div>
+                    <div id="costSessionStats" style="padding:12px;font-size:14px;">Loading...</div>
+                </div>
+            </div>
+
+            <!-- ═══ TAB: AUDIT TRAIL ═══ -->
+            <div class="tab-content" id="tab-audit">
+                <div class="tab-header">
+                    <h1>Audit Trail</h1>
+                    <p>Admin actions, auth events, and security monitoring</p>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="card">
+                        <div class="card-header"><h2>Admin Actions</h2></div>
+                        <div style="overflow-x:auto;max-height:400px;overflow-y:auto;">
+                            <table class="data-table" id="auditAdminTable">
+                                <thead><tr><th>Time</th><th>Action</th><th>Details</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h2>Auth Events</h2></div>
+                        <div style="overflow-x:auto;max-height:400px;overflow-y:auto;">
+                            <table class="data-table" id="auditAuthTable">
+                                <thead><tr><th>Time</th><th>Event</th><th>Details</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+                    <div class="card">
+                        <div class="card-header"><h2>Auth Failures By Day</h2></div>
+                        <canvas id="auditFailuresChart" height="180"></canvas>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h2>Heavy Users (>10 jobs/30d)</h2></div>
+                        <div style="overflow-x:auto;max-height:300px;overflow-y:auto;">
+                            <table class="data-table" id="auditHeavyUsersTable">
+                                <thead><tr><th>User</th><th>Email</th><th>Jobs</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="card" style="margin-top:16px;">
+                    <div class="card-header">
+                        <h2>Data Retention</h2>
+                        <button class="btn btn-sm btn-secondary" onclick="runRetention()">Prune Events &gt;90d</button>
+                    </div>
+                    <div id="retentionResult" style="padding:8px;font-size:13px;color:var(--text-secondary);"></div>
+                </div>
+            </div>
+
+            <!-- ═══ TAB: EVENT FEED ═══ -->
+            <div class="tab-content" id="tab-events">
+                <div class="tab-header">
+                    <h1>Event Feed</h1>
+                    <p>Live stream of all analytics events</p>
+                </div>
+                <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
+                    <select id="eventCategoryFilter" onchange="loadEventFeed(1)" style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;">
+                        <option value="">All categories</option>
+                        <option value="auth">Auth</option>
+                        <option value="tailor">Tailor</option>
+                        <option value="download">Download</option>
+                        <option value="feature">Feature</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <button class="btn btn-sm btn-primary" onclick="loadEventFeed(1)">Refresh</button>
+                    <span id="eventFeedCount" style="font-size:13px;color:var(--text-secondary);"></span>
+                </div>
+                <div class="card">
+                    <div style="overflow-x:auto;max-height:600px;overflow-y:auto;">
+                        <table class="data-table" id="eventFeedTable">
+                            <thead><tr><th>Time</th><th>Event</th><th>Category</th><th>Job ID</th><th>Details</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:center;padding:12px;">
+                        <button class="btn btn-sm btn-secondary" id="eventPrevBtn" onclick="loadEventFeed(eventCurrentPage-1)" disabled>Prev</button>
+                        <span id="eventPageInfo" style="font-size:13px;color:var(--text-secondary);line-height:32px;"></span>
+                        <button class="btn btn-sm btn-secondary" id="eventNextBtn" onclick="loadEventFeed(eventCurrentPage+1)">Next</button>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
     <script>
+    // --- CSRF token helper ---
+    function getCsrfToken() {
+        var m = document.cookie.match(/csrf_token=([^;]+)/);
+        return m ? decodeURIComponent(m[1]) : '';
+    }
+    (function() {
+        var origFetch = window.fetch;
+        window.fetch = function(url, opts) {
+            opts = opts || {};
+            var method = (opts.method || 'GET').toUpperCase();
+            if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
+                if (!opts.headers) opts.headers = {};
+                if (opts.headers instanceof Headers) {
+                    if (!opts.headers.has('X-CSRFToken')) opts.headers.set('X-CSRFToken', getCsrfToken());
+                } else if (Array.isArray(opts.headers)) {
+                    opts.headers.push(['X-CSRFToken', getCsrfToken()]);
+                } else {
+                    if (!opts.headers['X-CSRFToken']) opts.headers['X-CSRFToken'] = getCsrfToken();
+                }
+            }
+            return origFetch.call(this, url, opts);
+        };
+    })();
+
     // ─── Tab Management ───
 
     var activeTab = 'dashboard';
@@ -1503,8 +1744,41 @@
     function refreshDashboard() {
         loadDashboardData();
         loadRecentJobs();
+        loadAlerts();
         dashLastUpdate = Date.now();
         updateLastUpdatedLabel();
+    }
+
+    async function loadAlerts() {
+        try {
+            var r = await fetch('/admin/api/observability/alerts');
+            var d = await r.json();
+            var banner = document.getElementById('alertBanner');
+            var dot = document.getElementById('dashHealthDot');
+            var label = document.getElementById('dashHealthLabel');
+            if (d.alerts && d.alerts.length > 0) {
+                banner.style.display = 'block';
+                var html = '';
+                d.alerts.forEach(function(a) {
+                    var color = a.severity === 'high' ? 'var(--error)' : 'var(--warning)';
+                    var bg = a.severity === 'high' ? 'rgba(220,38,38,0.1)' : 'rgba(217,119,6,0.1)';
+                    html += '<div style="padding:10px 16px;border-radius:8px;border:1px solid ' + color + ';background:' + bg + ';margin-bottom:6px;font-size:13px;color:' + color + ';font-weight:500;">' +
+                        (a.severity === 'high' ? '&#9888; ' : '&#9432; ') + a.message + '</div>';
+                });
+                banner.innerHTML = html;
+                if (d.alerts.some(function(a){return a.severity==='high';})) {
+                    dot.style.background = 'var(--error)';
+                    label.textContent = 'Alerts active';
+                } else {
+                    dot.style.background = 'var(--warning)';
+                    label.textContent = 'Warnings active';
+                }
+            } else {
+                banner.style.display = 'none';
+                dot.style.background = 'var(--success)';
+                label.textContent = 'Service healthy';
+            }
+        } catch(e) { console.debug('Alert check failed:', e); }
     }
 
     function updateLastUpdatedLabel() {
@@ -2348,6 +2622,357 @@
             }).catch(function() { alert('Could not copy.'); });
         } catch (e) { alert('Could not copy.'); }
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  OBSERVABILITY HUB
+    // ═══════════════════════════════════════════════════════════════════════
+
+    var obsCharts = {};
+
+    function destroyChart(key) {
+        if (obsCharts[key]) { obsCharts[key].destroy(); delete obsCharts[key]; }
+    }
+
+    function chartColors(n) {
+        var palette = ['#2563eb','#059669','#d97706','#dc2626','#7c3aed','#06b6d4','#f59e0b','#ec4899','#10b981','#6366f1'];
+        var out = [];
+        for (var i = 0; i < n; i++) out.push(palette[i % palette.length]);
+        return out;
+    }
+
+    function shortModel(m) {
+        if (!m) return '?';
+        var parts = m.split('/');
+        return parts.length > 1 ? parts[1].split(':')[0] : m;
+    }
+
+    function fmtTime(iso) {
+        if (!iso) return '--';
+        var d = new Date(iso);
+        return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    }
+
+    function fmtNum(n) {
+        if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+        if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+        return String(n);
+    }
+
+    // ── Product Usage ──
+
+    async function loadProductUsage() {
+        try {
+            var r = await fetch('/admin/api/observability/product-usage');
+            var d = await r.json();
+            document.getElementById('puDAU').textContent = d.dau;
+            document.getElementById('puWAU').textContent = d.wau;
+            document.getElementById('puMAU').textContent = d.mau;
+            document.getElementById('puNewUsers').textContent = d.new_users_30d;
+
+            // Feature adoption
+            var fa = d.feature_adoption || {};
+            document.getElementById('puFeatureAdoption').innerHTML =
+                '<div style="display:grid;gap:12px;">' +
+                '<div><strong>Saved Resumes</strong>: ' + fa.saved_resumes_users + '/' + fa.total_users + ' users (' + fa.saved_resumes_pct + '%)</div>' +
+                '<div style="background:var(--border);border-radius:4px;height:8px;"><div style="background:var(--accent);border-radius:4px;height:8px;width:' + Math.min(fa.saved_resumes_pct,100) + '%;"></div></div>' +
+                '<div><strong>Job Tracker</strong>: ' + fa.tracker_users + '/' + fa.total_users + ' users (' + fa.tracker_pct + '%)</div>' +
+                '<div style="background:var(--border);border-radius:4px;height:8px;"><div style="background:#059669;border-radius:4px;height:8px;width:' + Math.min(fa.tracker_pct,100) + '%;"></div></div>' +
+                '</div>';
+
+            // Jobs chart
+            destroyChart('puJobs');
+            var jctx = document.getElementById('puJobsChart');
+            if (jctx && d.jobs_per_day) {
+                obsCharts['puJobs'] = new Chart(jctx, {
+                    type: 'bar',
+                    data: {
+                        labels: d.jobs_per_day.map(function(x){return x.date.slice(5);}),
+                        datasets: [
+                            {label:'Completed', data: d.jobs_per_day.map(function(x){return x.completed;}), backgroundColor:'#059669'},
+                            {label:'Failed', data: d.jobs_per_day.map(function(x){return x.failed;}), backgroundColor:'#dc2626'}
+                        ]
+                    },
+                    options: {responsive:true, scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true}}, plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}}}
+                });
+            }
+
+            // Users chart
+            destroyChart('puUsers');
+            var uctx = document.getElementById('puUsersChart');
+            if (uctx && d.users_per_day) {
+                obsCharts['puUsers'] = new Chart(uctx, {
+                    type: 'line',
+                    data: {
+                        labels: d.users_per_day.map(function(x){return x.date.slice(5);}),
+                        datasets: [{label:'Active Users', data: d.users_per_day.map(function(x){return x.count;}), borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,0.1)', fill:true, tension:0.3}]
+                    },
+                    options: {responsive:true, scales:{y:{beginAtZero:true}}, plugins:{legend:{display:false}}}
+                });
+            }
+
+            // Tracker funnel
+            destroyChart('puTracker');
+            var tctx = document.getElementById('puTrackerChart');
+            if (tctx && d.tracker_funnel) {
+                var tLabels = Object.keys(d.tracker_funnel);
+                var tValues = Object.values(d.tracker_funnel);
+                obsCharts['puTracker'] = new Chart(tctx, {
+                    type: 'doughnut',
+                    data: { labels: tLabels, datasets: [{ data: tValues, backgroundColor: chartColors(tLabels.length) }] },
+                    options: { responsive:true, plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}} }
+                });
+            }
+        } catch(e) { console.error('Product usage load failed:', e); }
+    }
+
+    // ── Reliability ──
+
+    async function loadReliability() {
+        try {
+            var r = await fetch('/admin/api/observability/reliability');
+            var d = await r.json();
+            document.getElementById('relSuccessRate').textContent = d.success_rate + '%';
+            document.getElementById('relP50').textContent = d.duration_p50 + 's';
+            document.getElementById('relP95').textContent = d.duration_p95 + 's';
+            document.getElementById('relErrors30d').textContent = d.total_errors_30d;
+
+            // Live status
+            var lv = d.live || {};
+            document.getElementById('relLiveStatus').innerHTML =
+                '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;text-align:center;">' +
+                '<div><div style="font-size:24px;font-weight:700;color:var(--accent);">' + lv.active_pipelines + '</div><div style="font-size:12px;color:var(--text-secondary);">Active</div></div>' +
+                '<div><div style="font-size:24px;font-weight:700;">' + lv.queue_depth + '</div><div style="font-size:12px;color:var(--text-secondary);">Queued</div></div>' +
+                '<div><div style="font-size:24px;font-weight:700;">' + lv.max_concurrent + '</div><div style="font-size:12px;color:var(--text-secondary);">Max Slots</div></div>' +
+                '<div><div style="font-size:24px;font-weight:700;">' + lv.max_queue + '</div><div style="font-size:12px;color:var(--text-secondary);">Max Queue</div></div>' +
+                '</div>';
+
+            // Failures chart
+            destroyChart('relFailures');
+            var fctx = document.getElementById('relFailuresChart');
+            if (fctx && d.failures_per_day) {
+                var failRates = d.failures_per_day.map(function(x){ return x.total > 0 ? Math.round(x.errors/x.total*100) : 0; });
+                obsCharts['relFailures'] = new Chart(fctx, {
+                    type: 'bar',
+                    data: {
+                        labels: d.failures_per_day.map(function(x){return x.date.slice(5);}),
+                        datasets: [
+                            {label:'Total', data: d.failures_per_day.map(function(x){return x.total;}), backgroundColor:'#2563eb'},
+                            {label:'Errors', data: d.failures_per_day.map(function(x){return x.errors;}), backgroundColor:'#dc2626'}
+                        ]
+                    },
+                    options: {responsive:true, scales:{y:{beginAtZero:true}}, plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}}}
+                });
+            }
+
+            // Model errors chart
+            destroyChart('relModelErrors');
+            var mctx = document.getElementById('relModelErrorsChart');
+            if (mctx && d.errors_by_model) {
+                var mLabels = Object.keys(d.errors_by_model).map(shortModel);
+                var mValues = Object.values(d.errors_by_model);
+                obsCharts['relModelErrors'] = new Chart(mctx, {
+                    type: 'bar',
+                    data: { labels: mLabels, datasets: [{label:'Errors', data: mValues, backgroundColor:'#dc2626'}] },
+                    options: { responsive:true, indexAxis:'y', scales:{x:{beginAtZero:true}}, plugins:{legend:{display:false}} }
+                });
+            }
+
+            // Errors table
+            var tbody = document.querySelector('#relErrorsTable tbody');
+            tbody.innerHTML = '';
+            (d.recent_errors || []).forEach(function(err) {
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td style="white-space:nowrap;font-size:12px;">' + fmtTime(err.time) + '</td>' +
+                    '<td style="font-size:12px;">' + shortModel(err.model) + '</td>' +
+                    '<td style="font-size:12px;max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (err.error||'') + '</td>';
+                tbody.appendChild(tr);
+            });
+        } catch(e) { console.error('Reliability load failed:', e); }
+    }
+
+    // ── Cost & Models ──
+
+    async function loadCostData() {
+        try {
+            var r = await fetch('/admin/api/observability/cost');
+            var d = await r.json();
+            var c30 = d.cost_30d || {};
+            document.getElementById('costTotal30d').textContent = '$' + (c30.total_cost_usd || 0).toFixed(2);
+            document.getElementById('costTokens30d').textContent = fmtNum(c30.total_tokens || 0);
+            document.getElementById('costPerResume').textContent = '$' + (c30.cost_per_resume || 0).toFixed(4);
+            document.getElementById('costJobsDone30d').textContent = c30.completed_jobs || 0;
+
+            // Model usage (all time)
+            destroyChart('costModelAll');
+            var actx = document.getElementById('costModelAllChart');
+            if (actx && d.model_usage_all) {
+                var aLabels = Object.keys(d.model_usage_all).map(shortModel);
+                var aValues = Object.values(d.model_usage_all);
+                obsCharts['costModelAll'] = new Chart(actx, {
+                    type: 'doughnut',
+                    data: { labels: aLabels, datasets: [{ data: aValues, backgroundColor: chartColors(aLabels.length) }] },
+                    options: { responsive:true, plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}} }
+                });
+            }
+
+            // Model usage (30d)
+            destroyChart('costModel30d');
+            var mctx = document.getElementById('costModel30dChart');
+            if (mctx && d.model_usage_30d) {
+                var mLabels = Object.keys(d.model_usage_30d).map(shortModel);
+                var mValues = Object.values(d.model_usage_30d);
+                obsCharts['costModel30d'] = new Chart(mctx, {
+                    type: 'doughnut',
+                    data: { labels: mLabels, datasets: [{ data: mValues, backgroundColor: chartColors(mLabels.length) }] },
+                    options: { responsive:true, plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}} }
+                });
+            }
+
+            // Cost table
+            var tbody = document.querySelector('#costModelTable tbody');
+            tbody.innerHTML = '';
+            var mu30 = d.model_usage_30d || {};
+            var mc30 = d.model_cost_30d || {};
+            Object.keys(mu30).forEach(function(m) {
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td style="font-size:13px;">' + shortModel(m) + '</td>' +
+                    '<td>' + mu30[m] + '</td>' +
+                    '<td>$' + (mc30[m] || 0).toFixed(4) + '</td>';
+                tbody.appendChild(tr);
+            });
+
+            // Session stats
+            var ls = d.live_stats || {};
+            document.getElementById('costSessionStats').innerHTML =
+                '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;text-align:center;">' +
+                '<div><div style="font-size:18px;font-weight:600;">' + fmtNum(ls.total_tokens_session) + '</div><div style="font-size:12px;color:var(--text-secondary);">Tokens (session)</div></div>' +
+                '<div><div style="font-size:18px;font-weight:600;">$' + (ls.total_cost_session||0).toFixed(4) + '</div><div style="font-size:12px;color:var(--text-secondary);">Cost (session)</div></div>' +
+                '<div><div style="font-size:18px;font-weight:600;">' + ls.total_jobs_session + '</div><div style="font-size:12px;color:var(--text-secondary);">Jobs (session)</div></div>' +
+                '<div><div style="font-size:18px;font-weight:600;">$' + (ls.avg_cost_per_job||0).toFixed(4) + '</div><div style="font-size:12px;color:var(--text-secondary);">Avg Cost/Job</div></div>' +
+                '</div>';
+        } catch(e) { console.error('Cost data load failed:', e); }
+    }
+
+    // ── Audit Trail ──
+
+    async function loadAuditData() {
+        try {
+            var r = await fetch('/admin/api/observability/audit');
+            var d = await r.json();
+
+            // Admin actions table
+            var atbody = document.querySelector('#auditAdminTable tbody');
+            atbody.innerHTML = '';
+            (d.admin_actions || []).forEach(function(e) {
+                var tr = document.createElement('tr');
+                var meta = e.metadata ? JSON.stringify(e.metadata) : '';
+                if (meta.length > 80) meta = meta.substring(0,77) + '...';
+                tr.innerHTML = '<td style="white-space:nowrap;font-size:12px;">' + fmtTime(e.time) + '</td>' +
+                    '<td style="font-size:12px;font-weight:500;">' + e.event.replace('admin.','') + '</td>' +
+                    '<td style="font-size:11px;color:var(--text-secondary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + meta.replace(/"/g,'&quot;') + '">' + meta + '</td>';
+                atbody.appendChild(tr);
+            });
+
+            // Auth events table
+            var autbody = document.querySelector('#auditAuthTable tbody');
+            autbody.innerHTML = '';
+            (d.auth_events || []).forEach(function(e) {
+                var tr = document.createElement('tr');
+                var meta = e.metadata ? JSON.stringify(e.metadata) : '';
+                if (meta.length > 80) meta = meta.substring(0,77) + '...';
+                tr.innerHTML = '<td style="white-space:nowrap;font-size:12px;">' + fmtTime(e.time) + '</td>' +
+                    '<td style="font-size:12px;">' + e.event.replace('auth.','') + '</td>' +
+                    '<td style="font-size:11px;color:var(--text-secondary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + meta + '</td>';
+                autbody.appendChild(tr);
+            });
+
+            // Auth failures chart
+            destroyChart('auditFailures');
+            var fctx = document.getElementById('auditFailuresChart');
+            if (fctx && d.auth_failures_by_day && d.auth_failures_by_day.length) {
+                obsCharts['auditFailures'] = new Chart(fctx, {
+                    type: 'bar',
+                    data: {
+                        labels: d.auth_failures_by_day.map(function(x){return x.date.slice(5);}),
+                        datasets: [{label:'Auth Failures', data: d.auth_failures_by_day.map(function(x){return x.count;}), backgroundColor:'#dc2626'}]
+                    },
+                    options: {responsive:true, scales:{y:{beginAtZero:true}}, plugins:{legend:{display:false}}}
+                });
+            }
+
+            // Heavy users
+            var hutbody = document.querySelector('#auditHeavyUsersTable tbody');
+            hutbody.innerHTML = '';
+            (d.heavy_users || []).forEach(function(u) {
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td style="font-size:13px;">' + (u.name||'--') + '</td>' +
+                    '<td style="font-size:12px;">' + (u.email||'--') + '</td>' +
+                    '<td style="font-weight:600;">' + u.job_count + '</td>';
+                hutbody.appendChild(tr);
+            });
+            if (!d.heavy_users || !d.heavy_users.length) {
+                hutbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-tertiary);padding:20px;">No heavy users detected</td></tr>';
+            }
+        } catch(e) { console.error('Audit data load failed:', e); }
+    }
+
+    async function runRetention() {
+        try {
+            var r = await fetch('/admin/api/observability/retention', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({days:90}) });
+            var d = await r.json();
+            document.getElementById('retentionResult').textContent = d.ok ? 'Pruned ' + d.deleted + ' events older than 90 days.' : 'Error: ' + (d.error||'unknown');
+        } catch(e) {
+            document.getElementById('retentionResult').textContent = 'Error: ' + e.message;
+        }
+    }
+
+    // ── Event Feed ──
+
+    var eventCurrentPage = 1;
+
+    async function loadEventFeed(page) {
+        if (page < 1) return;
+        eventCurrentPage = page;
+        var cat = document.getElementById('eventCategoryFilter').value;
+        var url = '/admin/api/observability/events?page=' + page + '&per_page=50';
+        if (cat) url += '&category=' + cat;
+
+        try {
+            var r = await fetch(url);
+            var d = await r.json();
+            document.getElementById('eventFeedCount').textContent = d.total + ' events total';
+            document.getElementById('eventPageInfo').textContent = 'Page ' + d.page + ' of ' + Math.ceil(d.total / d.per_page);
+            document.getElementById('eventPrevBtn').disabled = page <= 1;
+            document.getElementById('eventNextBtn').disabled = page * d.per_page >= d.total;
+
+            var tbody = document.querySelector('#eventFeedTable tbody');
+            tbody.innerHTML = '';
+            (d.events || []).forEach(function(e) {
+                var tr = document.createElement('tr');
+                var meta = e.metadata ? JSON.stringify(e.metadata) : '';
+                if (meta.length > 100) meta = meta.substring(0,97) + '...';
+                var catBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;background:var(--accent-light);color:var(--accent);">' + e.category + '</span>';
+                tr.innerHTML = '<td style="white-space:nowrap;font-size:12px;">' + fmtTime(e.time) + '</td>' +
+                    '<td style="font-size:12px;font-weight:500;">' + e.event_name + '</td>' +
+                    '<td>' + catBadge + '</td>' +
+                    '<td style="font-size:11px;font-family:monospace;">' + (e.job_id || '--') + '</td>' +
+                    '<td style="font-size:11px;color:var(--text-secondary);max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + meta.replace(/"/g,'&quot;') + '">' + meta + '</td>';
+                tbody.appendChild(tr);
+            });
+        } catch(e) { console.error('Event feed load failed:', e); }
+    }
+
+    // ── Tab switch integration ──
+
+    var origSwitchTab = switchTab;
+    switchTab = function(tabName) {
+        origSwitchTab(tabName);
+        if (tabName === 'product-usage') loadProductUsage();
+        else if (tabName === 'reliability') loadReliability();
+        else if (tabName === 'cost') loadCostData();
+        else if (tabName === 'audit') loadAuditData();
+        else if (tabName === 'events') loadEventFeed(1);
+    };
 
     // ─── Init ───
     checkAuth();

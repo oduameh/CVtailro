@@ -13,6 +13,7 @@ import logging
 import os
 import tempfile
 from pathlib import Path
+from urllib.parse import quote
 
 from flask import Response, jsonify, redirect, send_from_directory
 from flask_login import current_user
@@ -20,6 +21,7 @@ from flask_login import current_user
 from app.extensions import db
 from app.models import JobFile, TailoringJob
 from app.services.pipeline import jobs, jobs_lock
+from app.services.telemetry import track
 from docx_generator import generate_resume_docx
 from pdf_generator import generate_resume_pdf
 from storage import r2_storage
@@ -27,9 +29,24 @@ from storage import r2_storage
 logger = logging.getLogger("cvtailro.downloads")
 
 
+def _content_disposition(filename: str) -> str:
+    """RFC 6266-compliant Content-Disposition header value."""
+    ascii_name = filename.encode("ascii", "replace").decode()
+    return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{quote(filename)}"
+
+
 def serve_download(job_id: str, filename: str):
     """Serve a file for the given job, trying local → R2 → DB in order."""
     safe_name = Path(filename).name
+
+    ALLOWED_SUFFIXES = {".pdf", ".docx", ".md", ".json"}
+    if Path(safe_name).suffix.lower() not in ALLOWED_SUFFIXES:
+        return jsonify({"error": "File type not allowed"}), 403
+
+    BLOCKED_PREFIXES = ("input_", "pipeline")
+    if safe_name.lower().startswith(BLOCKED_PREFIXES):
+        return jsonify({"error": "File not available for download"}), 403
+
     is_authed = current_user.is_authenticated
     user_id = current_user.id if is_authed else None
 
@@ -43,9 +60,11 @@ def serve_download(job_id: str, filename: str):
 
     if output_dir:
         if not _can_access_job(job_user_id, user_id, is_authed):
+            track("download.failed", category="download", job_id=job_id, metadata={"reason": "access_denied", "source": "local"})
             return jsonify({"error": "Access denied"}), 403
         file_path = Path(output_dir) / safe_name
         if file_path.exists():
+            track("download.served", category="download", user_id=user_id, job_id=job_id, metadata={"source": "local", "ext": Path(safe_name).suffix})
             return send_from_directory(output_dir, safe_name, as_attachment=True)
 
     # 2. R2 cloud storage
@@ -57,6 +76,7 @@ def serve_download(job_id: str, filename: str):
                 return jsonify({"error": "Access denied"}), 403
             try:
                 url = r2_storage.generate_presigned_url(job_file.r2_key)
+                track("download.served", category="download", user_id=user_id, job_id=job_id, metadata={"source": "r2", "ext": Path(safe_name).suffix})
                 return redirect(url)
             except Exception as e:
                 logger.error(f"R2 presigned URL failed: {e}")
@@ -64,11 +84,13 @@ def serve_download(job_id: str, filename: str):
     # 3. Database fallback
     db_job = _resolve_job_ownership(job_id, user_id, is_authed)
     if db_job is None:
+        track("download.failed", category="download", job_id=job_id, metadata={"reason": "not_found"})
         return (
             jsonify({"error": "File not found. The job may have expired or you may need to sign in again."}),
             404,
         )
 
+    track("download.served", category="download", user_id=user_id, job_id=job_id, metadata={"source": "db_regen", "ext": Path(safe_name).suffix})
     return _serve_from_db(db_job, safe_name)
 
 
@@ -114,7 +136,7 @@ def _serve_from_db(db_job: TailoringJob, safe_name: str):
             return Response(
                 md_content,
                 mimetype="text/markdown",
-                headers={"Content-Disposition": f"attachment; filename={safe_name}"},
+                headers={"Content-Disposition": _content_disposition(safe_name)},
             )
         return jsonify({"error": "Resume content not found in database."}), 404
 
@@ -166,7 +188,7 @@ def _serve_from_db(db_job: TailoringJob, safe_name: str):
         return Response(
             json.dumps(report, indent=2),
             mimetype="application/json",
-            headers={"Content-Disposition": f"attachment; filename={safe_name}"},
+            headers={"Content-Disposition": _content_disposition(safe_name)},
         )
 
     return jsonify({"error": "File not found. Try re-downloading from your History."}), 404
@@ -183,7 +205,7 @@ def _regenerate_pdf(source_md: str, filename: str, template: str):
         return Response(
             pdf_data,
             mimetype="application/pdf",
-            headers={"Content-Disposition": f"attachment; filename={filename}"},
+            headers={"Content-Disposition": _content_disposition(filename)},
         )
     except Exception as e:
         logger.error(f"PDF regeneration failed for {filename}: {e}", exc_info=True)
@@ -207,7 +229,7 @@ def _regenerate_docx(source_md: str, filename: str):
         return Response(
             docx_data,
             mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            headers={"Content-Disposition": f"attachment; filename={filename}"},
+            headers={"Content-Disposition": _content_disposition(filename)},
         )
     except Exception as e:
         logger.error(f"DOCX regeneration failed for {filename}: {e}", exc_info=True)

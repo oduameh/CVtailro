@@ -1,4 +1,4 @@
-"""Request middleware — structured logging, request IDs, and Sentry integration."""
+"""Request middleware — structured logging, request IDs, Sentry, and telemetry."""
 
 from __future__ import annotations
 
@@ -28,6 +28,11 @@ class JSONFormatter(logging.Formatter):
             log_entry["job_id"] = record.job_id
         if record.exc_info and record.exc_info[0] is not None:
             log_entry["exception"] = self.formatException(record.exc_info)
+
+        # Include telemetry event context when available
+        if hasattr(record, "event_name"):
+            log_entry["event_name"] = record.event_name
+            log_entry["event_category"] = getattr(record, "event_category", "")
         return json.dumps(log_entry, default=str)
 
 
@@ -68,12 +73,25 @@ def init_request_id(flask_app: Flask) -> None:
         if request.path == "/api/health":
             return response
         duration_ms = (time.time() - getattr(g, "request_start", time.time())) * 1000
-        logger = logging.getLogger("cvtailro.access")
-        logger.info(
+        rid = getattr(g, "request_id", "-")
+        alog = logging.getLogger("cvtailro.access")
+        alog.info(
             f"{request.method} {request.path} {response.status_code} "
-            f"{duration_ms:.0f}ms rid={getattr(g, 'request_id', '-')}"
+            f"{duration_ms:.0f}ms rid={rid}"
         )
         response.headers["X-Request-ID"] = getattr(g, "request_id", "")
+
+        # Sentry breadcrumb for request tracing
+        try:
+            import sentry_sdk
+            sentry_sdk.add_breadcrumb(
+                category="http",
+                message=f"{request.method} {request.path}",
+                data={"status_code": response.status_code, "duration_ms": round(duration_ms), "rid": rid},
+                level="info",
+            )
+        except Exception:
+            pass
         return response
 
 

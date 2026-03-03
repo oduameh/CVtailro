@@ -7,11 +7,21 @@ from datetime import datetime, timezone
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 
-from app.extensions import csrf, db
+from app.extensions import db
 from app.models import JobApplication
+from app.services.telemetry import track
 
 tracker_bp = Blueprint("tracker", __name__)
-csrf.exempt(tracker_bp)
+
+
+def _parse_date(value: str | None):
+    """Parse ISO date string, returning None on invalid input."""
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except (ValueError, TypeError):
+        return None
 
 
 @tracker_bp.route("/api/tracker", methods=["GET"])
@@ -62,10 +72,12 @@ def create_application():
         url=data.get("url"),
         notes=data.get("notes"),
         tailoring_job_id=data.get("tailoring_job_id"),
-        applied_date=datetime.fromisoformat(data["applied_date"]) if data.get("applied_date") else None,
+        applied_date=_parse_date(data.get("applied_date")),
     )
     db.session.add(app)
     db.session.commit()
+    track("tracker.application.created", category="feature", user_id=current_user.id,
+          metadata={"status": app.status, "has_tailoring_job": bool(app.tailoring_job_id)})
     return jsonify({"id": app.id, "status": "created"}), 201
 
 
@@ -84,14 +96,14 @@ def update_application(app_id):
         if field in data:
             setattr(app, field, data[field])
     if "applied_date" in data:
-        app.applied_date = datetime.fromisoformat(data["applied_date"]) if data["applied_date"] else None
+        app.applied_date = _parse_date(data.get("applied_date"))
     if "interview_date" in data:
-        app.interview_date = (
-            datetime.fromisoformat(data["interview_date"]) if data["interview_date"] else None
-        )
+        app.interview_date = _parse_date(data.get("interview_date"))
 
     app.updated_at = datetime.now(timezone.utc)
     db.session.commit()
+    track("tracker.application.updated", category="feature", user_id=current_user.id,
+          metadata={"new_status": app.status})
     return jsonify({"id": app.id, "status": "updated"})
 
 
@@ -104,4 +116,5 @@ def delete_application(app_id):
 
     db.session.delete(app)
     db.session.commit()
+    track("tracker.application.deleted", category="feature", user_id=current_user.id)
     return jsonify({"status": "deleted"})
