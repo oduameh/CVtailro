@@ -12,6 +12,14 @@ def _uuid():
     return uuid.uuid4().hex
 
 
+class JobStatus:
+    """Canonical job status values — use these instead of raw strings."""
+
+    RUNNING = "running"
+    COMPLETE = "complete"
+    ERROR = "error"
+
+
 class TailoringJob(db.Model):
     __tablename__ = "tailoring_jobs"
     __table_args__ = (
@@ -36,7 +44,12 @@ class TailoringJob(db.Model):
     original_resume_text = db.Column(db.Text, nullable=True)
     error_message = db.Column(db.Text, nullable=True)
     ats_resume_md = db.Column(db.Text, nullable=True)
-    recruiter_resume_md = db.Column(db.Text, nullable=True)
+    recruiter_resume_md = db.Column(db.Text, nullable=True)  # DEPRECATED: same as ats_resume_md since unification
+
+    @property
+    def resume_md(self) -> str | None:
+        """Canonical resume markdown — use this instead of ats_resume_md or recruiter_resume_md."""
+        return self.ats_resume_md
     talking_points_md = db.Column(db.Text, nullable=True)
     cover_letter_md = db.Column(db.Text, nullable=True)
     section_scores = db.Column(db.JSON, nullable=True)

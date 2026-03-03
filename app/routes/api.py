@@ -244,7 +244,7 @@ def get_result(job_id: str):
         "job_title": db_job.job_title,
         "company": db_job.company,
         "ats_resume_md": db_job.ats_resume_md,
-        "recruiter_resume_md": db_job.recruiter_resume_md,
+        "recruiter_resume_md": db_job.ats_resume_md,  # deprecated: same as ats_resume_md
         "original_resume_text": db_job.original_resume_text,
         "talking_points_md": db_job.talking_points_md,
         "cover_letter_md": db_job.cover_letter_md,

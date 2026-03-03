@@ -2,11 +2,11 @@
 
 from app.models.admin_config import AdminSetting
 from app.models.analytics import AnalyticsEvent, DailyMetric
-from app.models.job import JobApplication, JobFile, TailoringJob
+from app.models.job import JobApplication, JobFile, JobStatus, TailoringJob
 from app.models.saved_resume import SavedResume
 from app.models.user import User
 
 __all__ = [
-    "User", "TailoringJob", "JobFile", "JobApplication", "SavedResume",
+    "User", "TailoringJob", "JobFile", "JobStatus", "JobApplication", "SavedResume",
     "AdminSetting", "AnalyticsEvent", "DailyMetric",
 ]

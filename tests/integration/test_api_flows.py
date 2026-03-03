@@ -106,7 +106,7 @@ class TestResultAndProgressAPI:
         job = TailoringJob(
             id="testjob1234567890ab",
             user_id=user.id,
-            status="completed",
+            status="complete",
             ats_resume_md="# Resume",
         )
         db.session.add(job)
@@ -129,7 +129,7 @@ class TestHistoryAPI:
         job = TailoringJob(
             id="histjob1234567890ab",
             user_id=user.id,
-            status="completed",
+            status="complete",
             job_title="Engineer",
             company="Acme",
         )

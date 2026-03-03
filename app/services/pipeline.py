@@ -46,15 +46,18 @@ jobs_lock = threading.Lock()
 pipeline_errors: list[dict] = []
 pipeline_errors_lock = threading.Lock()
 
-# Pipeline concurrency — configurable via app settings
+# Pipeline concurrency — these are the single source of truth for queue limits.
+# Change here to adjust; admin.py imports these values.
 MAX_CONCURRENT_PIPELINES = 5
+MAX_QUEUE_DEPTH = 50
+JOB_TTL_SECONDS = 900
+
 pipeline_semaphore = threading.Semaphore(MAX_CONCURRENT_PIPELINES)
 pipeline_queue_depth = 0
 pipeline_queue_lock = threading.Lock()
-MAX_QUEUE_DEPTH = 50
 
 
-def cleanup_old_jobs(ttl: int = 900) -> None:
+def cleanup_old_jobs(ttl: int = JOB_TTL_SECONDS) -> None:
     """Remove completed jobs older than *ttl* seconds from in-memory storage."""
     cutoff = time.time() - ttl
     with jobs_lock:
@@ -576,7 +579,6 @@ def run_pipeline_job(
                 db_job.job_title = job_analysis.job_title
                 db_job.company = job_analysis.company
                 db_job.ats_resume_md = ats_resume.markdown_content
-                db_job.recruiter_resume_md = ats_resume.markdown_content
                 db_job.talking_points_md = format_talking_points(talking_points)
                 db_job.cover_letter_md = cover_letter_md or None
                 db_job.section_scores = (
@@ -631,7 +633,6 @@ def run_pipeline_job(
                 "company": job_analysis.company,
                 "bullets_rewritten": len(optimised_bullets.bullets),
                 "ats_resume_md": ats_resume.markdown_content,
-                "recruiter_resume_md": ats_resume.markdown_content,
                 "original_resume_text": resume_text,
                 "talking_points_md": format_talking_points(talking_points),
                 "cover_letter_md": cover_letter_md,

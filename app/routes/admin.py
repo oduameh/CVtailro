@@ -36,6 +36,46 @@ logger = logging.getLogger("cvtailro.admin")
 admin_bp = Blueprint("admin", __name__)
 
 
+# ── Shared query helpers ─────────────────────────────────────────────────────
+
+
+def _time_windows() -> dict[str, datetime]:
+    """Return commonly used UTC time boundaries."""
+    now = datetime.now(timezone.utc)
+    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    return {
+        "now": now,
+        "today": today,
+        "week": today - timedelta(days=7),
+        "month": today - timedelta(days=30),
+    }
+
+
+def _jobs_by_status(since: datetime | None = None) -> dict[str, int]:
+    """Count jobs grouped by status, optionally filtered to a time window."""
+    q = db.session.query(TailoringJob.status, func.count(TailoringJob.id))
+    if since is not None:
+        q = q.filter(TailoringJob.created_at >= since)
+    return dict(q.group_by(TailoringJob.status).all())
+
+
+def _live_pipeline_state() -> dict:
+    """Return current pipeline concurrency and queue depth."""
+    try:
+        available = pipeline_semaphore._value
+        active = MAX_CONCURRENT_PIPELINES - available
+    except AttributeError:
+        active = -1
+    with pipeline_queue_lock:
+        queue_depth = pipeline_queue_depth
+    return {
+        "active_pipelines": active,
+        "queue_depth": queue_depth,
+        "max_concurrent": MAX_CONCURRENT_PIPELINES,
+        "max_queue": MAX_QUEUE_DEPTH,
+    }
+
+
 def _admin_required(f):
     """Decorator checking session-based admin auth OR logged-in admin user."""
     from functools import wraps
@@ -175,53 +215,39 @@ def admin_usage():
 @_admin_required
 def admin_analytics():
     """Returns in-memory pipeline analytics (tokens, cost) + DB-backed stats for charts."""
-    now = datetime.now(timezone.utc)
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-
-    # In-memory pipeline stats (resets on restart)
+    tw = _time_windows()
     pipeline_stats = pipeline_analytics.get_global_stats()
 
-    # DB-backed: jobs per day for last 30 days (for charts)
     jobs_per_day = (
         db.session.query(
             func.date(TailoringJob.created_at).label("day"),
             func.count(TailoringJob.id).label("count"),
         )
-        .filter(TailoringJob.created_at >= today_start - timedelta(days=30))
+        .filter(TailoringJob.created_at >= tw["month"])
         .group_by(func.date(TailoringJob.created_at))
         .order_by(func.date(TailoringJob.created_at))
         .all()
     )
-    jobs_over_time = [{"date": str(d).split()[0] if d else "1970-01-01", "jobs": c} for d, c in jobs_per_day]
 
-    # DB-backed: jobs by status for pie chart
-    status_counts = (
-        db.session.query(TailoringJob.status, func.count(TailoringJob.id)).group_by(TailoringJob.status).all()
-    )
-    jobs_by_status = {s: c for s, c in status_counts}
-
-    # DB-backed: avg duration, completed jobs
-    completed_count = jobs_by_status.get("completed", 0)
+    status = _jobs_by_status()
+    completed_count = status.get("complete", 0)
     avg_duration = (
         db.session.query(func.avg(TailoringJob.duration_seconds))
-        .filter(TailoringJob.status == "completed", TailoringJob.duration_seconds.isnot(None))
+        .filter(TailoringJob.status == "complete", TailoringJob.duration_seconds.isnot(None))
         .scalar()
     )
-    avg_duration_seconds = round(float(avg_duration or 0), 1)
 
     return jsonify(
         {
             **pipeline_stats,
-            "jobs_over_time": jobs_over_time,
-            "jobs_by_status": jobs_by_status,
-            "jobs_today": TailoringJob.query.filter(TailoringJob.created_at >= today_start).count(),
-            "jobs_this_week": TailoringJob.query.filter(
-                TailoringJob.created_at >= today_start - timedelta(days=7)
-            ).count(),
-            "jobs_this_month": TailoringJob.query.filter(
-                TailoringJob.created_at >= today_start - timedelta(days=30)
-            ).count(),
-            "avg_duration_seconds": avg_duration_seconds,
+            "jobs_over_time": [
+                {"date": str(d).split()[0] if d else "1970-01-01", "jobs": c} for d, c in jobs_per_day
+            ],
+            "jobs_by_status": status,
+            "jobs_today": TailoringJob.query.filter(TailoringJob.created_at >= tw["today"]).count(),
+            "jobs_this_week": TailoringJob.query.filter(TailoringJob.created_at >= tw["week"]).count(),
+            "jobs_this_month": TailoringJob.query.filter(TailoringJob.created_at >= tw["month"]).count(),
+            "avg_duration_seconds": round(float(avg_duration or 0), 1),
             "completed_count": completed_count,
         }
     )
@@ -295,15 +321,6 @@ def admin_user_jobs(user_id: str):
 @admin_bp.route("/admin/api/live-stats")
 @_admin_required
 def admin_live_stats():
-    try:
-        available_slots = pipeline_semaphore._value
-        active_pipelines = MAX_CONCURRENT_PIPELINES - available_slots
-    except AttributeError:
-        active_pipelines = -1
-
-    with pipeline_queue_lock:
-        current_queue_depth = pipeline_queue_depth
-
     rusage = resource_mod.getrusage(resource_mod.RUSAGE_SELF)
     if platform_mod.system() == "Darwin":
         mem_mb = rusage.ru_maxrss / (1024 * 1024)
@@ -313,12 +330,11 @@ def admin_live_stats():
     with pipeline_errors_lock:
         recent_errors_count = len(pipeline_errors)
 
+    live = _live_pipeline_state()
     return jsonify(
         {
-            "active_pipelines": active_pipelines,
-            "queue_depth": current_queue_depth,
-            "max_concurrent": MAX_CONCURRENT_PIPELINES,
-            "max_queue_depth": MAX_QUEUE_DEPTH,
+            **live,
+            "max_queue_depth": live["max_queue"],
             "memory_mb": round(mem_mb, 1),
             "thread_count": threading.active_count(),
             "usage_stats": usage_tracker.get_stats(),
@@ -332,25 +348,15 @@ def admin_live_stats():
 @_admin_required
 def admin_stats():
     """Comprehensive stats: jobs by status, time trends, success rate, saved resumes."""
-    now = datetime.now(timezone.utc)
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    week_start = today_start - timedelta(days=7)
-    month_start = today_start - timedelta(days=30)
+    tw = _time_windows()
+    status = _jobs_by_status()
 
-    # Jobs by status
-    status_counts = (
-        db.session.query(TailoringJob.status, func.count(TailoringJob.id)).group_by(TailoringJob.status).all()
-    )
-    jobs_by_status = {s: c for s, c in status_counts}
+    jobs_today = TailoringJob.query.filter(TailoringJob.created_at >= tw["today"]).count()
+    jobs_this_week = TailoringJob.query.filter(TailoringJob.created_at >= tw["week"]).count()
+    jobs_this_month = TailoringJob.query.filter(TailoringJob.created_at >= tw["month"]).count()
 
-    # Time-based counts
-    jobs_today = TailoringJob.query.filter(TailoringJob.created_at >= today_start).count()
-    jobs_this_week = TailoringJob.query.filter(TailoringJob.created_at >= week_start).count()
-    jobs_this_month = TailoringJob.query.filter(TailoringJob.created_at >= month_start).count()
-
-    # Success rate (completed jobs with resume)
-    completed = jobs_by_status.get("completed", 0)
-    errors = jobs_by_status.get("error", 0)
+    completed = status.get("complete", 0)
+    errors = status.get("error", 0)
     total_finished = completed + errors
     success_rate = (completed / total_finished * 100) if total_finished > 0 else 100.0
 
@@ -371,14 +377,14 @@ def admin_stats():
     # Saved resumes count
     saved_resumes_count = SavedResume.query.count()
 
-    total_jobs = sum(jobs_by_status.values())
+    total_jobs = sum(status.values())
     total_users = User.query.count()
 
     return jsonify(
         {
             "total_jobs": total_jobs,
             "total_users": total_users,
-            "jobs_by_status": jobs_by_status,
+            "jobs_by_status": status,
             "jobs_today": jobs_today,
             "jobs_this_week": jobs_this_week,
             "jobs_this_month": jobs_this_month,
@@ -708,15 +714,10 @@ def admin_product_usage():
 def admin_reliability():
     """Pipeline reliability metrics: success/failure rates, durations, errors by model."""
     now = datetime.now(timezone.utc)
+    month_ago = now - timedelta(days=30)
 
-    # Overall success/failure rates (last 30 days)
-    status_30d = dict(
-        db.session.query(TailoringJob.status, func.count(TailoringJob.id))
-        .filter(TailoringJob.created_at >= now - timedelta(days=30))
-        .group_by(TailoringJob.status)
-        .all()
-    )
-    completed = status_30d.get("complete", 0) + status_30d.get("completed", 0)
+    status_30d = _jobs_by_status(since=month_ago)
+    completed = status_30d.get("complete", 0)
     errors = status_30d.get("error", 0)
     total_finished = completed + errors
     success_rate = round(completed / max(total_finished, 1) * 100, 1)
@@ -726,9 +727,9 @@ def admin_reliability():
         d[0] for d in
         db.session.query(TailoringJob.duration_seconds)
         .filter(
-            TailoringJob.created_at >= now - timedelta(days=30),
+            TailoringJob.created_at >= month_ago,
             TailoringJob.duration_seconds.isnot(None),
-            TailoringJob.status.in_(["complete", "completed"]),
+            TailoringJob.status == "complete",
         )
         .order_by(TailoringJob.duration_seconds)
         .all()
@@ -741,7 +742,7 @@ def admin_reliability():
     errors_by_model = dict(
         db.session.query(TailoringJob.model_used, func.count(TailoringJob.id))
         .filter(
-            TailoringJob.created_at >= now - timedelta(days=30),
+            TailoringJob.created_at >= month_ago,
             TailoringJob.status == "error",
         )
         .group_by(TailoringJob.model_used)
@@ -755,7 +756,7 @@ def admin_reliability():
             func.count(TailoringJob.id).label("total"),
             func.count(case((TailoringJob.status == "error", 1))).label("errors"),
         )
-        .filter(TailoringJob.created_at >= now - timedelta(days=30))
+        .filter(TailoringJob.created_at >= month_ago)
         .group_by(func.date(TailoringJob.created_at))
         .order_by(func.date(TailoringJob.created_at))
         .all()
@@ -773,15 +774,6 @@ def admin_reliability():
         .limit(25)
         .all()
     )
-
-    # Live pipeline state
-    try:
-        available_slots = pipeline_semaphore._value
-        active_pipelines = MAX_CONCURRENT_PIPELINES - available_slots
-    except AttributeError:
-        active_pipelines = -1
-    with pipeline_queue_lock:
-        current_queue = pipeline_queue_depth
 
     return jsonify({
         "success_rate": success_rate,
@@ -803,12 +795,7 @@ def admin_reliability():
             }
             for t, m, msg in recent_errors_db
         ],
-        "live": {
-            "active_pipelines": active_pipelines,
-            "queue_depth": current_queue,
-            "max_concurrent": MAX_CONCURRENT_PIPELINES,
-            "max_queue": MAX_QUEUE_DEPTH,
-        },
+        "live": _live_pipeline_state(),
     })
 
 
@@ -875,7 +862,7 @@ def admin_cost():
         )
         .filter(
             TailoringJob.created_at >= now - timedelta(days=30),
-            TailoringJob.status.in_(["complete", "completed"]),
+            TailoringJob.status == "complete",
         )
         .group_by(func.date(TailoringJob.created_at))
         .order_by(func.date(TailoringJob.created_at))
@@ -1057,14 +1044,8 @@ def admin_alerts():
     alerts = []
 
     # 1. Error rate spike: >20% failure in last 24h
-    recent_24h = (
-        db.session.query(TailoringJob.status, func.count(TailoringJob.id))
-        .filter(TailoringJob.created_at >= now - timedelta(hours=24))
-        .group_by(TailoringJob.status)
-        .all()
-    )
-    status_24h = {s: c for s, c in recent_24h}
-    completed_24h = status_24h.get("complete", 0) + status_24h.get("completed", 0)
+    status_24h = _jobs_by_status(since=now - timedelta(hours=24))
+    completed_24h = status_24h.get("complete", 0)
     errors_24h = status_24h.get("error", 0)
     total_24h = completed_24h + errors_24h
     if total_24h >= 3 and errors_24h / total_24h > 0.2:
@@ -1075,8 +1056,8 @@ def admin_alerts():
         })
 
     # 2. Queue saturation: queue depth > 80% of max
-    with pipeline_queue_lock:
-        current_queue = pipeline_queue_depth
+    live = _live_pipeline_state()
+    current_queue = live["queue_depth"]
     if current_queue > MAX_QUEUE_DEPTH * 0.8:
         alerts.append({
             "severity": "high",

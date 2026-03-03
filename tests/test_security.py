@@ -65,7 +65,7 @@ def user_job(db, user):
     j = TailoringJob(
         id="userjob1234567890ab",
         user_id=user.id,
-        status="completed",
+        status="complete",
         job_title="Engineer",
         company="Acme",
         ats_resume_md="# Resume\nConfidential content",
@@ -82,7 +82,7 @@ def anonymous_job(db):
     j = TailoringJob(
         id="anonjob1234567890ab",
         user_id=None,
-        status="completed",
+        status="complete",
         job_title="Engineer",
         company="Acme",
         ats_resume_md="# Resume\nPublic content",
@@ -184,7 +184,7 @@ class TestIDORResult:
         other_job = TailoringJob(
             id="otherjob1234567890ab",
             user_id=other_user.id,
-            status="completed",
+            status="complete",
             ats_resume_md="# Secret resume",
         )
         db.session.add(other_job)
@@ -262,13 +262,13 @@ class TestIDORHistory:
         my_job = TailoringJob(
             id="myjob1234567890abcd",
             user_id=user.id,
-            status="completed",
+            status="complete",
             job_title="My Job",
         )
         other_job = TailoringJob(
             id="othjob1234567890abcd",
             user_id=other_user.id,
-            status="completed",
+            status="complete",
             job_title="Other Job",
         )
         db.session.add_all([my_job, other_job])
@@ -286,7 +286,7 @@ class TestIDORHistory:
         other_job = TailoringJob(
             id="othjob1234567890abcd",
             user_id=other_user.id,
-            status="completed",
+            status="complete",
             job_title="Other Job",
         )
         db.session.add(other_job)
@@ -375,8 +375,8 @@ class TestInputValidation:
                 "job_description": "<script>alert(1)</script>" + "x" * 50,
             }
             resp = client.post("/api/tailor", data=data, content_type="multipart/form-data")
-            # Should accept (HTML stripped) or reject for other reasons
-            assert resp.status_code in (200, 400, 429, 503)
+            # HTML tags stripped; request accepted or rejected on other validation
+            assert resp.status_code in (200, 400)
 
     def test_job_description_max_length(self, client, flask_app):
         """Job description must have max length."""

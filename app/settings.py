@@ -54,10 +54,7 @@ class BaseSettings:
     ADSENSE_SLOT_BOTTOM = os.environ.get("ADSENSE_SLOT_BOTTOM", "")
     BLOG_BASE_URL = os.environ.get("BLOG_BASE_URL", "https://cvtailro-production.up.railway.app")
 
-    # Pipeline concurrency
-    MAX_CONCURRENT_PIPELINES = 5
-    MAX_QUEUE_DEPTH = 50
-    JOB_TTL = 900  # 15 minutes
+    # Pipeline concurrency is configured in app/services/pipeline.py (module-level constants).
 
 
 class DevelopmentSettings(BaseSettings):

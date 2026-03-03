@@ -1,6 +1,7 @@
 # CVtailro Security Audit Report
 
 **Date:** 2026-03-03
+**Last reviewed:** 2026-03-03 (tech debt cleanup pass -- status values unified, dead code removed, test coverage expanded to 179 tests including security suite)
 **Scope:** Application code, auth/sessions, API endpoints, file handling, config/deployment, dependencies
 **Depth:** Deep (code review + abuse cases + test guidance)
 

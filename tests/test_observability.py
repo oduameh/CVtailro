@@ -7,6 +7,17 @@ from app.models import AnalyticsEvent, DailyMetric, TailoringJob, User
 from app.models.analytics import hash_user_id
 from app.services.telemetry import _redact_value, _sanitize_metadata
 
+
+def _wait_for_event(event_name: str, timeout: float = 2.0, interval: float = 0.1) -> AnalyticsEvent | None:
+    """Poll the DB for an analytics event instead of using a fixed sleep."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        evt = AnalyticsEvent.query.filter_by(event_name=event_name).first()
+        if evt is not None:
+            return evt
+        time.sleep(interval)
+    return AnalyticsEvent.query.filter_by(event_name=event_name).first()
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # PII Redaction
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -152,14 +163,13 @@ class TestTelemetryTrack:
                 job_id="job456",
                 metadata={"model": "gpt-4o-mini", "duration_s": 5.0},
             )
-            time.sleep(0.5)
 
-            evt = AnalyticsEvent.query.filter_by(event_name="test.track").first()
+            evt = _wait_for_event("test.track")
             assert evt is not None
             assert evt.category == "test"
             assert evt.job_id == "job456"
             assert evt.user_id_hash is not None
-            assert evt.user_id_hash != "user123"  # hashed
+            assert evt.user_id_hash != "user123"
 
     def test_track_redacts_pii(self, flask_app, db):
         from app.services.telemetry import track_with_app
@@ -169,9 +179,8 @@ class TestTelemetryTrack:
                 category="test",
                 metadata={"email": "secret@test.com", "model": "gpt-4o"},
             )
-            time.sleep(0.5)
 
-            evt = AnalyticsEvent.query.filter_by(event_name="test.pii").first()
+            evt = _wait_for_event("test.pii")
             assert evt is not None
             meta = evt.metadata_json
             assert "secret@test.com" not in str(meta)
@@ -181,9 +190,8 @@ class TestTelemetryTrack:
         from app.services.telemetry import track_with_app
         with flask_app.app_context():
             track_with_app(flask_app, "test.noop", category="test")
-            time.sleep(0.5)
 
-            evt = AnalyticsEvent.query.filter_by(event_name="test.noop").first()
+            evt = _wait_for_event("test.noop")
             assert evt is not None
 
 

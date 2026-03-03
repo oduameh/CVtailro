@@ -32,7 +32,7 @@ class TestDownloadFromDB:
         job = TailoringJob(
             id="dljob1234567890abcd",
             user_id=user.id,
-            status="completed",
+            status="complete",
             ats_resume_md="# My Resume\nContent here",
         )
         db.session.add(job)
@@ -46,7 +46,7 @@ class TestDownloadFromDB:
         job = TailoringJob(
             id="dljob1234567890efgh",
             user_id=user.id,
-            status="completed",
+            status="complete",
             ats_resume_md="# Secret",
         )
         db.session.add(job)
@@ -58,7 +58,7 @@ class TestDownloadFromDB:
         job = TailoringJob(
             id="dljob1234567890ijkl",
             user_id=None,
-            status="completed",
+            status="complete",
             ats_resume_md="# Public resume",
         )
         db.session.add(job)

@@ -39,22 +39,25 @@ CVtailro/
     middleware.py              # Structured logging, request IDs, Sentry
     models/                    # SQLAlchemy ORM models
       user.py                  # User (Google OAuth)
-      job.py                   # TailoringJob, JobFile
+      job.py                   # TailoringJob, JobFile, JobApplication, JobStatus
       saved_resume.py          # SavedResume
       admin_config.py          # AdminSetting (DB-backed config)
     routes/                    # Flask blueprints
       main.py                  # /, /api/health, /api/status, /api/models
-      api.py                   # /api/tailor, /api/result, /api/progress, /api/download
-      auth.py                  # Google OAuth login/logout/callback
-      admin.py                 # /admin panel and API
+      api.py                   # /api/tailor, /api/result, /api/progress, /api/download, /api/score-resume, /api/boost-bullet, /api/batch-tailor
+      auth.py                  # Google OAuth + email/password login/register
+      admin.py                 # /admin panel, config, analytics, observability hub
       history.py               # /api/history
       saved_resumes.py         # /api/saved-resumes CRUD
+      tracker.py               # /api/tracker — job application tracking
+      blog.py                  # /blog — content pages
     services/                  # Business logic
       pipeline.py              # 6-stage pipeline orchestration, job storage, semaphore
       file_service.py          # Download: local → R2 → DB fallback
       admin_config.py          # AdminConfigManager (DB-first, file fallback)
       usage.py                 # UsageTracker, LoginRateLimiter
       cache.py                 # Redis wrapper with graceful fallback
+      telemetry.py             # Analytics event tracking, PII redaction
   agents/                      # Pipeline agents (unchanged)
   prompts/                     # LLM prompt templates (unchanged)
   config.py                    # Pipeline AppConfig, RECOMMENDED_MODELS
@@ -69,7 +72,7 @@ CVtailro/
   email_templates.py           # Follow-up email templates
   keyword_density.py           # Keyword density analysis
   templates/                   # Jinja2 templates (index.html, admin.html)
-  tests/                       # pytest suite (26 tests)
+  tests/                       # pytest suite (179 tests: unit, integration, security, observability)
   migrations/                  # Alembic (Flask-Migrate)
   wsgi.py                      # Gunicorn entry point
   .github/workflows/ci.yml     # GitHub Actions: lint + test
@@ -99,8 +102,8 @@ gunicorn wsgi:application --bind 0.0.0.0:5050  # production mode
 
 ## Running Tests
 ```bash
-pytest tests/ -v       # 26 tests
-ruff check app/ tests/ # linting
+pytest tests/ -v       # 179 tests
+ruff check .           # linting (matches CI)
 ```
 
 ## Deploying
