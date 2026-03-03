@@ -153,6 +153,24 @@
         html.dark .site-header {
             background: rgba(10, 10, 15, 0.85);
         }
+        .header-links {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: 12px;
+        }
+        .header-link {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 6px 10px;
+            border-radius: 8px;
+        }
+        .header-link:hover {
+            background: var(--accent-light);
+            color: var(--primary);
+        }
 
         /* --- Dark Mode Toggle --- */
         .theme-toggle {
@@ -2718,7 +2736,12 @@
     </noscript>
     <!-- Header -->
     <header class="site-header" role="banner">
-        <a href="/" class="site-logo"><span class="cv">CV</span><span class="tailro">tailro</span></a>
+        <div style="display:flex;align-items:center;">
+            <a href="/" class="site-logo"><span class="cv">CV</span><span class="tailro">tailro</span></a>
+            <nav class="header-links" aria-label="Primary">
+                <a class="header-link" href="/blog">Blog</a>
+            </nav>
+        </div>
         <div style="display:flex;align-items:center;gap:8px;">
         <!-- History button (visible when signed in) -->
         <button class="header-icon-btn" id="btnHeaderHistory" style="display:none;" onclick="showHistory()" title="Tailoring History">
@@ -3024,8 +3047,8 @@
         </div>
     </div>
 
-    <!-- Tools Section -->
-    <div class="container" id="toolsSection" style="margin-top:40px;">
+    <!-- Tools Section (premium — hidden until paid tier) -->
+    <div class="container" id="toolsSection" style="margin-top:40px;display:none;">
         <h2 style="text-align:center;font-size:20px;font-weight:700;margin-bottom:24px;color:var(--text);">More Tools</h2>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:32px;">
             <!-- Score My Resume -->
@@ -3667,10 +3690,12 @@
             document.getElementById('dropdownUserName').textContent = authUser.name || '';
             document.getElementById('dropdownUserEmail').textContent = authUser.email || '';
 
-            // Show admin link if admin
+            // Show admin link + tools section if admin
             if (authUser.is_admin) {
                 document.getElementById('adminLink').style.display = 'flex';
                 document.getElementById('adminDivider').style.display = 'block';
+                var toolsSec = document.getElementById('toolsSection');
+                if (toolsSec) toolsSec.style.display = 'block';
             }
 
             // Update CTA hint for signed-in users
