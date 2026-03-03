@@ -25,6 +25,11 @@ def terms():
     return render_template("terms.html")
 
 
+@main_bp.route("/pricing")
+def pricing():
+    return render_template("pricing.html")
+
+
 @main_bp.route("/contact")
 def contact():
     return render_template("contact.html")
