@@ -2969,8 +2969,8 @@
                 <div class="talking-points-content collapsible-content collapsed" id="emailTemplatesContent"></div>
             </div>
 
-            <!-- Preview with Editor and Side-by-Side -->
-            <div class="card">
+            <!-- Preview with Editor and Side-by-Side (premium) -->
+            <div class="card" id="previewCard">
                 <div class="preview-header">
                     <h2 style="margin-bottom:0;font-size:16px;font-weight:700;">Resume Preview</h2>
                     <div style="display:flex;gap:6px;align-items:center;">
@@ -3540,7 +3540,10 @@
     function buildTemplateCards() {
         var grid = document.getElementById('templateGrid');
         if (!grid) return;
-        grid.innerHTML = TEMPLATE_CARDS.map(function(t) {
+        var isAdmin = authUser && authUser.is_admin;
+        var freeTemplates = ['modern', 'executive', 'minimal'];
+        var cards = isAdmin ? TEMPLATE_CARDS : TEMPLATE_CARDS.filter(function(t) { return freeTemplates.indexOf(t.id) !== -1; });
+        grid.innerHTML = cards.map(function(t) {
             return '<div class="tpl-card" data-tpl="' + t.id + '" onclick="selectTemplate(this)">' +
                 '<div class="tpl-card-swatch" style="background:' + t.color + ';"></div>' +
                 '<div class="tpl-card-body">' +
@@ -3549,8 +3552,8 @@
                 '</div>' +
                 '<div class="tpl-card-actions">' +
                     '<button class="tpl-dl-btn" onclick="event.stopPropagation();downloadFormat(\'' + t.id + '\',\'pdf\')">PDF</button>' +
-                    '<button class="tpl-dl-btn" onclick="event.stopPropagation();downloadFormat(\'' + t.id + '\',\'docx\')">DOCX</button>' +
-                    '<button class="tpl-dl-btn" onclick="event.stopPropagation();downloadFormat(\'' + t.id + '\',\'md\')">TXT</button>' +
+                    (isAdmin ? '<button class="tpl-dl-btn" onclick="event.stopPropagation();downloadFormat(\'' + t.id + '\',\'docx\')">DOCX</button>' : '') +
+                    (isAdmin ? '<button class="tpl-dl-btn" onclick="event.stopPropagation();downloadFormat(\'' + t.id + '\',\'md\')">TXT</button>' : '') +
                 '</div>' +
             '</div>';
         }).join('');
@@ -3628,6 +3631,7 @@
     }
 
     function renderAuthUI() {
+        buildTemplateCards(); // Rebuild template grid based on admin status
         var signinBtn = document.getElementById('btnGoogleSignin');
         var userMenuWrap = document.getElementById('userMenuWrap');
         var ctaHint = document.getElementById('ctaHint');
@@ -4482,15 +4486,18 @@
 
             document.getElementById("dlGridSecondary").innerHTML = secondaryHtml;
 
-            // --- Talking Points ---
-            if (s.talking_points_md) {
+            // --- Premium features (admin-only for now) ---
+            var isPremiumUser = authUser && authUser.is_admin;
+
+            // --- Talking Points (premium) ---
+            if (s.talking_points_md && isPremiumUser) {
                 document.getElementById("talkingPointsCard").style.display = "block";
                 document.getElementById("talkingPointsContent").innerHTML = renderMarkdown(s.talking_points_md);
             } else {
                 document.getElementById("talkingPointsCard").style.display = "none";
             }
 
-            // --- Cover Letter ---
+            // --- Cover Letter (free) ---
             var clContainer = document.getElementById("coverLetterCard");
             if (s.cover_letter_md) {
                 clContainer.style.display = "block";
@@ -4509,9 +4516,9 @@
                 clContainer.style.display = "none";
             }
 
-            // --- Email Templates ---
+            // --- Email Templates (premium) ---
             var etContainer = document.getElementById("emailTemplatesCard");
-            if (s.email_templates_md) {
+            if (s.email_templates_md && isPremiumUser) {
                 etContainer.style.display = "block";
                 document.getElementById("emailTemplatesContent").innerHTML = renderMarkdown(s.email_templates_md);
             } else {
@@ -4536,11 +4543,16 @@
             document.getElementById("whatChangedCard").style.display = "block";
             document.getElementById("whatChangedContent").innerHTML = buildChangesPanel(s);
 
-            // --- Preview ---
+            // --- Preview (premium) ---
             currentResumeMd = s.ats_resume_md || '';
             originalResumeMd = s.original_resume_text || '';
-            document.getElementById("previewContent").innerHTML = renderMarkdown(currentResumeMd);
-            setPreviewMode('preview');
+            if (isPremiumUser) {
+                document.getElementById("previewCard").style.display = "block";
+                document.getElementById("previewContent").innerHTML = renderMarkdown(currentResumeMd);
+                setPreviewMode('preview');
+            } else {
+                document.getElementById("previewCard").style.display = "none";
+            }
 
             document.getElementById("resultsSection").classList.add("active");
             document.getElementById("resultsSection").scrollIntoView({behavior: "smooth"});
@@ -5288,15 +5300,18 @@
 
         document.getElementById("dlGridSecondary").innerHTML = secondaryHtml;
 
-        // --- Talking Points ---
-        if (s.talking_points_md) {
+        // --- Premium features (admin-only for now) ---
+        var isPremiumUser2 = authUser && authUser.is_admin;
+
+        // --- Talking Points (premium) ---
+        if (s.talking_points_md && isPremiumUser2) {
             document.getElementById("talkingPointsCard").style.display = "block";
             document.getElementById("talkingPointsContent").innerHTML = renderMarkdown(s.talking_points_md);
         } else {
             document.getElementById("talkingPointsCard").style.display = "none";
         }
 
-        // --- Cover Letter ---
+        // --- Cover Letter (free) ---
         var clContainer = document.getElementById("coverLetterCard");
         if (s.cover_letter_md) {
             clContainer.style.display = "block";
@@ -5315,9 +5330,9 @@
             clContainer.style.display = "none";
         }
 
-        // --- Email Templates ---
+        // --- Email Templates (premium) ---
         var etContainer = document.getElementById("emailTemplatesCard");
-        if (s.email_templates_md) {
+        if (s.email_templates_md && isPremiumUser2) {
             etContainer.style.display = "block";
             document.getElementById("emailTemplatesContent").innerHTML = renderMarkdown(s.email_templates_md);
         } else {
@@ -5342,10 +5357,15 @@
         document.getElementById("whatChangedCard").style.display = "block";
         document.getElementById("whatChangedContent").innerHTML = buildChangesPanel(s);
 
-        // --- Preview: resume only (no tabs) ---
+        // --- Preview (premium) ---
         currentResumeMd = s.ats_resume_md || '';
         originalResumeMd = s.original_resume_text || '';
-        document.getElementById("previewContent").innerHTML = renderMarkdown(currentResumeMd);
+        if (isPremiumUser2) {
+            document.getElementById("previewCard").style.display = "block";
+            document.getElementById("previewContent").innerHTML = renderMarkdown(currentResumeMd);
+        } else {
+            document.getElementById("previewCard").style.display = "none";
+        }
         setPreviewMode('preview');
 
         document.getElementById("resultsSection").classList.add("active");
