@@ -832,20 +832,20 @@
         /* --- Circular Score --- */
         .score-section {
             text-align: center;
-            padding: 36px 24px;
+            padding: 24px 20px;
         }
 
         .score-ring-wrap {
             display: inline-block;
             position: relative;
-            width: 140px;
-            height: 140px;
-            margin-bottom: 16px;
+            width: 80px;
+            height: 80px;
+            margin-bottom: 12px;
         }
 
         .score-ring-wrap svg {
-            width: 140px;
-            height: 140px;
+            width: 80px;
+            height: 80px;
             transform: rotate(-90deg);
         }
 
@@ -867,7 +867,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 32px;
+            font-size: 22px;
             font-weight: 700;
             color: var(--text);
             letter-spacing: -0.5px;
@@ -956,54 +956,92 @@
 
         /* --- Downloads --- */
         .downloads-heading {
-            font-size: 18px;
+            font-size: 11px;
             font-weight: 700;
-            color: var(--text);
-            margin-bottom: 8px;
-            letter-spacing: -0.02em;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .template-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 14px;
-            margin: 20px 0;
+            gap: 12px;
+            margin: 16px 0;
         }
         .template-card {
-            border: 1.5px solid var(--border);
-            border-radius: 14px;
-            padding: 24px 16px;
-            text-align: center;
+            border: 0.5px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            text-align: left;
             cursor: pointer;
-            transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+            transition: transform 0.3s, box-shadow 0.3s;
             background: var(--card);
+            backdrop-filter: blur(var(--glass-blur));
+            position: relative;
+            overflow: hidden;
         }
+        .template-card::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: -4px;
+            width: 48px;
+            height: 48px;
+            opacity: 0.04;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpolyline points='14 2 14 8 20 8'/%3E%3C/svg%3E") no-repeat center;
+            transform: rotate(12deg);
+            pointer-events: none;
+        }
+        html.dark .template-card::after { opacity: 0.08; }
         .template-card:hover {
-            border-color: var(--primary);
-            background: var(--primary-bg);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+            transform: translateY(-4px);
         }
-        .template-card:hover .template-name {
-            color: var(--primary);
+        .template-card.modern-card { border-left: 3.5px solid #1a3a5c; }
+        .template-card.modern-card:hover { box-shadow: 0 8px 24px rgba(26, 58, 92, 0.2); }
+        .template-card.exec-card { border-bottom: 3.5px solid #8B7355; }
+        .template-card.exec-card:hover { box-shadow: 0 8px 24px rgba(139, 115, 85, 0.2); }
+        .template-card.min-card { }
+        .template-card.min-card:hover { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); }
+        .template-name {
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
-        .template-name { font-weight: 700; font-size: 15px; margin-top: 14px; transition: color 0.2s; letter-spacing: -0.01em; }
-        .template-desc { font-size: 13px; color: var(--text-secondary); margin-top: 6px; }
+        .template-name .dl-arrow {
+            color: var(--text-secondary);
+            transition: color 0.2s;
+        }
+        .template-card.modern-card:hover .dl-arrow { color: #1a3a5c; }
+        .template-card.exec-card:hover .dl-arrow { color: #8B7355; }
+        .template-card.min-card:hover .dl-arrow { color: var(--text); }
+        .template-desc { display: none; }
         .template-preview {
-            height: 100px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
+            height: 80px;
+            border-radius: 4px;
+            border: 0.5px solid var(--border);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
-        .modern-preview {
-            background: linear-gradient(180deg, var(--primary-bg) 0%, var(--card) 100%);
-            border-left: 4px solid #1a3a5c;
-        }
-        .exec-preview {
-            background: linear-gradient(180deg, var(--bg) 0%, var(--card) 100%);
-            border-bottom: 2px solid #8B7355;
-        }
-        .min-preview {
-            background: var(--bg);
-        }
+        .tpl-line { height: 3px; border-radius: 2px; background: var(--border); }
+        .tpl-line-bold { height: 4px; border-radius: 2px; }
+        .tpl-line-thin { height: 2px; border-radius: 1px; background: var(--border); opacity: 0.5; }
+        .modern-preview { background: rgba(37, 99, 235, 0.03); }
+        .modern-preview .tpl-line-bold { background: #1a3a5c; width: 60%; opacity: 0.4; }
+        .exec-preview { background: rgba(139, 115, 85, 0.03); }
+        .exec-preview .tpl-line-bold { background: #8B7355; width: 30%; margin: 0 auto; opacity: 0.4; }
+        .exec-preview .tpl-line { background: var(--border); }
+        .min-preview { background: transparent; }
+        .min-preview .tpl-line-bold { background: var(--text-secondary); width: 25%; opacity: 0.3; }
+        .min-preview .tpl-line { opacity: 0.3; }
 
         .dl-usage-hint {
             font-size: 13px;
@@ -1319,13 +1357,15 @@
 
         /* --- What Changed Card --- */
         .what-changed-card {
-            border-left: 3px solid var(--primary);
+            border-left: none;
         }
         .what-changed-heading {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 16px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .what-changed-card .change-stats {
             margin-bottom: 24px;
@@ -2897,20 +2937,31 @@
                 <div class="downloads-heading">Download Your Resume</div>
 
                 <div class="template-grid" id="templateGrid">
-                    <div class="template-card" onclick="downloadTemplate('modern')">
-                        <div class="template-preview modern-preview"></div>
-                        <div class="template-name">Modern</div>
-                        <div class="template-desc">Clean sans-serif, navy accents</div>
+                    <div class="template-card modern-card" onclick="downloadTemplate('modern')">
+                        <div class="template-preview modern-preview">
+                            <div class="tpl-line-bold tpl-line"></div>
+                            <div class="tpl-line" style="width:100%"></div>
+                            <div class="tpl-line" style="width:100%"></div>
+                            <div class="tpl-line" style="width:80%"></div>
+                        </div>
+                        <div class="template-name">Modern <svg class="dl-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>
                     </div>
-                    <div class="template-card" onclick="downloadTemplate('executive')">
-                        <div class="template-preview exec-preview"></div>
-                        <div class="template-name">Executive</div>
-                        <div class="template-desc">Classic serif, elegant</div>
+                    <div class="template-card exec-card" onclick="downloadTemplate('executive')">
+                        <div class="template-preview exec-preview">
+                            <div class="tpl-line-bold tpl-line"></div>
+                            <div class="tpl-line" style="width:100%"></div>
+                            <div class="tpl-line" style="width:100%"></div>
+                            <div class="tpl-line" style="width:100%"></div>
+                        </div>
+                        <div class="template-name">Executive <svg class="dl-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>
                     </div>
-                    <div class="template-card" onclick="downloadTemplate('minimal')">
-                        <div class="template-preview min-preview"></div>
-                        <div class="template-name">Minimal</div>
-                        <div class="template-desc">Typography-focused, zero color</div>
+                    <div class="template-card min-card" onclick="downloadTemplate('minimal')">
+                        <div class="template-preview min-preview">
+                            <div class="tpl-line-bold tpl-line"></div>
+                            <div class="tpl-line-thin" style="width:100%"></div>
+                            <div class="tpl-line-thin" style="width:100%"></div>
+                        </div>
+                        <div class="template-name">Minimal <svg class="dl-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>
                     </div>
                 </div>
 
@@ -5125,20 +5176,17 @@
         var templateGrid = document.getElementById("templateGrid");
         if (templateGrid) {
             templateGrid.innerHTML =
-                '<div class="template-card" onclick="downloadTemplate(\'modern\')">' +
-                    '<div class="template-preview modern-preview"></div>' +
-                    '<div class="template-name">Modern</div>' +
-                    '<div class="template-desc">Clean sans-serif, navy accents</div>' +
+                '<div class="template-card modern-card" onclick="downloadTemplate(\'modern\')">' +
+                    '<div class="template-preview modern-preview"><div class="tpl-line-bold tpl-line"></div><div class="tpl-line" style="width:100%"></div><div class="tpl-line" style="width:100%"></div><div class="tpl-line" style="width:80%"></div></div>' +
+                    '<div class="template-name">Modern <svg class="dl-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>' +
                 '</div>' +
-                '<div class="template-card" onclick="downloadTemplate(\'executive\')">' +
-                    '<div class="template-preview exec-preview"></div>' +
-                    '<div class="template-name">Executive</div>' +
-                    '<div class="template-desc">Classic serif, elegant</div>' +
+                '<div class="template-card exec-card" onclick="downloadTemplate(\'executive\')">' +
+                    '<div class="template-preview exec-preview"><div class="tpl-line-bold tpl-line"></div><div class="tpl-line" style="width:100%"></div><div class="tpl-line" style="width:100%"></div><div class="tpl-line" style="width:100%"></div></div>' +
+                    '<div class="template-name">Executive <svg class="dl-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>' +
                 '</div>' +
-                '<div class="template-card" onclick="downloadTemplate(\'minimal\')">' +
-                    '<div class="template-preview min-preview"></div>' +
-                    '<div class="template-name">Minimal</div>' +
-                    '<div class="template-desc">Typography-focused, zero color</div>' +
+                '<div class="template-card min-card" onclick="downloadTemplate(\'minimal\')">' +
+                    '<div class="template-preview min-preview"><div class="tpl-line-bold tpl-line"></div><div class="tpl-line-thin" style="width:100%"></div><div class="tpl-line-thin" style="width:100%"></div></div>' +
+                    '<div class="template-name">Minimal <svg class="dl-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>' +
                 '</div>';
         }
 
