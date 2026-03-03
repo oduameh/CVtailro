@@ -39,6 +39,13 @@ class BaseSettings:
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = 3600  # 1 hour
 
+    # Blog + AdSense
+    ADSENSE_CLIENT_ID = os.environ.get("ADSENSE_CLIENT_ID", "")
+    ADSENSE_SLOT_TOP = os.environ.get("ADSENSE_SLOT_TOP", "")
+    ADSENSE_SLOT_MID = os.environ.get("ADSENSE_SLOT_MID", "")
+    ADSENSE_SLOT_BOTTOM = os.environ.get("ADSENSE_SLOT_BOTTOM", "")
+    BLOG_BASE_URL = os.environ.get("BLOG_BASE_URL", "https://cvtailro-production.up.railway.app")
+
     # Pipeline concurrency
     MAX_CONCURRENT_PIPELINES = 5
     MAX_QUEUE_DEPTH = 50
