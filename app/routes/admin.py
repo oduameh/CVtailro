@@ -187,16 +187,11 @@ def admin_analytics():
         .order_by(func.date(TailoringJob.created_at))
         .all()
     )
-    jobs_over_time = [
-        {"date": str(d).split()[0] if d else "1970-01-01", "jobs": c}
-        for d, c in jobs_per_day
-    ]
+    jobs_over_time = [{"date": str(d).split()[0] if d else "1970-01-01", "jobs": c} for d, c in jobs_per_day]
 
     # DB-backed: jobs by status for pie chart
     status_counts = (
-        db.session.query(TailoringJob.status, func.count(TailoringJob.id))
-        .group_by(TailoringJob.status)
-        .all()
+        db.session.query(TailoringJob.status, func.count(TailoringJob.id)).group_by(TailoringJob.status).all()
     )
     jobs_by_status = {s: c for s, c in status_counts}
 

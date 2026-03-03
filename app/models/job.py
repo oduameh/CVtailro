@@ -83,3 +83,35 @@ class JobFile(db.Model):
     )
 
     job = db.relationship("TailoringJob", back_populates="files")
+
+
+class JobApplication(db.Model):
+    """Track job applications with status and linked tailoring jobs."""
+
+    __tablename__ = "job_applications"
+    __table_args__ = (db.Index("idx_job_applications_user", "user_id"),)
+
+    id = db.Column(db.String(32), primary_key=True, default=_uuid)
+    user_id = db.Column(db.String(32), db.ForeignKey("users.id"), nullable=False, index=True)
+    tailoring_job_id = db.Column(db.String(32), db.ForeignKey("tailoring_jobs.id"), nullable=True)
+    company = db.Column(db.String(500), nullable=False)
+    job_title = db.Column(db.String(500), nullable=False)
+    status = db.Column(db.String(50), nullable=False, default="saved")
+    url = db.Column(db.String(2000), nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    applied_date = db.Column(db.DateTime(timezone=True), nullable=True)
+    interview_date = db.Column(db.DateTime(timezone=True), nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    user = db.relationship("User", backref="job_applications")
+    tailoring_job = db.relationship("TailoringJob", backref="application")

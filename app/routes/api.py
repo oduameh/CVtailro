@@ -83,7 +83,9 @@ def start_tailoring():
         return jsonify({"error": "Job description is too short (minimum 50 characters)"}), 400
     if mode not in ("conservative", "aggressive"):
         return jsonify({"error": "Invalid mode"}), 400
-    if template not in ("executive", "modern", "minimal"):
+    from pdf_generator import ALL_TEMPLATE_NAMES
+
+    if template not in ALL_TEMPLATE_NAMES:
         return jsonify({"error": "Invalid template"}), 400
 
     resume_ext = Path(resume_file.filename).suffix.lower()
@@ -234,6 +236,7 @@ def get_result(job_id: str):
         "company": db_job.company,
         "ats_resume_md": db_job.ats_resume_md,
         "recruiter_resume_md": db_job.recruiter_resume_md,
+        "original_resume_text": db_job.original_resume_text,
         "talking_points_md": db_job.talking_points_md,
         "cover_letter_md": db_job.cover_letter_md,
         "section_scores": db_job.section_scores,
@@ -247,6 +250,236 @@ def get_result(job_id: str):
     if db_job.match_score is not None:
         result["tailored_match_score"] = db_job.match_score
     return jsonify({"status": "complete", "result": result})
+
+
+@api_bp.route("/api/score-resume", methods=["POST"])
+@limiter.limit("30 per hour")
+def score_resume():
+    """Score a resume without tailoring — standalone quality check."""
+    if "resume" not in request.files:
+        return jsonify({"error": "No resume file uploaded"}), 400
+
+    resume_file = request.files["resume"]
+    if not resume_file.filename:
+        return jsonify({"error": "No resume file selected"}), 400
+
+    resume_ext = Path(resume_file.filename).suffix.lower()
+    if resume_ext not in (".pdf", ".md", ".txt"):
+        return jsonify({"error": "Unsupported file type. Use PDF, MD, or TXT."}), 400
+
+    try:
+        if resume_ext == ".pdf":
+            resume_file.stream.seek(0)
+            with pdfplumber.open(resume_file.stream) as pdf:
+                resume_text = "\n".join(page.extract_text() or "" for page in pdf.pages)
+        else:
+            resume_file.stream.seek(0)
+            resume_text = resume_file.stream.read().decode("utf-8", errors="replace")
+    except Exception as e:
+        return jsonify({"error": f"Could not read file: {e}"}), 400
+
+    if not resume_text or len(resume_text.strip()) < 50:
+        return jsonify({"error": "Resume appears to be empty or too short"}), 400
+
+    from resume_quality import analyze_resume, extract_bullets_from_markdown
+
+    bullets = extract_bullets_from_markdown(resume_text)
+    if not bullets:
+        return jsonify({"error": "No bullet points found in resume"}), 400
+
+    report = analyze_resume(bullets)
+
+    return jsonify(
+        {
+            "overall_score": report.overall_score,
+            "total_bullets": report.total_bullets,
+            "bullets_with_metrics": report.bullets_with_metrics,
+            "metrics_percentage": report.metrics_percentage,
+            "unique_verbs": report.unique_verbs,
+            "repeated_verbs": report.repeated_verbs,
+            "weak_verbs_used": report.weak_verbs_used,
+            "filler_words_found": report.filler_words_found,
+            "avg_bullet_length": report.avg_bullet_length,
+            "too_long_bullets": report.too_long_bullets,
+            "too_short_bullets": report.too_short_bullets,
+            "improvement_summary": report.improvement_summary,
+            "bullet_analyses": [
+                {
+                    "text": ba.text,
+                    "score": ba.score,
+                    "has_metrics": ba.has_metrics,
+                    "verb_strength": ba.verb_strength,
+                    "action_verb": ba.action_verb,
+                    "suggestions": ba.suggestions,
+                }
+                for ba in report.bullet_analyses[:50]
+            ],
+        }
+    )
+
+
+@api_bp.route("/api/boost-bullet", methods=["POST"])
+@limiter.limit("30 per hour")
+def boost_bullet():
+    """Rewrite a single bullet point with stronger action verbs and metrics."""
+    data = request.get_json(silent=True)
+    if not data or not data.get("bullet"):
+        return jsonify({"error": "No bullet text provided"}), 400
+
+    bullet = data["bullet"].strip()
+    if len(bullet) < 10:
+        return jsonify({"error": "Bullet text too short"}), 400
+    if len(bullet) > 500:
+        return jsonify({"error": "Bullet text too long (max 500 chars)"}), 400
+
+    job_title = data.get("job_title", "").strip()
+
+    admin_config = AdminConfigManager.load()
+    api_key = admin_config.api_key.strip()
+    if not api_key:
+        return jsonify({"error": "Service not configured"}), 400
+
+    model = admin_config.default_model or DEFAULT_MODEL
+
+    context = f" for a {job_title} role" if job_title else ""
+    prompt = (
+        f"Rewrite this resume bullet point to be more impactful{context}. "
+        "Use a strong action verb, include quantifiable metrics where possible, "
+        "and keep it concise (under 30 words). Do NOT fabricate specific numbers "
+        "that weren't implied. Return ONLY the rewritten bullet, nothing else.\n\n"
+        f"Original: {bullet}"
+    )
+
+    try:
+        import requests as http_requests
+
+        resp = http_requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json={
+                "model": model,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You are an expert resume writer. Rewrite bullet points to be more impactful.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                "max_tokens": 200,
+                "temperature": 0.7,
+            },
+            timeout=30,
+        )
+        if resp.status_code != 200:
+            return jsonify({"error": "LLM API call failed"}), 500
+        improved = resp.json()["choices"][0]["message"]["content"].strip().strip('"').strip("- ")
+        if not improved:
+            return jsonify({"error": "Failed to generate improved bullet"}), 500
+
+        from resume_quality import analyze_bullet
+
+        original_analysis = analyze_bullet(bullet)
+        improved_analysis = analyze_bullet(improved)
+
+        return jsonify(
+            {
+                "original": bullet,
+                "improved": improved,
+                "original_score": original_analysis.score,
+                "improved_score": improved_analysis.score,
+                "original_has_metrics": original_analysis.has_metrics,
+                "improved_has_metrics": improved_analysis.has_metrics,
+                "suggestions": improved_analysis.suggestions,
+            }
+        )
+    except Exception as e:
+        return jsonify({"error": f"Failed to improve bullet: {str(e)}"}), 500
+
+
+@api_bp.route("/api/batch-tailor", methods=["POST"])
+@limiter.limit("3 per hour")
+def start_batch_tailoring():
+    """Start tailoring a resume against multiple job descriptions."""
+    from flask import current_app
+
+    admin_config = AdminConfigManager.load()
+    api_key = admin_config.api_key.strip()
+    if not api_key:
+        return jsonify({"error": "Service not configured"}), 400
+
+    if "resume" not in request.files:
+        return jsonify({"error": "No resume file uploaded"}), 400
+
+    resume_file = request.files["resume"]
+    if not resume_file.filename:
+        return jsonify({"error": "No resume file selected"}), 400
+
+    job_descriptions_raw = request.form.get("job_descriptions", "").strip()
+    if not job_descriptions_raw:
+        return jsonify({"error": "No job descriptions provided"}), 400
+
+    # Parse job descriptions separated by "---"
+    job_descriptions = [
+        jd.strip() for jd in job_descriptions_raw.split("---") if jd.strip() and len(jd.strip()) >= 50
+    ]
+    if len(job_descriptions) < 2:
+        return jsonify({"error": "Provide at least 2 job descriptions separated by ---"}), 400
+    if len(job_descriptions) > 5:
+        return jsonify({"error": "Maximum 5 job descriptions per batch"}), 400
+
+    mode = request.form.get("mode", "conservative")
+    template = request.form.get("template", "modern")
+
+    resume_ext = Path(resume_file.filename).suffix.lower()
+    if resume_ext not in (".pdf", ".md", ".txt"):
+        return jsonify({"error": "Unsupported file type"}), 400
+
+    # Start individual tailoring jobs
+    job_ids = []
+    for i, jd in enumerate(job_descriptions):
+        job_id = uuid.uuid4().hex[:16]
+        output_dir = create_output_dir(job_id=job_id)
+
+        resume_file.stream.seek(0)
+        resume_path = output_dir / f"input_resume{resume_ext}"
+        resume_file.save(str(resume_path))
+        (output_dir / "input_job_description.txt").write_text(jd, encoding="utf-8")
+
+        user_id = current_user.id if current_user.is_authenticated else None
+
+        with jobs_lock:
+            jobs[job_id] = {
+                "status": "running",
+                "queue": queue.Queue(),
+                "output_dir": str(output_dir),
+                "created_at": __import__("time").time(),
+                "user_id": user_id,
+                "result": None,
+                "error": None,
+                "batch_index": i,
+            }
+
+        model = admin_config.default_model or DEFAULT_MODEL
+        thread = threading.Thread(
+            target=run_pipeline_job,
+            args=(
+                current_app._get_current_object(),
+                job_id,
+                str(resume_path),
+                jd,
+                mode,
+                template,
+                output_dir,
+                api_key,
+                model,
+                user_id,
+            ),
+            daemon=True,
+        )
+        thread.start()
+        job_ids.append(job_id)
+
+    return jsonify({"job_ids": job_ids, "count": len(job_ids)})
 
 
 @api_bp.route("/api/download/<job_id>/<filename>")

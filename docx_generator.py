@@ -141,12 +141,113 @@ def _flatten_contact(contact_lines: list[str]) -> str:
 # ---------------------------------------------------------------------------
 
 
-def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
+DOCX_STYLES = {
+    "modern": {
+        "font": "Calibri",
+        "size": 10,
+        "heading_size": 12,
+        "name_size": 18,
+        "text_color": (0x22, 0x22, 0x22),
+        "heading_color": (0x1A, 0x1A, 0x1A),
+        "accent_color": (0x1A, 0x3A, 0x5C),
+        "date_color": (0x55, 0x55, 0x55),
+        "company_color": (0x44, 0x44, 0x44),
+        "margin": 0.6,
+    },
+    "executive": {
+        "font": "Georgia",
+        "size": 10,
+        "heading_size": 12,
+        "name_size": 18,
+        "text_color": (0x2D, 0x2D, 0x2D),
+        "heading_color": (0x33, 0x33, 0x33),
+        "accent_color": (0x33, 0x33, 0x33),
+        "date_color": (0x66, 0x66, 0x66),
+        "company_color": (0x44, 0x44, 0x44),
+        "margin": 0.6,
+    },
+    "minimal": {
+        "font": "Calibri",
+        "size": 10,
+        "heading_size": 12,
+        "name_size": 18,
+        "text_color": (0x2B, 0x2B, 0x2B),
+        "heading_color": (0x44, 0x44, 0x44),
+        "accent_color": (0x11, 0x11, 0x11),
+        "date_color": (0x77, 0x77, 0x77),
+        "company_color": (0x55, 0x55, 0x55),
+        "margin": 0.6,
+    },
+    "creative": {
+        "font": "Calibri",
+        "size": 10,
+        "heading_size": 12,
+        "name_size": 18,
+        "text_color": (0x2B, 0x2B, 0x2B),
+        "heading_color": (0x0D, 0x94, 0x88),
+        "accent_color": (0x0D, 0x94, 0x88),
+        "date_color": (0x66, 0x66, 0x66),
+        "company_color": (0x0D, 0x7D, 0x73),
+        "margin": 0.6,
+    },
+    "compact": {
+        "font": "Calibri",
+        "size": 9,
+        "heading_size": 10,
+        "name_size": 16,
+        "text_color": (0x2B, 0x2B, 0x2B),
+        "heading_color": (0x33, 0x33, 0x33),
+        "accent_color": (0x1A, 0x1A, 0x1A),
+        "date_color": (0x66, 0x66, 0x66),
+        "company_color": (0x44, 0x44, 0x44),
+        "margin": 0.4,
+    },
+    "professional": {
+        "font": "Calibri",
+        "size": 10,
+        "heading_size": 12,
+        "name_size": 18,
+        "text_color": (0x2D, 0x2D, 0x2D),
+        "heading_color": (0x33, 0x41, 0x55),
+        "accent_color": (0x33, 0x41, 0x55),
+        "date_color": (0x64, 0x74, 0x8B),
+        "company_color": (0x47, 0x55, 0x69),
+        "margin": 0.6,
+    },
+    "tech": {
+        "font": "Calibri",
+        "size": 10,
+        "heading_size": 12,
+        "name_size": 18,
+        "text_color": (0x1E, 0x1E, 0x1E),
+        "heading_color": (0x0F, 0x17, 0x2A),
+        "accent_color": (0x3B, 0x82, 0xF6),
+        "date_color": (0x6B, 0x72, 0x80),
+        "company_color": (0x37, 0x41, 0x51),
+        "margin": 0.6,
+    },
+    "elegant": {
+        "font": "Georgia",
+        "size": 10,
+        "heading_size": 12,
+        "name_size": 18,
+        "text_color": (0x2D, 0x2D, 0x2D),
+        "heading_color": (0x7C, 0x2D, 0x36),
+        "accent_color": (0x7C, 0x2D, 0x36),
+        "date_color": (0x88, 0x88, 0x88),
+        "company_color": (0x55, 0x55, 0x55),
+        "margin": 0.6,
+    },
+}
+
+
+def generate_resume_docx(md_content: str, output_path: str | Path, template: str = "modern") -> Path:
     """Generate a professionally formatted DOCX from markdown resume content.
 
     Args:
         md_content: Resume content in markdown format.
         output_path: Path for the output DOCX file.
+        template: Style name — matches PDF template names.
 
     Returns:
         Path to the generated DOCX file.
@@ -154,21 +255,23 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
     out = Path(output_path)
     out.parent.mkdir(parents=True, exist_ok=True)
 
+    ts = DOCX_STYLES.get(template, DOCX_STYLES["modern"])
+
     doc = Document()
 
-    # --- Page margins: 0.6 inches all sides ---
+    # --- Page margins ---
     for section in doc.sections:
-        section.top_margin = Inches(0.6)
-        section.bottom_margin = Inches(0.6)
-        section.left_margin = Inches(0.6)
-        section.right_margin = Inches(0.6)
+        section.top_margin = Inches(ts["margin"])
+        section.bottom_margin = Inches(ts["margin"])
+        section.left_margin = Inches(ts["margin"])
+        section.right_margin = Inches(ts["margin"])
 
     # --- Default font ---
     style = doc.styles["Normal"]
     font = style.font
-    font.name = "Calibri"
-    font.size = Pt(10)
-    font.color.rgb = RGBColor(0x22, 0x22, 0x22)
+    font.name = ts["font"]
+    font.size = Pt(ts["size"])
+    font.color.rgb = RGBColor(*ts["text_color"])
     paragraph_format = style.paragraph_format
     paragraph_format.space_before = Pt(0)
     paragraph_format.space_after = Pt(2)
@@ -181,9 +284,9 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
     p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = p_name.add_run(name)
     run.bold = True
-    run.font.size = Pt(18)
-    run.font.name = "Calibri"
-    run.font.color.rgb = RGBColor(0x1A, 0x1A, 0x1A)
+    run.font.size = Pt(ts["name_size"])
+    run.font.name = ts["font"]
+    run.font.color.rgb = RGBColor(*ts["heading_color"])
     _set_paragraph_spacing(p_name, before=0, after=2)
 
     # --- Contact ---
@@ -192,9 +295,9 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
         p_contact = doc.add_paragraph()
         p_contact.alignment = WD_ALIGN_PARAGRAPH.CENTER
         run = p_contact.add_run(contact_text)
-        run.font.size = Pt(10)
-        run.font.name = "Calibri"
-        run.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+        run.font.size = Pt(ts["size"])
+        run.font.name = ts["font"]
+        run.font.color.rgb = RGBColor(*ts["date_color"])
         _set_paragraph_spacing(p_contact, before=0, after=6)
 
     # --- Parse body ---
@@ -223,9 +326,9 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
             p = doc.add_paragraph()
             run = p.add_run(heading_text.upper())
             run.bold = True
-            run.font.size = Pt(12)
-            run.font.name = "Calibri"
-            run.font.color.rgb = RGBColor(0x1A, 0x1A, 0x1A)
+            run.font.size = Pt(ts["heading_size"])
+            run.font.name = ts["font"]
+            run.font.color.rgb = RGBColor(*ts["heading_color"])
             _add_bottom_border(p)
             _set_paragraph_spacing(p, before=8, after=4)
             i += 1
@@ -249,28 +352,23 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
                     date = nl
                     i += 1
 
-            # Role line with date right-aligned using a tab stop
+            tab_width = Inches(7.3 - ts["margin"] * 2)
             p = doc.add_paragraph()
             _set_paragraph_spacing(p, before=4, after=1)
-            # Set a right-aligned tab stop at the right margin
             tab_stops = p.paragraph_format.tab_stops
-            tab_stops.add_tab_stop(
-                Inches(7.3 - 1.2),  # page width minus margins
-                alignment=WD_TAB_ALIGNMENT.RIGHT,
-            )
+            tab_stops.add_tab_stop(tab_width, alignment=WD_TAB_ALIGNMENT.RIGHT)
             run_title = p.add_run(_strip_bold_markers(title))
             run_title.bold = True
-            run_title.font.size = Pt(11)
-            run_title.font.name = "Calibri"
-            run_title.font.color.rgb = RGBColor(0x1A, 0x1A, 0x1A)
+            run_title.font.size = Pt(ts["size"] + 1)
+            run_title.font.name = ts["font"]
+            run_title.font.color.rgb = RGBColor(*ts["heading_color"])
             if date:
                 p.add_run("\t")
                 run_date = p.add_run(date)
-                run_date.font.size = Pt(10)
-                run_date.font.name = "Calibri"
-                run_date.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+                run_date.font.size = Pt(ts["size"])
+                run_date.font.name = ts["font"]
+                run_date.font.color.rgb = RGBColor(*ts["date_color"])
 
-            # Company line
             if company:
                 company_loc = company
                 if location:
@@ -278,9 +376,9 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
                 p2 = doc.add_paragraph()
                 _set_paragraph_spacing(p2, before=0, after=2)
                 run_comp = p2.add_run(company_loc)
-                run_comp.font.size = Pt(11)
-                run_comp.font.name = "Calibri"
-                run_comp.font.color.rgb = RGBColor(0x44, 0x44, 0x44)
+                run_comp.font.size = Pt(ts["size"] + 1)
+                run_comp.font.name = ts["font"]
+                run_comp.font.color.rgb = RGBColor(*ts["company_color"])
 
             i += 1
             continue
@@ -308,20 +406,20 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
             _set_paragraph_spacing(p, before=4, after=1)
             tab_stops = p.paragraph_format.tab_stops
             tab_stops.add_tab_stop(
-                Inches(7.3 - 1.2),
+                Inches(7.3 - ts["margin"] * 2),
                 alignment=WD_TAB_ALIGNMENT.RIGHT,
             )
             run_title = p.add_run(title)
             run_title.bold = True
-            run_title.font.size = Pt(11)
-            run_title.font.name = "Calibri"
-            run_title.font.color.rgb = RGBColor(0x1A, 0x1A, 0x1A)
+            run_title.font.size = Pt(ts["size"] + 1)
+            run_title.font.name = ts["font"]
+            run_title.font.color.rgb = RGBColor(*ts["heading_color"])
             if date:
                 p.add_run("\t")
                 run_date = p.add_run(date)
-                run_date.font.size = Pt(10)
-                run_date.font.name = "Calibri"
-                run_date.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+                run_date.font.size = Pt(ts["size"])
+                run_date.font.name = ts["font"]
+                run_date.font.color.rgb = RGBColor(*ts["date_color"])
 
             company_loc = company
             if location:
@@ -329,9 +427,9 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
             p2 = doc.add_paragraph()
             _set_paragraph_spacing(p2, before=0, after=2)
             run_comp = p2.add_run(company_loc)
-            run_comp.font.size = Pt(11)
-            run_comp.font.name = "Calibri"
-            run_comp.font.color.rgb = RGBColor(0x44, 0x44, 0x44)
+            run_comp.font.size = Pt(ts["size"] + 1)
+            run_comp.font.name = ts["font"]
+            run_comp.font.color.rgb = RGBColor(*ts["company_color"])
 
             i += 1
             continue
@@ -355,27 +453,27 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
             _set_paragraph_spacing(p, before=4, after=1)
             tab_stops = p.paragraph_format.tab_stops
             tab_stops.add_tab_stop(
-                Inches(7.3 - 1.2),
+                Inches(7.3 - ts["margin"] * 2),
                 alignment=WD_TAB_ALIGNMENT.RIGHT,
             )
             run_title = p.add_run(title)
             run_title.bold = True
-            run_title.font.size = Pt(11)
-            run_title.font.name = "Calibri"
-            run_title.font.color.rgb = RGBColor(0x1A, 0x1A, 0x1A)
+            run_title.font.size = Pt(ts["size"] + 1)
+            run_title.font.name = ts["font"]
+            run_title.font.color.rgb = RGBColor(*ts["heading_color"])
             if date:
                 p.add_run("\t")
                 run_date = p.add_run(date)
-                run_date.font.size = Pt(10)
-                run_date.font.name = "Calibri"
-                run_date.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+                run_date.font.size = Pt(ts["size"])
+                run_date.font.name = ts["font"]
+                run_date.font.color.rgb = RGBColor(*ts["date_color"])
 
             p2 = doc.add_paragraph()
             _set_paragraph_spacing(p2, before=0, after=2)
             run_comp = p2.add_run(company)
-            run_comp.font.size = Pt(11)
-            run_comp.font.name = "Calibri"
-            run_comp.font.color.rgb = RGBColor(0x44, 0x44, 0x44)
+            run_comp.font.size = Pt(ts["size"] + 1)
+            run_comp.font.name = ts["font"]
+            run_comp.font.color.rgb = RGBColor(*ts["company_color"])
 
             i += 1
             continue
@@ -398,28 +496,28 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
             _set_paragraph_spacing(p, before=4, after=1)
             tab_stops = p.paragraph_format.tab_stops
             tab_stops.add_tab_stop(
-                Inches(7.3 - 1.2),
+                Inches(7.3 - ts["margin"] * 2),
                 alignment=WD_TAB_ALIGNMENT.RIGHT,
             )
             run_deg = p.add_run(degree)
             run_deg.bold = True
-            run_deg.font.size = Pt(11)
-            run_deg.font.name = "Calibri"
-            run_deg.font.color.rgb = RGBColor(0x1A, 0x1A, 0x1A)
+            run_deg.font.size = Pt(ts["size"] + 1)
+            run_deg.font.name = ts["font"]
+            run_deg.font.color.rgb = RGBColor(*ts["heading_color"])
             if date:
                 p.add_run("\t")
                 run_date = p.add_run(date)
-                run_date.font.size = Pt(10)
-                run_date.font.name = "Calibri"
-                run_date.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+                run_date.font.size = Pt(ts["size"])
+                run_date.font.name = ts["font"]
+                run_date.font.color.rgb = RGBColor(*ts["date_color"])
 
             if school:
                 p2 = doc.add_paragraph()
                 _set_paragraph_spacing(p2, before=0, after=2)
                 run_sch = p2.add_run(school)
-                run_sch.font.size = Pt(10)
-                run_sch.font.name = "Calibri"
-                run_sch.font.color.rgb = RGBColor(0x44, 0x44, 0x44)
+                run_sch.font.size = Pt(ts["size"])
+                run_sch.font.name = ts["font"]
+                run_sch.font.color.rgb = RGBColor(*ts["company_color"])
 
             i += 1
             continue
@@ -433,32 +531,32 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
                 _set_paragraph_spacing(p, before=2, after=2)
                 run_name = p.add_run(cert_bold.group(1))
                 run_name.bold = True
-                run_name.font.size = Pt(10)
-                run_name.font.name = "Calibri"
+                run_name.font.size = Pt(ts["size"])
+                run_name.font.name = ts["font"]
                 p.add_run(" -- ")
                 run_meta = p.add_run(cert_bold.group(2))
-                run_meta.font.size = Pt(10)
-                run_meta.font.name = "Calibri"
-                run_meta.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+                run_meta.font.size = Pt(ts["size"])
+                run_meta.font.name = ts["font"]
+                run_meta.font.color.rgb = RGBColor(*ts["date_color"])
             elif cert_plain:
                 p = doc.add_paragraph()
                 _set_paragraph_spacing(p, before=2, after=2)
                 run_name = p.add_run(cert_plain.group(1))
                 run_name.bold = True
-                run_name.font.size = Pt(10)
-                run_name.font.name = "Calibri"
+                run_name.font.size = Pt(ts["size"])
+                run_name.font.name = ts["font"]
                 p.add_run(" -- ")
                 run_meta = p.add_run(cert_plain.group(2))
-                run_meta.font.size = Pt(10)
-                run_meta.font.name = "Calibri"
-                run_meta.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+                run_meta.font.size = Pt(ts["size"])
+                run_meta.font.name = ts["font"]
+                run_meta.font.color.rgb = RGBColor(*ts["date_color"])
             else:
                 p = doc.add_paragraph()
                 _set_paragraph_spacing(p, before=2, after=2)
                 run_name = p.add_run(_strip_inline_md(stripped))
                 run_name.bold = True
-                run_name.font.size = Pt(10)
-                run_name.font.name = "Calibri"
+                run_name.font.size = Pt(ts["size"])
+                run_name.font.name = ts["font"]
             i += 1
             continue
 
@@ -471,9 +569,9 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
             # Clear default run and add our own with proper formatting
             p.clear()
             run = p.add_run(bullet_text)
-            run.font.size = Pt(10)
-            run.font.name = "Calibri"
-            run.font.color.rgb = RGBColor(0x22, 0x22, 0x22)
+            run.font.size = Pt(ts["size"])
+            run.font.name = ts["font"]
+            run.font.color.rgb = RGBColor(*ts["text_color"])
             # Set left indent for proper bullet indentation
             p.paragraph_format.left_indent = Inches(0.25)
             i += 1
@@ -486,13 +584,13 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
             _set_paragraph_spacing(p, before=1, after=2)
             run_cat = p.add_run(cat_skill.group(1) + ": ")
             run_cat.bold = True
-            run_cat.font.size = Pt(10)
-            run_cat.font.name = "Calibri"
-            run_cat.font.color.rgb = RGBColor(0x1A, 0x1A, 0x1A)
+            run_cat.font.size = Pt(ts["size"])
+            run_cat.font.name = ts["font"]
+            run_cat.font.color.rgb = RGBColor(*ts["heading_color"])
             run_items = p.add_run(cat_skill.group(2).strip())
-            run_items.font.size = Pt(10)
-            run_items.font.name = "Calibri"
-            run_items.font.color.rgb = RGBColor(0x22, 0x22, 0x22)
+            run_items.font.size = Pt(ts["size"])
+            run_items.font.name = ts["font"]
+            run_items.font.color.rgb = RGBColor(*ts["text_color"])
             i += 1
             continue
 
@@ -509,9 +607,9 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
             p = doc.add_paragraph()
             _set_paragraph_spacing(p, before=1, after=2)
             run = p.add_run(cleaned)
-            run.font.size = Pt(10)
-            run.font.name = "Calibri"
-            run.font.color.rgb = RGBColor(0x22, 0x22, 0x22)
+            run.font.size = Pt(ts["size"])
+            run.font.name = ts["font"]
+            run.font.color.rgb = RGBColor(*ts["text_color"])
             i += 1
             continue
 
@@ -521,8 +619,8 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
             p = doc.add_paragraph()
             _set_paragraph_spacing(p, before=1, after=2)
             run = p.add_run(clean)
-            run.font.size = Pt(10)
-            run.font.name = "Calibri"
+            run.font.size = Pt(ts["size"])
+            run.font.name = ts["font"]
             i += 1
             continue
 
@@ -540,9 +638,9 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
             p = doc.add_paragraph()
             _set_paragraph_spacing(p, before=0, after=4)
             run = p.add_run(_strip_inline_md(summary_text))
-            run.font.size = Pt(10)
-            run.font.name = "Calibri"
-            run.font.color.rgb = RGBColor(0x33, 0x33, 0x33)
+            run.font.size = Pt(ts["size"])
+            run.font.name = ts["font"]
+            run.font.color.rgb = RGBColor(*ts["text_color"])
             i += 1
             continue
 
@@ -551,9 +649,9 @@ def generate_resume_docx(md_content: str, output_path: str | Path) -> Path:
             p = doc.add_paragraph()
             _set_paragraph_spacing(p, before=0, after=2)
             run = p.add_run(_strip_inline_md(stripped))
-            run.font.size = Pt(10)
-            run.font.name = "Calibri"
-            run.font.color.rgb = RGBColor(0x22, 0x22, 0x22)
+            run.font.size = Pt(ts["size"])
+            run.font.name = ts["font"]
+            run.font.color.rgb = RGBColor(*ts["text_color"])
 
         i += 1
 

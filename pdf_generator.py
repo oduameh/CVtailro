@@ -321,11 +321,329 @@ em { font-style: italic; color: #555; }
 a { color: #111; text-decoration: none; }
 """
 
+# ─── CREATIVE: teal accent, slightly bolder design ───────────────────────────
+
+CREATIVE_CSS = """
+@page { size: A4; margin: 15mm; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10pt; line-height: 1.35; color: #2b2b2b;
+    word-break: break-word;
+}
+.name {
+    font-size: 22pt; font-weight: 800; color: #0d9488;
+    text-align: center; margin-bottom: 3pt; letter-spacing: 0.3pt;
+}
+.contact {
+    text-align: center; font-size: 9pt; color: #555;
+    margin-bottom: 12pt; line-height: 1.3;
+}
+.contact .sep { color: #0d9488; margin: 0 6pt; font-weight: 400; font-size: 8pt; }
+.section-heading {
+    font-size: 10.5pt; font-weight: 700; color: #0d9488;
+    text-transform: uppercase; letter-spacing: 1.5pt;
+    border-bottom: 2pt solid #0d9488; padding-bottom: 2pt;
+    margin-top: 11pt; margin-bottom: 6pt;
+    page-break-after: avoid;
+}
+.role { margin-bottom: 8pt; page-break-inside: avoid; }
+.role-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 0pt; page-break-after: avoid;
+}
+.role-title { font-size: 10pt; font-weight: 700; color: #1a1a1a; flex-grow: 1; }
+.role-date {
+    font-size: 9pt; color: #666;
+    white-space: nowrap; flex-shrink: 0; margin-left: 12pt; text-align: right;
+}
+.role-company { font-size: 9.5pt; color: #0d7d73; font-weight: 500; margin-bottom: 2pt; }
+ul { margin-left: 15pt; margin-bottom: 1pt; padding-left: 0; page-break-inside: avoid; }
+li { font-size: 10pt; margin-bottom: 2pt; line-height: 1.35; color: #2b2b2b; padding-left: 2pt; }
+li::marker { color: #0d9488; font-size: 8pt; }
+ul { orphans: 2; widows: 2; }
+.summary { font-size: 10pt; line-height: 1.4; color: #333; margin-bottom: 2pt; text-align: justify; }
+.skills-text { font-size: 10pt; line-height: 1.4; color: #2b2b2b; margin-bottom: 2pt; }
+.skills-category { font-size: 10pt; line-height: 1.4; margin-bottom: 1pt; }
+.skills-cat-name { font-weight: 700; color: #0d9488; }
+.edu { margin-bottom: 6pt; page-break-inside: avoid; }
+.edu-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0pt; }
+.edu-degree { font-size: 10pt; font-weight: 700; color: #1a1a1a; }
+.edu-date { font-size: 9pt; color: #666; flex-shrink: 0; margin-left: 12pt; text-align: right; }
+.edu-school { font-size: 9.5pt; color: #444; font-weight: 400; margin-bottom: 1pt; }
+.cert { font-size: 10pt; margin-bottom: 3pt; line-height: 1.35; page-break-inside: avoid; }
+.cert-name { font-weight: 700; color: #0d9488; }
+.cert-meta { color: #555; }
+.hr-divider { height: 1pt; background: #b2dfdb; margin: 6pt 0; }
+p { font-size: 10pt; margin-bottom: 2pt; line-height: 1.35; color: #2b2b2b; }
+strong { font-weight: 700; color: #1a1a1a; }
+em { font-style: italic; color: #444; }
+a { color: #0d9488; text-decoration: none; }
+"""
+
+# ─── COMPACT: dense layout, smaller font, fits more content ──────────────────
+
+COMPACT_CSS = """
+@page { size: A4; margin: 10mm 12mm; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 9pt; line-height: 1.25; color: #2b2b2b;
+    word-break: break-word;
+}
+.name {
+    font-size: 16pt; font-weight: 700; color: #1a1a1a;
+    text-align: center; margin-bottom: 2pt; letter-spacing: 0.3pt;
+}
+.contact {
+    text-align: center; font-size: 8pt; color: #666;
+    margin-bottom: 8pt; line-height: 1.2;
+}
+.contact .sep { color: #aaa; margin: 0 4pt; font-weight: 300; font-size: 7pt; }
+.section-heading {
+    font-size: 9pt; font-weight: 700; color: #333;
+    text-transform: uppercase; letter-spacing: 1pt;
+    border-bottom: 0.5pt solid #999; padding-bottom: 1pt;
+    margin-top: 7pt; margin-bottom: 4pt;
+    page-break-after: avoid;
+}
+.role { margin-bottom: 5pt; page-break-inside: avoid; }
+.role-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 0pt; page-break-after: avoid;
+}
+.role-title { font-size: 9pt; font-weight: 700; color: #1a1a1a; flex-grow: 1; }
+.role-date {
+    font-size: 8pt; color: #666;
+    white-space: nowrap; flex-shrink: 0; margin-left: 8pt; text-align: right;
+}
+.role-company { font-size: 8.5pt; color: #444; font-weight: 400; margin-bottom: 1pt; }
+ul { margin-left: 12pt; margin-bottom: 1pt; padding-left: 0; page-break-inside: avoid; }
+li { font-size: 9pt; margin-bottom: 1pt; line-height: 1.25; color: #2b2b2b; padding-left: 1pt; }
+li::marker { color: #999; font-size: 6pt; }
+ul { orphans: 2; widows: 2; }
+.summary { font-size: 9pt; line-height: 1.3; color: #333; margin-bottom: 2pt; text-align: justify; }
+.skills-text { font-size: 9pt; line-height: 1.3; color: #2b2b2b; margin-bottom: 1pt; }
+.skills-category { font-size: 9pt; line-height: 1.3; margin-bottom: 1pt; }
+.skills-cat-name { font-weight: 700; color: #1a1a1a; }
+.edu { margin-bottom: 4pt; page-break-inside: avoid; }
+.edu-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0pt; }
+.edu-degree { font-size: 9pt; font-weight: 700; color: #1a1a1a; }
+.edu-date { font-size: 8pt; color: #666; flex-shrink: 0; margin-left: 8pt; text-align: right; }
+.edu-school { font-size: 8.5pt; color: #444; font-weight: 400; margin-bottom: 1pt; }
+.cert { font-size: 9pt; margin-bottom: 2pt; line-height: 1.25; page-break-inside: avoid; }
+.cert-name { font-weight: 700; color: #1a1a1a; }
+.cert-meta { color: #555; }
+.hr-divider { height: 0.5pt; background: #ccc; margin: 4pt 0; }
+p { font-size: 9pt; margin-bottom: 1pt; line-height: 1.25; color: #2b2b2b; }
+strong { font-weight: 700; color: #1a1a1a; }
+em { font-style: italic; color: #444; }
+a { color: #1a1a1a; text-decoration: none; }
+"""
+
+# ─── PROFESSIONAL: blue-gray corporate ───────────────────────────────────────
+
+PROFESSIONAL_CSS = """
+@page { size: A4; margin: 15mm; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10pt; line-height: 1.35; color: #2d2d2d;
+    word-break: break-word;
+}
+.name {
+    font-size: 20pt; font-weight: 700; color: #334155;
+    text-align: center; margin-bottom: 3pt; letter-spacing: 0.5pt;
+}
+.contact {
+    text-align: center; font-size: 9pt; color: #64748b;
+    margin-bottom: 12pt; line-height: 1.3;
+}
+.contact .sep { color: #94a3b8; margin: 0 6pt; font-weight: 300; font-size: 8pt; }
+.section-heading {
+    font-size: 10.5pt; font-weight: 700; color: #334155;
+    text-transform: uppercase; letter-spacing: 1.5pt;
+    border-bottom: 1pt solid #cbd5e1; padding-bottom: 2pt;
+    margin-top: 11pt; margin-bottom: 6pt;
+    page-break-after: avoid;
+}
+.role { margin-bottom: 8pt; page-break-inside: avoid; }
+.role-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 0pt; page-break-after: avoid;
+}
+.role-title { font-size: 10pt; font-weight: 700; color: #1e293b; flex-grow: 1; }
+.role-date {
+    font-size: 9pt; color: #64748b;
+    white-space: nowrap; flex-shrink: 0; margin-left: 12pt; text-align: right;
+}
+.role-company { font-size: 9.5pt; color: #475569; font-weight: 400; margin-bottom: 2pt; }
+ul { margin-left: 15pt; margin-bottom: 1pt; padding-left: 0; page-break-inside: avoid; }
+li { font-size: 10pt; margin-bottom: 2pt; line-height: 1.35; color: #2d2d2d; padding-left: 2pt; }
+li::marker { color: #94a3b8; font-size: 8pt; }
+ul { orphans: 2; widows: 2; }
+.summary { font-size: 10pt; line-height: 1.4; color: #334155; margin-bottom: 2pt; text-align: justify; }
+.skills-text { font-size: 10pt; line-height: 1.4; color: #2d2d2d; margin-bottom: 2pt; }
+.skills-category { font-size: 10pt; line-height: 1.4; margin-bottom: 1pt; }
+.skills-cat-name { font-weight: 700; color: #334155; }
+.edu { margin-bottom: 6pt; page-break-inside: avoid; }
+.edu-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0pt; }
+.edu-degree { font-size: 10pt; font-weight: 700; color: #1e293b; }
+.edu-date { font-size: 9pt; color: #64748b; flex-shrink: 0; margin-left: 12pt; text-align: right; }
+.edu-school { font-size: 9.5pt; color: #475569; font-weight: 400; margin-bottom: 1pt; }
+.cert { font-size: 10pt; margin-bottom: 3pt; line-height: 1.35; page-break-inside: avoid; }
+.cert-name { font-weight: 700; color: #334155; }
+.cert-meta { color: #64748b; }
+.hr-divider { height: 0.5pt; background: #cbd5e1; margin: 6pt 0; }
+p { font-size: 10pt; margin-bottom: 2pt; line-height: 1.35; color: #2d2d2d; }
+strong { font-weight: 700; color: #1e293b; }
+em { font-style: italic; color: #475569; }
+a { color: #334155; text-decoration: none; }
+"""
+
+# ─── TECH: dark accents, clean monospace-inspired ─────────────────────────────
+
+TECH_CSS = """
+@page { size: A4; margin: 15mm; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10pt; line-height: 1.35; color: #1e1e1e;
+    word-break: break-word;
+}
+.name {
+    font-size: 20pt; font-weight: 700; color: #0f172a;
+    text-align: center; margin-bottom: 3pt; letter-spacing: 1pt;
+    text-transform: uppercase;
+}
+.contact {
+    text-align: center; font-size: 9pt; color: #6b7280;
+    margin-bottom: 12pt; line-height: 1.3; letter-spacing: 0.3pt;
+}
+.contact .sep { color: #3b82f6; margin: 0 6pt; font-weight: 400; }
+.section-heading {
+    font-size: 10pt; font-weight: 700; color: #0f172a;
+    text-transform: uppercase; letter-spacing: 2pt;
+    border-left: 3pt solid #3b82f6; padding-left: 8pt;
+    margin-top: 11pt; margin-bottom: 6pt;
+    page-break-after: avoid;
+}
+.role { margin-bottom: 8pt; page-break-inside: avoid; }
+.role-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 0pt; page-break-after: avoid;
+}
+.role-title { font-size: 10pt; font-weight: 700; color: #0f172a; flex-grow: 1; }
+.role-date {
+    font-size: 8.5pt; color: #6b7280;
+    white-space: nowrap; flex-shrink: 0; margin-left: 12pt; text-align: right;
+    font-family: "Courier New", monospace;
+}
+.role-company { font-size: 9.5pt; color: #374151; font-weight: 500; margin-bottom: 2pt; }
+ul { margin-left: 15pt; margin-bottom: 1pt; padding-left: 0; page-break-inside: avoid; }
+li { font-size: 10pt; margin-bottom: 2pt; line-height: 1.35; color: #1e1e1e; padding-left: 2pt; }
+li::marker { color: #3b82f6; font-size: 8pt; }
+ul { orphans: 2; widows: 2; }
+.summary { font-size: 10pt; line-height: 1.4; color: #1e1e1e; margin-bottom: 2pt; }
+.skills-text { font-size: 10pt; line-height: 1.4; color: #1e1e1e; margin-bottom: 2pt; }
+.skills-category { font-size: 10pt; line-height: 1.4; margin-bottom: 1pt; }
+.skills-cat-name { font-weight: 700; color: #0f172a; }
+.edu { margin-bottom: 6pt; page-break-inside: avoid; }
+.edu-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0pt; }
+.edu-degree { font-size: 10pt; font-weight: 700; color: #0f172a; }
+.edu-date { font-size: 8.5pt; color: #6b7280; flex-shrink: 0; margin-left: 12pt; text-align: right; font-family: "Courier New", monospace; }
+.edu-school { font-size: 9.5pt; color: #374151; font-weight: 400; margin-bottom: 1pt; }
+.cert { font-size: 10pt; margin-bottom: 3pt; line-height: 1.35; page-break-inside: avoid; }
+.cert-name { font-weight: 700; color: #0f172a; }
+.cert-meta { color: #6b7280; }
+.hr-divider { height: 0.5pt; background: #e5e7eb; margin: 6pt 0; }
+p { font-size: 10pt; margin-bottom: 2pt; line-height: 1.35; color: #1e1e1e; }
+strong { font-weight: 700; color: #0f172a; }
+em { font-style: italic; color: #374151; }
+a { color: #3b82f6; text-decoration: none; }
+"""
+
+# ─── ELEGANT: burgundy accent, refined serif-sans mix ─────────────────────────
+
+ELEGANT_CSS = """
+@page { size: A4; margin: 15mm; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 10pt; line-height: 1.4; color: #2d2d2d;
+    word-break: break-word;
+}
+.name {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 20pt; font-weight: 300; color: #7c2d36;
+    text-align: center; margin-bottom: 4pt;
+    letter-spacing: 2pt; text-transform: uppercase;
+}
+.contact {
+    text-align: center; font-family: Helvetica, Arial, sans-serif;
+    font-size: 9pt; color: #666; margin-bottom: 12pt; line-height: 1.3;
+}
+.contact .sep { color: #7c2d36; margin: 0 6pt; font-weight: 300; }
+.section-heading {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10pt; font-weight: 600; color: #7c2d36;
+    text-transform: uppercase; letter-spacing: 1.5pt;
+    border-bottom: 0.75pt solid #7c2d36; padding-bottom: 2pt;
+    margin-top: 11pt; margin-bottom: 6pt;
+    page-break-after: avoid;
+}
+.role { margin-bottom: 8pt; page-break-inside: avoid; }
+.role-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 0pt; page-break-after: avoid;
+}
+.role-title {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10pt; font-weight: 700; color: #1a1a1a; flex-grow: 1;
+}
+.role-date {
+    font-size: 9pt; color: #888; font-style: italic;
+    white-space: nowrap; flex-shrink: 0; margin-left: 12pt; text-align: right;
+}
+.role-company { font-size: 9.5pt; color: #555; font-style: italic; margin-bottom: 2pt; }
+ul { margin-left: 15pt; margin-bottom: 1pt; padding-left: 0; page-break-inside: avoid; }
+li { font-size: 10pt; margin-bottom: 2pt; line-height: 1.4; color: #2d2d2d; padding-left: 2pt; }
+li::marker { color: #7c2d36; font-size: 8pt; }
+ul { orphans: 2; widows: 2; }
+.summary { font-size: 10pt; line-height: 1.5; color: #333; margin-bottom: 2pt; text-align: justify; }
+.skills-text { font-size: 10pt; line-height: 1.4; color: #2d2d2d; margin-bottom: 2pt; }
+.skills-category { font-size: 10pt; line-height: 1.4; margin-bottom: 1pt; }
+.skills-cat-name { font-weight: 700; color: #7c2d36; }
+.edu { margin-bottom: 6pt; page-break-inside: avoid; }
+.edu-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0pt; }
+.edu-degree {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10pt; font-weight: 700; color: #1a1a1a;
+}
+.edu-date { font-size: 9pt; color: #888; font-style: italic; flex-shrink: 0; margin-left: 12pt; text-align: right; }
+.edu-school { font-size: 9.5pt; color: #555; font-style: italic; margin-bottom: 1pt; }
+.cert { font-size: 10pt; margin-bottom: 3pt; line-height: 1.35; page-break-inside: avoid; }
+.cert-name { font-weight: 700; color: #7c2d36; }
+.cert-meta { color: #888; font-style: italic; }
+.hr-divider { height: 0.5pt; background: #d4a0a7; margin: 6pt 0; }
+p { font-size: 10pt; margin-bottom: 2pt; line-height: 1.4; color: #2d2d2d; }
+strong { font-weight: 700; color: #1a1a1a; }
+em { font-style: italic; color: #555; }
+a { color: #7c2d36; text-decoration: none; }
+"""
+
 TEMPLATES = {
     "executive": EXECUTIVE_CSS,
     "modern": MODERN_CSS,
     "minimal": MINIMAL_CSS,
+    "creative": CREATIVE_CSS,
+    "compact": COMPACT_CSS,
+    "professional": PROFESSIONAL_CSS,
+    "tech": TECH_CSS,
+    "elegant": ELEGANT_CSS,
 }
+
+ALL_TEMPLATE_NAMES = list(TEMPLATES.keys())
 
 
 def _escape(text: str) -> str:

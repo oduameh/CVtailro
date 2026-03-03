@@ -117,11 +117,49 @@ def load_file(path: str | Path) -> str:
     return p.read_text(encoding="utf-8")
 
 
+def clean_linkedin_pdf_text(text: str) -> str:
+    """Clean up text extracted from LinkedIn PDF exports.
+
+    LinkedIn PDFs have specific formatting artifacts that need cleanup
+    for optimal parsing by the resume pipeline.
+    """
+    if not text:
+        return text
+
+    # Detect if this looks like a LinkedIn export
+    is_linkedin = "linkedin.com" in text.lower() or "\nContact\n" in text or "www.linkedin.com" in text
+    if not is_linkedin:
+        return text
+
+    lines = text.split("\n")
+    cleaned = []
+    skip_patterns = [
+        "Page ",
+        "linkedin.com/in/",
+        "(LinkedIn)",
+        "Top Skills",
+    ]
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if any(p in stripped for p in skip_patterns):
+            continue
+        # Remove LinkedIn URL artifacts
+        if stripped.startswith("www.linkedin.com"):
+            continue
+        cleaned.append(stripped)
+
+    return "\n".join(cleaned)
+
+
 def load_resume(path: str | Path) -> str:
     """Load a resume from either a PDF or text/markdown file.
 
     Automatically detects the file type and uses the appropriate
-    extraction method.
+    extraction method. LinkedIn PDF exports are detected and cleaned
+    for optimal parsing.
 
     Args:
         path: Path to the resume file (.pdf, .md, or .txt).
@@ -131,7 +169,9 @@ def load_resume(path: str | Path) -> str:
     """
     p = Path(path)
     if p.suffix.lower() == ".pdf":
-        return extract_pdf_text(p)
+        text = extract_pdf_text(p)
+        text = clean_linkedin_pdf_text(text)
+        return text
     return load_file(p)
 
 
