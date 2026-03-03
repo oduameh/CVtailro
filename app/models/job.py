@@ -113,5 +113,5 @@ class JobApplication(db.Model):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
-    user = db.relationship("User", backref="job_applications")
-    tailoring_job = db.relationship("TailoringJob", backref="application")
+    user = db.relationship("User", backref=db.backref("applications", lazy="dynamic"))
+    tailoring_job = db.relationship("TailoringJob", backref=db.backref("application", uselist=False))

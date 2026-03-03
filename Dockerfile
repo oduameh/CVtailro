@@ -39,11 +39,11 @@ ENV PYTHONUNBUFFERED=1 \
     XDG_CACHE_HOME=/app/.cache
 
 # Health check (uses PORT at runtime; Railway injects PORT)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
     CMD python -c "import os, urllib.request; urllib.request.urlopen('http://localhost:' + os.environ.get('PORT', '5050') + '/api/health')" || exit 1
 
 # Use tini for proper signal handling (graceful shutdown)
 ENTRYPOINT ["tini", "--"]
 
 # Gunicorn — bind to Railway's PORT (default 5050 for local dev)
-CMD ["sh", "-c", "exec gunicorn wsgi:application --bind 0.0.0.0:${PORT:-5050} --workers 2 --threads 4 --timeout 300 --keep-alive 65 --access-logfile - --error-logfile -"]
+CMD ["sh", "-c", "exec gunicorn wsgi:application --bind 0.0.0.0:${PORT:-5050} --workers 2 --threads 4 --timeout 300 --keep-alive 65 --preload --access-logfile - --error-logfile -"]
