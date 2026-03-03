@@ -65,27 +65,58 @@
             --text-secondary: #64748b;
             --text-tertiary: #94a3b8;
             --error: #dc2626;
-            --radius: 10px;
-            --radius-lg: 14px;
+            --radius: 12px;
+            --radius-lg: 16px;
             --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
             --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
             --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
         }
 
         html.dark {
-            --primary-bg: rgba(37, 99, 235, 0.15);
-            --bg: #0f172a;
-            --card: #1e293b;
-            --border: #334155;
-            --border-light: #1e293b;
-            --text: #f8fafc;
-            --text-secondary: #cbd5e1;
-            --text-tertiary: #94a3b8;
-            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-            --accent-light: rgba(37, 99, 235, 0.2);
+            --primary-bg: rgba(37, 99, 235, 0.1);
+            --bg: #0a0a0f;
+            --card: rgba(26, 26, 46, 0.5);
+            --border: #1a1a2e;
+            --border-light: #1a1a2e;
+            --text: #ffffff;
+            --text-secondary: #94a3b8;
+            --text-tertiary: #64748b;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+            --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.6);
+            --accent-light: rgba(37, 99, 235, 0.15);
             --accent-glow: rgba(37, 99, 235, 0.25);
+        }
+
+        /* --- Design effects --- */
+        .hero-glow {
+            position: absolute;
+            top: -10%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 1000px;
+            height: 600px;
+            background: radial-gradient(circle at center, var(--accent-glow) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .hero-highlight {
+            background: linear-gradient(135deg, #2563eb, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .glass-card {
+            background: var(--card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+        }
+        .cta-glow {
+            box-shadow: 0 0 20px rgba(37, 99, 235, 0.35);
+        }
+        .cta-glow:hover {
+            box-shadow: 0 0 32px rgba(37, 99, 235, 0.5);
         }
 
         html { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
@@ -113,13 +144,18 @@
             position: sticky;
             top: 0;
             z-index: 100;
-            height: 56px;
-            background: var(--card);
+            height: 64px;
+            background: rgba(248, 250, 252, 0.8);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0 24px;
+        }
+        html.dark .site-header {
+            background: rgba(10, 10, 15, 0.8);
         }
 
         /* --- Dark Mode Toggle --- */
@@ -145,7 +181,7 @@
         .theme-toggle .icon-moon { display: block; }
 
         .site-logo {
-            font-size: 22px;
+            font-size: 24px;
             font-weight: 700;
             text-decoration: none;
             display: flex;
@@ -183,7 +219,9 @@
             background: var(--bg);
             color: var(--text);
             text-align: center;
-            padding: 72px 24px 48px;
+            padding: 100px 24px 60px;
+            position: relative;
+            overflow: hidden;
         }
 
         @keyframes pulse {
@@ -191,17 +229,36 @@
             50% { opacity: 0.4; }
         }
 
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            margin-bottom: 24px;
+            border-radius: 100px;
+            background: rgba(37, 99, 235, 0.1);
+            border: 1px solid rgba(37, 99, 235, 0.2);
+            color: #60a5fa;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .hero-badge svg { width: 14px; height: 14px; }
+
         .hero-inner {
-            max-width: 640px;
+            max-width: 800px;
             margin: 0 auto;
+            position: relative;
+            z-index: 1;
         }
 
         .hero h1 {
-            font-size: 44px;
+            font-size: 48px;
             font-weight: 700;
-            letter-spacing: -1px;
-            line-height: 1.15;
-            margin-bottom: 20px;
+            letter-spacing: -1.5px;
+            line-height: 1.05;
+            margin-bottom: 28px;
             color: var(--text);
         }
 
@@ -219,65 +276,47 @@
         }
 
         .hero-sub {
-            font-size: 17px;
+            font-size: 18px;
             color: var(--text-secondary);
-            line-height: 1.7;
-            max-width: 520px;
-            margin: 0 auto 40px;
+            line-height: 1.6;
+            max-width: 600px;
+            margin: 0 auto 48px;
         }
 
         .hero-stats {
             display: flex;
-            align-items: stretch;
+            align-items: center;
             justify-content: center;
-            gap: 0;
+            gap: 32px;
             flex-wrap: wrap;
-            max-width: 520px;
             margin: 0 auto;
         }
 
-        .hero-stat {
-            flex: 1;
-            min-width: 120px;
-            text-align: center;
-            padding: 22px 24px;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-right: none;
-            transition: background 0.2s, border-color 0.2s;
-            box-shadow: var(--shadow-sm);
+        .hero-stat-inline {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .hero-stat:first-child { border-radius: var(--radius) 0 0 var(--radius); }
-        .hero-stat:last-child { border-radius: 0 var(--radius) var(--radius) 0; border-right: 1px solid var(--border); }
-        .hero-stat:only-child { border-radius: var(--radius); border-right: 1px solid var(--border); }
-        .hero-stat:hover { background: var(--accent-light); border-color: var(--accent-light-border); }
-        @media (max-width: 480px) {
-            .hero-stats { flex-direction: column; }
-            .hero-stat { border-right: 1px solid var(--border); border-bottom: none; min-width: auto; }
-            .hero-stat:first-child { border-radius: var(--radius) var(--radius) 0 0; }
-            .hero-stat:last-child { border-radius: 0 0 var(--radius) var(--radius); }
-            .hero-stat:not(:last-child) { border-bottom: 1px solid var(--border); }
-        }
-
-        .hero-stat-value {
-            font-size: 26px;
+        .hero-stat-num {
+            font-size: 22px;
             font-weight: 700;
-            color: var(--primary);
-            line-height: 1.2;
-            letter-spacing: -0.5px;
+            color: var(--text);
         }
-
-        .hero-stat-label {
-            font-size: 12px;
+        .hero-stat-txt {
+            font-size: 13px;
+            font-weight: 500;
             color: var(--text-secondary);
-            font-weight: 600;
-            margin-top: 4px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-
-        .hero-stat-divider {
-            display: none;
+        .hero-stat-sep {
+            width: 1px;
+            height: 16px;
+            background: var(--border);
+        }
+        @media (max-width: 480px) {
+            .hero-stat-sep { display: none; }
+            .hero-stats { gap: 20px; }
         }
 
         /* --- Trust Bar --- */
@@ -299,25 +338,28 @@
 
         /* --- Container --- */
         .container {
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
-            padding: 32px 24px 64px;
+            padding: 0 24px 64px;
         }
 
         /* --- Cards --- */
         .card {
             background: var(--card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 32px;
+            border-radius: 20px;
+            padding: 40px;
             margin-bottom: 24px;
         }
 
         .card h2 {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 700;
             color: var(--text);
             margin-bottom: 20px;
+            letter-spacing: -0.02em;
         }
 
         /* --- Form Layout: side by side --- */
@@ -334,31 +376,31 @@
 
         /* --- Upload Zone --- */
         .upload-zone {
-            border: 2px dashed var(--border);
-            border-radius: 12px;
+            border: 1px dashed var(--border);
+            border-radius: 16px;
             padding: 48px 28px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
-            background: var(--bg);
+            background: transparent;
         }
 
         .upload-zone:hover {
-            border-color: var(--primary);
-            background: var(--primary-bg);
+            border-color: rgba(37, 99, 235, 0.5);
+            background: rgba(37, 99, 235, 0.05);
         }
 
         .upload-zone.dragover {
-            border-color: var(--primary);
-            background: var(--primary-bg);
+            border-color: rgba(37, 99, 235, 0.5);
+            background: rgba(37, 99, 235, 0.05);
             border-style: solid;
         }
 
         .upload-zone.has-file {
             border-style: solid;
             border-color: var(--primary);
-            background: var(--primary-bg);
+            background: rgba(37, 99, 235, 0.05);
         }
 
         .upload-zone input[type="file"] {
@@ -369,19 +411,21 @@
         }
 
         .upload-icon {
-            width: 56px;
-            height: 56px;
+            width: 64px;
+            height: 64px;
             margin: 0 auto 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: var(--primary-bg);
-            border-radius: 14px;
+            background: rgba(37, 99, 235, 0.1);
+            border-radius: 18px;
+            transition: transform 0.2s;
         }
+        .upload-zone:hover .upload-icon { transform: scale(1.1); }
 
         .upload-icon svg {
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             color: var(--primary);
             stroke-width: 1.5;
         }
@@ -429,8 +473,8 @@
             width: 100%;
             min-height: 200px;
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
+            border-radius: 16px;
+            padding: 20px;
             font-family: inherit;
             font-size: 15px;
             line-height: 1.7;
@@ -481,17 +525,18 @@
 
         .toggle-group {
             display: inline-flex;
-            background: var(--primary-bg);
-            border-radius: 14px;
-            padding: 4px;
-            gap: 2px;
-            border: none;
+            border-radius: 100px;
+            padding: 6px;
+            gap: 0;
+            border: 1px solid var(--border);
+            background: rgba(26, 26, 46, 0.2);
+            backdrop-filter: blur(8px);
         }
 
         .toggle-group label {
-            padding: 10px 22px;
-            font-size: 14px;
-            font-weight: 600;
+            padding: 10px 28px;
+            font-size: 13px;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.25s ease;
             user-select: none;
@@ -501,16 +546,15 @@
             align-items: center;
             color: var(--text-secondary);
             background: transparent;
-            border-radius: 11px;
+            border-radius: 100px;
             border: none;
         }
 
         .toggle-group input { display: none; }
 
         .toggle-group input:checked + label {
-            background: var(--card);
-            color: var(--primary);
-            box-shadow: var(--shadow-sm);
+            background: var(--text);
+            color: var(--bg);
         }
 
         .toggle-group label:hover {
@@ -518,7 +562,7 @@
         }
 
         .toggle-group input:checked + label:hover {
-            background: var(--card);
+            background: var(--text);
         }
 
         /* --- CTA Row --- */
@@ -529,25 +573,27 @@
 
         .btn-run {
             width: 100%;
-            max-width: 440px;
-            padding: 16px 32px;
+            max-width: 480px;
+            padding: 18px 36px;
             background: var(--primary);
             color: #fff;
             border: none;
-            border-radius: 12px;
-            font-size: 16px;
+            border-radius: 100px;
+            font-size: 17px;
             font-weight: 700;
             font-family: inherit;
             cursor: pointer;
-            transition: background 0.2s, box-shadow 0.2s;
-            min-height: 52px;
+            transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+            min-height: 60px;
             letter-spacing: -0.01em;
         }
 
         .btn-run:hover:not(:disabled) {
             background: var(--primary-hover);
-            box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
         }
+        .btn-run:not(:disabled) { box-shadow: 0 0 20px rgba(37, 99, 235, 0.35); }
+        .btn-run:hover:not(:disabled) { box-shadow: 0 0 32px rgba(37, 99, 235, 0.5); }
+        .btn-run:active:not(:disabled) { transform: scale(0.98); }
 
         .btn-run:disabled {
             opacity: 0.4;
@@ -1116,12 +1162,12 @@
         }
 
         .btn-again {
-            padding: 14px 32px;
+            padding: 16px 36px;
             background: var(--primary);
             color: #fff;
             border: none;
-            border-radius: 12px;
-            font-size: 16px;
+            border-radius: 100px;
+            font-size: 17px;
             font-weight: 700;
             cursor: pointer;
             transition: background 0.2s, box-shadow 0.2s;
@@ -1130,25 +1176,37 @@
 
         .btn-again:hover {
             background: var(--primary-hover);
-            box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
+            box-shadow: 0 0 32px rgba(37, 99, 235, 0.5);
         }
 
         /* --- Footer --- */
         .site-footer {
-            background: var(--card);
+            background: var(--bg);
             border-top: 1px solid var(--border);
             color: var(--text-secondary);
-            text-align: center;
-            padding: 32px 24px;
+            padding: 64px 24px 48px;
             font-size: 13px;
         }
 
-        .footer-brand {
-            font-size: 14px;
-            color: var(--text);
-            margin-bottom: 12px;
-            font-weight: 600;
+        .site-footer .footer-inner {
+            max-width: 1000px;
+            margin: 0 auto;
         }
+
+        .footer-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 48px;
+        }
+
+        .footer-brand {
+            font-size: 24px;
+            color: var(--text);
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .footer-brand .cv { color: var(--primary); }
 
         .footer-links {
             display: flex;
@@ -1160,15 +1218,24 @@
         .footer-links a {
             color: var(--text-secondary);
             text-decoration: none;
-            font-size: 13px;
+            font-size: 14px;
+            font-weight: 500;
             transition: color 0.2s;
         }
 
         .footer-links a:hover { color: var(--text); }
 
+        .footer-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 32px;
+            border-top: 1px solid var(--border);
+        }
+
         .footer-copy {
             color: var(--text-tertiary);
-            font-size: 12px;
+            font-size: 13px;
         }
 
         /* --- Score Improvement Banner --- */
@@ -1313,13 +1380,14 @@
 
             /* Hero: tighter padding on mobile */
             .hero {
-                padding: 40px 20px 32px;
+                padding: 60px 20px 40px;
             }
 
             .hero h1 {
-                font-size: 30px;
+                font-size: 36px;
                 letter-spacing: -0.5px;
             }
+            .hero-badge { font-size: 11px; padding: 5px 12px; }
 
             .hero-sub {
                 font-size: 16px;
@@ -2100,7 +2168,7 @@
 
         /* --- Small phones (iPhone SE, older Androids) --- */
         @media (max-width: 375px) {
-            .hero h1 { font-size: 28px; }
+            .hero h1 { font-size: 32px; }
             .hero-sub { font-size: 14px; }
             .hero-stats { padding: 14px 20px; }
             .hero-stat-value { font-size: 20px; }
@@ -2643,22 +2711,20 @@
 
     <!-- Hero -->
     <section class="hero">
+        <div class="hero-glow"></div>
         <div class="hero-inner">
+            <div class="hero-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                Powered by Advanced AI
+            </div>
             <h1>AI Resume Tailoring.<br><span class="hero-highlight">Getting you hired.</span></h1>
-            <p class="hero-sub">Upload your resume, paste a job description, and get an ATS-optimized resume with 3 templates, keyword matching, and interview prep — in 2 minutes.</p>
+            <p class="hero-sub">The industry standard for ATS optimization. Tailor your professional experience to any job description in seconds.</p>
             <div class="hero-stats">
-                <div class="hero-stat">
-                    <div class="hero-stat-value">3</div>
-                    <div class="hero-stat-label">PDF Templates</div>
-                </div>
-                <div class="hero-stat">
-                    <div class="hero-stat-value">90%+</div>
-                    <div class="hero-stat-label">ATS Match Rate</div>
-                </div>
-                <div class="hero-stat">
-                    <div class="hero-stat-value">2 min</div>
-                    <div class="hero-stat-label">Average Time</div>
-                </div>
+                <div class="hero-stat-inline"><span class="hero-stat-num">3</span> <span class="hero-stat-txt">Templates</span></div>
+                <div class="hero-stat-sep"></div>
+                <div class="hero-stat-inline"><span class="hero-stat-num">90%+</span> <span class="hero-stat-txt">ATS Score</span></div>
+                <div class="hero-stat-sep"></div>
+                <div class="hero-stat-inline"><span class="hero-stat-num">2 min</span> <span class="hero-stat-txt">Fast</span></div>
             </div>
         </div>
     </section>
@@ -2669,12 +2735,6 @@
     </div>
 
     <!-- Demo Banner -->
-    <div style="max-width:960px;margin:0 auto;text-align:center;padding-bottom:8px;">
-        <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;font-size:12px;color:var(--text-tertiary);font-weight:500;">
-            <span style="width:6px;height:6px;border-radius:50%;background:#059669;display:inline-block;animation:pulse 2s ease-in-out infinite;"></span>
-            Free &amp; unlimited — no credit card needed
-        </div>
-    </div>
 
     <div class="container" id="main-content">
         <!-- Error Banner -->
@@ -2746,7 +2806,10 @@
             <!-- CTA -->
             <div class="cta-row">
                 <button class="btn-run" id="btnRun" onclick="startTailoring()">Tailor My Resume</button>
-                <div class="cta-hint" id="ctaHint">Takes about 2 minutes &middot; Sign in with Google to get started</div>
+                <div class="cta-hint" id="ctaHint">
+                    <svg style="display:inline;width:14px;height:14px;vertical-align:middle;margin-right:4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    Your data is encrypted and never sold
+                </div>
             </div>
         </div>
 
@@ -2882,13 +2945,19 @@
 
     <!-- Footer -->
     <footer class="site-footer">
-        <div class="footer-brand">CVtailro &middot; AI-powered resume optimization</div>
-        <div class="footer-links">
-            <a href="/privacy">Privacy</a>
-            <a href="/terms">Terms</a>
-            <a href="/contact">Contact</a>
+        <div class="footer-inner">
+            <div class="footer-top">
+                <div class="footer-brand"><span class="cv">CV</span>tailro</div>
+                <div class="footer-links">
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Contact Support</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="footer-copy">&copy; 2026 CVtailro. Precision engineering for career growth.</div>
+            </div>
         </div>
-        <div class="footer-copy">&copy; 2026 CVtailro. All rights reserved.</div>
     </footer>
 
     <!-- History Overlay -->
@@ -3256,7 +3325,7 @@
         var isDark = html.classList.toggle('dark');
         localStorage.setItem('cvtailro-theme', isDark ? 'dark' : 'light');
         var meta = document.getElementById('theme-color-meta');
-        if (meta) meta.content = isDark ? '#0f172a' : '#f8fafc';
+        if (meta) meta.content = isDark ? '#0a0a0f' : '#f8fafc';
         // Sync overlays if open
         var profileOl = document.getElementById('profileOverlay');
         var historyOl = document.getElementById('historyOverlay');

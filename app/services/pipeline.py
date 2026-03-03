@@ -100,12 +100,23 @@ def run_pipeline_job(
     global pipeline_queue_depth
     progress_queue = jobs[job_id]["queue"]
 
-    def emit(stage: int, total: int, name: str, status: str, detail: str = "") -> None:
-        progress_queue.put({"stage": stage, "total": total, "name": name, "status": status, "detail": detail})
+    def emit(
+        stage: int,
+        total: int,
+        name: str,
+        status: str,
+        detail: str = "",
+        position: int | None = None,
+    ) -> None:
+        payload = {"stage": stage, "total": total, "name": name, "status": status, "detail": detail}
+        if position is not None:
+            payload["position"] = position
+        progress_queue.put(payload)
 
     with pipeline_queue_lock:
         pipeline_queue_depth += 1
-    emit(0, 6, "Pipeline", "queued", "Waiting for available slot...")
+        queue_position = pipeline_queue_depth
+    emit(0, 6, "Pipeline", "queued", "Waiting for available slot...", position=queue_position)
     pipeline_semaphore.acquire()
     with pipeline_queue_lock:
         pipeline_queue_depth -= 1

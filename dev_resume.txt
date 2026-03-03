@@ -1,0 +1,25 @@
+Jordan Lee
+San Francisco, CA | jordan.lee@email.com | (555) 555-5555 | linkedin.com/in/jordanlee
+
+SUMMARY
+Product-focused software engineer with 6+ years building web applications, APIs, and data pipelines.
+Experienced in Python, JavaScript, and cloud infrastructure. Led cross-functional projects and improved
+system performance, reliability, and developer productivity.
+
+EXPERIENCE
+Senior Software Engineer - Horizon Labs | 2021-2025
+- Led migration from monolith to Flask-based services, reducing deployment time by 40%.
+- Built REST APIs and background workers for data processing (Python, SQLAlchemy, Redis).
+- Implemented observability (structured logging, metrics, alerts) to cut incident response time by 30%.
+- Partnered with product to ship a resume insights feature used by 50k+ users.
+
+Software Engineer - BrightWave | 2018-2021
+- Developed React UI and Node/Flask APIs for customer onboarding and document processing.
+- Optimized PDF generation pipeline, reducing render latency from 90s to 20s.
+- Wrote automated tests and CI checks; improved coverage from 45% to 75%.
+
+EDUCATION
+B.S. Computer Science - University of Washington
+
+SKILLS
+Python, Flask, SQLAlchemy, JavaScript, TypeScript, React, Postgres, Redis, Docker, AWS, CI/CD, Testing

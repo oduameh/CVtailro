@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Privacy Policy | CVtailro</title>
+    <meta name="description" content="Privacy policy for CVtailro.">
+    <meta name="author" content="CVtailro">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#f8fafc" id="theme-color-meta">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%232563eb' width='100' height='100' rx='12'/><text x='50' y='68' font-size='60' font-weight='bold' text-anchor='middle' fill='%23FFFFFF' font-family='system-ui'>CV</text></svg>">
+    <script>
+    (function() {
+        var saved = localStorage.getItem('cvtailro-theme');
+        var prefersDark = window.matchMedia('(prefers-reduced-motion: no-preference)').matches
+                        && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (saved === 'dark' || (!saved && prefersDark)) {
+            document.documentElement.classList.add('dark');
+        }
+    })();
+    </script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-bg: #eff6ff;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --text-secondary: #64748b;
+            --radius: 12px;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        html.dark {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --border: #334155;
+            --text: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --primary-bg: rgba(37, 99, 235, 0.15);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 16px;
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .site-header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            height: 56px;
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+        }
+
+        .site-logo {
+            font-size: 22px;
+            font-weight: 700;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            letter-spacing: -0.5px;
+        }
+
+        .site-logo .cv { color: var(--primary); }
+        .site-logo .tailro { color: var(--text); }
+
+        .nav-links {
+            display: flex;
+            gap: 16px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+
+        .nav-links a.active { color: var(--primary); }
+        .nav-links a:hover { color: var(--text); }
+
+        .page {
+            max-width: 860px;
+            margin: 32px auto 64px;
+            padding: 0 24px;
+        }
+
+        .page h1 {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .meta {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .page h2 {
+            font-size: 18px;
+            margin-top: 24px;
+            margin-bottom: 8px;
+        }
+
+        .page p {
+            color: var(--text-secondary);
+            margin: 10px 0;
+        }
+
+        .page ul {
+            margin: 8px 0 0 20px;
+            color: var(--text-secondary);
+        }
+
+        .page li { margin-bottom: 6px; }
+
+        .site-footer {
+            border-top: 1px solid var(--border);
+            padding: 24px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .site-footer a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin: 0 8px;
+        }
+
+        .site-footer a:hover { color: var(--text); }
+    </style>
+</head>
+<body>
+    <header class="site-header">
+        <a class="site-logo" href="/">
+            <span class="cv">CV</span><span class="tailro">tailro</span>
+        </a>
+        <nav class="nav-links">
+            <a href="/">Home</a>
+            <a href="/privacy" class="active" aria-current="page">Privacy</a>
+            <a href="/terms">Terms</a>
+            <a href="/contact">Contact</a>
+        </nav>
+    </header>
+
+    <main class="page">
+        <h1>Privacy Policy</h1>
+        <div class="meta">Last updated: March 2, 2026</div>
+
+        <p>CVtailro helps you tailor resumes and prepare interview materials. This page explains what we collect and how we use it.</p>
+
+        <h2>What we collect</h2>
+        <ul>
+            <li>Basic Google profile information (name, email, avatar) to sign you in.</li>
+            <li>The resume and job description you submit to generate tailored outputs.</li>
+            <li>Generated files and usage metadata needed to show your history and run the service.</li>
+        </ul>
+
+        <h2>How we use data</h2>
+        <ul>
+            <li>To generate your tailored resume, match report, and talking points.</li>
+            <li>To store results so you can download them later.</li>
+            <li>To keep the service reliable and prevent abuse.</li>
+        </ul>
+
+        <h2>Sharing</h2>
+        <p>We do not sell your data. We share data only with service providers required to run the app, such as hosting, storage, and AI processing.</p>
+
+        <h2>Retention and deletion</h2>
+        <p>We keep your results so you can access your history. You can request deletion through the contact page.</p>
+
+        <h2>Security</h2>
+        <p>We use access controls and monitoring to protect your data. No system is 100 percent secure, so please avoid uploading sensitive information you do not want stored.</p>
+    </main>
+
+    <footer class="site-footer">
+        <div>CVtailro - AI-powered resume optimization</div>
+        <div>
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
+            <a href="/contact">Contact</a>
+        </div>
+        <div>&copy; 2026 CVtailro. All rights reserved.</div>
+    </footer>
+</body>
+</html>
