@@ -4992,13 +4992,14 @@
     function updateProgress() {
         var done = document.querySelectorAll(".stage-check.done").length;
         var running = document.querySelectorAll(".stage-check.running").length;
-        var pct = Math.round(done / STAGES.length * 100);
+        // Cap at 95% until "complete" event — last 5% covers PDF gen + file upload
+        var pct = Math.min(Math.round(done / STAGES.length * 95), 95);
         setTargetProgress(pct);
 
         // Update current stage text
         var stageText = document.getElementById("progressStageText");
         if (done === STAGES.length) {
-            stageText.textContent = "Finishing up...";
+            stageText.textContent = "Generating PDFs & finalizing...";
         } else {
             // Find the running stage
             for (var i = 0; i < STAGES.length; i++) {
@@ -5114,6 +5115,12 @@
             function onComplete(jid) {
                 if (finished) return;
                 finished = true;
+                // Jump to 100% instantly when results are actually ready
+                setTargetProgress(100);
+                currentProgress = 100;
+                document.getElementById("progressFill").style.width = "100%";
+                document.getElementById("progressPct").textContent = "100%";
+                document.getElementById("progressStageText").textContent = "Done!";
                 stopTipRotation();
                 stopElapsedTimer();
                 document.getElementById('reconnectingBadge').classList.remove('visible');
