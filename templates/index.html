@@ -969,126 +969,56 @@
 
         .template-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin: 20px 0;
-            justify-items: center;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 16px 0;
         }
+        @media (max-width: 640px) { .template-grid { grid-template-columns: repeat(2, 1fr); } }
 
-        /* --- Interactive Folder --- */
-        .folder-wrap {
-            position: relative;
-            width: 110px;
-            height: 100px;
+        .tpl-card {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
             cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: var(--card);
         }
-        .folder-body {
-            position: relative;
-            width: 110px;
-            height: 85px;
-            border-radius: 0 12px 12px 12px;
-            transition: box-shadow 0.4s;
-        }
-        .folder-tab {
-            position: absolute;
-            bottom: 100%;
-            left: 0;
-            width: 35px;
-            height: 12px;
-            border-radius: 6px 6px 0 0;
-        }
-        .folder-flap-l, .folder-flap-r {
-            position: absolute;
-            inset: 0;
-            z-index: 30;
-            border-radius: 6px 12px 12px 12px;
-            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
-            transform-origin: bottom center;
-        }
-        .folder-flap-l { clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%); }
-        .folder-flap-r { clip-path: polygon(50% 0, 100% 0, 100% 100%, 50% 100%); }
-        .folder-wrap.open .folder-flap-l { transform: scaleY(0.55) skewX(18deg) translateY(4px); }
-        .folder-wrap.open .folder-flap-r { transform: scaleY(0.55) skewX(-18deg) translateY(4px); }
-        .folder-label {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            color: rgba(255,255,255,0.9);
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            white-space: nowrap;
-            z-index: 31;
-            pointer-events: none;
-            transition: opacity 0.3s;
-        }
-        .folder-wrap.open .folder-label { opacity: 0; }
-
-        .folder-paper {
-            position: absolute;
-            left: 50%;
-            z-index: 20;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            border: 1px solid rgba(0,0,0,0.04);
-            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s;
-            transform: translate(-50%, 10%) rotate(0deg);
-        }
-        .folder-paper .paper-lines {
+        .tpl-card:hover { border-color: var(--primary); box-shadow: 0 2px 12px rgba(99,102,241,0.1); }
+        .tpl-card.active { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary); }
+        .tpl-card-swatch {
+            height: 6px;
             width: 100%;
-            height: 100%;
-            padding: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            opacity: 0.15;
         }
-        .paper-lines span { display: block; height: 2px; border-radius: 1px; background: currentColor; }
-        .folder-wrap.open .folder-paper:nth-child(1) { transform: translate(-120%, -75%) rotate(-15deg); }
-        .folder-wrap.open .folder-paper:nth-child(2) { transform: translate(10%, -75%) rotate(15deg); }
-        .folder-wrap.open .folder-paper:nth-child(3) { transform: translate(-50%, -105%) rotate(5deg); }
-        .folder-wrap.open .folder-paper:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
-
-        .folder-name {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text);
-            margin-top: 14px;
+        .tpl-card-body {
+            padding: 12px;
             text-align: center;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            justify-content: center;
         }
-        .folder-name .dl-icon { color: var(--text-secondary); transition: color 0.2s; }
-        .folder-wrap:hover .folder-name .dl-icon { color: var(--primary); }
-
-        .folder-downloads {
+        .tpl-card-name {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: 0.3px;
+        }
+        .tpl-card-desc {
+            font-size: 10px;
+            color: var(--text-tertiary);
+            margin-top: 2px;
+        }
+        .tpl-card-actions {
             display: none;
-            flex-direction: row;
             gap: 6px;
-            margin-top: 10px;
+            padding: 0 12px 12px;
             justify-content: center;
         }
-        .folder-wrap.open .folder-downloads {
+        .tpl-card.active .tpl-card-actions {
             display: flex;
-            animation: fadeInUp 0.25s ease-out;
+            animation: fadeInUp 0.2s ease-out;
         }
-        .folder-wrap.open .folder-name { display: none; }
-        .folder-dl-btn {
+        .tpl-dl-btn {
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            padding: 6px 12px;
+            padding: 6px 14px;
             border: 1px solid var(--border);
             background: var(--card);
             color: var(--text);
@@ -1099,7 +1029,7 @@
             transition: all 0.15s;
             font-family: inherit;
         }
-        .folder-dl-btn:hover {
+        .tpl-dl-btn:hover {
             background: var(--primary);
             color: #fff;
             border-color: var(--primary);
@@ -3595,49 +3525,42 @@
     }
     window.toggleDarkMode = toggleDarkMode;
 
-    // --- Interactive Folder ---
-    var TEMPLATE_FOLDERS = [
-        { id: 'modern', label: 'Modern', color: '#1a3a5c', flap: '#2a5a8c' },
-        { id: 'executive', label: 'Executive', color: '#6B5335', flap: '#8B7355' },
-        { id: 'minimal', label: 'Minimal', color: '#555', flap: '#777' },
-        { id: 'creative', label: 'Creative', color: '#0d9488', flap: '#14b8a6' },
-        { id: 'compact', label: 'Compact', color: '#374151', flap: '#4b5563' },
-        { id: 'professional', label: 'Professional', color: '#334155', flap: '#475569' },
-        { id: 'tech', label: 'Tech', color: '#0f172a', flap: '#1e293b' },
-        { id: 'elegant', label: 'Elegant', color: '#7c2d36', flap: '#9f3d48' }
+    // --- Template Download Cards ---
+    var TEMPLATE_CARDS = [
+        { id: 'modern', label: 'Modern', desc: 'Clean sans-serif', color: '#1a3a5c' },
+        { id: 'executive', label: 'Executive', desc: 'Serif, conservative', color: '#6B5335' },
+        { id: 'minimal', label: 'Minimal', desc: 'Ultra-clean', color: '#555' },
+        { id: 'creative', label: 'Creative', desc: 'Teal accent', color: '#0d9488' },
+        { id: 'compact', label: 'Compact', desc: 'Dense, 1-page', color: '#374151' },
+        { id: 'professional', label: 'Professional', desc: 'Classic layout', color: '#334155' },
+        { id: 'tech', label: 'Tech', desc: 'Bold, modern', color: '#0f172a' },
+        { id: 'elegant', label: 'Elegant', desc: 'Refined serif', color: '#7c2d36' }
     ];
 
-    function buildTemplateFolders() {
+    function buildTemplateCards() {
         var grid = document.getElementById('templateGrid');
         if (!grid) return;
-        grid.innerHTML = TEMPLATE_FOLDERS.map(function(t) {
-            return '<div class="folder-wrap" data-tpl="' + t.id + '" onclick="toggleFolder(this)">' +
-                '<div class="folder-body" style="background:' + t.color + ';">' +
-                    '<div class="folder-tab" style="background:' + t.color + ';"></div>' +
-                    '<div class="folder-paper" style="width:75px;height:65px;background:#e8e8e8;"></div>' +
-                    '<div class="folder-paper" style="width:85px;height:70px;background:#f0f0f0;"></div>' +
-                    '<div class="folder-paper" style="width:95px;height:75px;background:#fff;"></div>' +
-                    '<div class="folder-flap-l" style="background:' + t.flap + ';"></div>' +
-                    '<div class="folder-flap-r" style="background:' + t.flap + ';">' +
-                        '<span class="folder-label">' + t.label + '</span>' +
-                    '</div>' +
+        grid.innerHTML = TEMPLATE_CARDS.map(function(t) {
+            return '<div class="tpl-card" data-tpl="' + t.id + '" onclick="selectTemplate(this)">' +
+                '<div class="tpl-card-swatch" style="background:' + t.color + ';"></div>' +
+                '<div class="tpl-card-body">' +
+                    '<div class="tpl-card-name">' + t.label + '</div>' +
+                    '<div class="tpl-card-desc">' + t.desc + '</div>' +
                 '</div>' +
-                '<div class="folder-name">' + t.label + '</div>' +
-                '<div class="folder-downloads">' +
-                    '<button class="folder-dl-btn" onclick="event.stopPropagation();downloadFormat(\'' + t.id + '\',\'pdf\')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> PDF</button>' +
-                    '<button class="folder-dl-btn" onclick="event.stopPropagation();downloadFormat(\'' + t.id + '\',\'docx\')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> DOCX</button>' +
-                    '<button class="folder-dl-btn" onclick="event.stopPropagation();downloadFormat(\'' + t.id + '\',\'md\')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> TXT</button>' +
+                '<div class="tpl-card-actions">' +
+                    '<button class="tpl-dl-btn" onclick="event.stopPropagation();downloadFormat(\'' + t.id + '\',\'pdf\')">PDF</button>' +
+                    '<button class="tpl-dl-btn" onclick="event.stopPropagation();downloadFormat(\'' + t.id + '\',\'docx\')">DOCX</button>' +
+                    '<button class="tpl-dl-btn" onclick="event.stopPropagation();downloadFormat(\'' + t.id + '\',\'md\')">TXT</button>' +
                 '</div>' +
             '</div>';
         }).join('');
     }
-    buildTemplateFolders();
+    buildTemplateCards();
 
-    function toggleFolder(el) {
-        var wasOpen = el.classList.contains('open');
-        // Close all other folders
-        document.querySelectorAll('.folder-wrap.open').forEach(function(f) { f.classList.remove('open'); });
-        if (!wasOpen) el.classList.add('open');
+    function selectTemplate(el) {
+        var wasActive = el.classList.contains('active');
+        document.querySelectorAll('.tpl-card.active').forEach(function(c) { c.classList.remove('active'); });
+        if (!wasActive) el.classList.add('active');
     }
 
     function downloadFormat(tpl, format) {
@@ -3646,43 +3569,25 @@
         for (var i = 0; i < currentFileList.length; i++) {
             var f = typeof currentFileList[i] === 'string' ? currentFileList[i] : currentFileList[i].filename;
             var fl = f.toLowerCase();
-            if (format === 'pdf' && fl.indexOf(tpl) !== -1 && fl.endsWith('.pdf')) { target = f; break; }
+            // PDF: match template-specific file
+            if (format === 'pdf' && fl.indexOf(tpl) !== -1 && fl.endsWith('.pdf') && fl.indexOf('cover') === -1) { target = f; break; }
+            // DOCX: there's only one DOCX per job
             if (format === 'docx' && fl.endsWith('.docx') && fl.indexOf('cover') === -1) { target = f; break; }
+            // MD: there's only one resume MD per job
             if (format === 'md' && fl.endsWith('.md') && fl.indexOf('talking') === -1) { target = f; break; }
         }
         if (target) {
             safeDownload('/api/download/' + currentJobId + '/' + target, target);
         } else {
-            // Fallback: request the template-specific PDF from DB regeneration
-            var fallbackName = tpl.charAt(0).toUpperCase() + tpl.slice(1) + '.' + (format === 'md' ? 'md' : format);
+            // Fallback: request template-specific PDF from DB regeneration
+            var fallbackName = 'Resume_' + tpl.charAt(0).toUpperCase() + tpl.slice(1) + '.' + (format === 'md' ? 'md' : format);
             safeDownload('/api/download/' + currentJobId + '/' + fallbackName, fallbackName);
         }
     }
 
-    // Legacy compat
     function downloadTemplate(tpl) { downloadFormat(tpl, 'pdf'); }
 
-    // Simplified paper drift (no complex mouse tracking)
-    document.addEventListener('mousemove', function(e) {
-        var folders = document.querySelectorAll('.folder-wrap.open');
-        folders.forEach(function(folder) {
-            var papers = folder.querySelectorAll('.folder-paper');
-            var rect = folder.getBoundingClientRect();
-            var cx = rect.left + rect.width / 2;
-            var cy = rect.top + rect.height / 2;
-            var dx = (e.clientX - cx) * 0.08;
-            var dy = (e.clientY - cy) * 0.08;
-            papers.forEach(function(paper, i) {
-                var base = [
-                    { x: -120, y: -75, r: -15 },
-                    { x: 10, y: -75, r: 15 },
-                    { x: -50, y: -105, r: 5 }
-                ][i] || { x: -50, y: -50, r: 0 };
-                paper.style.transform = 'translate(calc(' + base.x + '% + ' + (dx * (1 + i * 0.3)) + 'px), calc(' + base.y + '% + ' + (dy * (1 + i * 0.3)) + 'px)) rotate(' + base.r + 'deg)';
-            });
-        });
-    });
-    window.toggleFolder = toggleFolder;
+    window.selectTemplate = selectTemplate;
 
     // --- Scroll Reveal Animation ---
     (function() {
