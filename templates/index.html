@@ -353,7 +353,7 @@
             padding: 0 24px 64px;
         }
 
-        /* --- Cards --- */
+        /* --- Cards (glass globally) --- */
         .card {
             background: var(--card);
             backdrop-filter: blur(var(--glass-blur));
@@ -363,6 +363,7 @@
             padding: 24px;
             margin-bottom: 16px;
             box-shadow: var(--shadow-md);
+            transition: border-color 0.3s, background 0.3s;
         }
 
         .card h2 {
@@ -680,6 +681,8 @@
             margin: 0 auto;
             text-align: center;
             background: var(--card);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
             border: 1px solid var(--border);
             border-radius: var(--radius-lg);
             padding: 40px 32px;
@@ -976,9 +979,10 @@
             padding: 16px;
             text-align: left;
             cursor: pointer;
-            transition: transform 0.3s, box-shadow 0.3s;
+            transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
             background: var(--card);
             backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
             position: relative;
             overflow: hidden;
         }
@@ -1709,15 +1713,17 @@
             right: 0;
             min-width: 200px;
             background: var(--card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             color: var(--text);
-            border: 1px solid var(--border);
+            border: 0.5px solid var(--border);
             border-radius: 8px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
             z-index: 200;
             overflow: hidden;
         }
         html.dark .user-dropdown {
-            box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         }
 
         .user-menu-wrap.open .user-dropdown {
@@ -1798,7 +1804,9 @@
             border-radius: 8px;
             font-size: 14px;
             font-weight: 500;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             transform: translateX(calc(100% + 24px));
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             pointer-events: auto;
@@ -1879,6 +1887,8 @@
 
         .history-panel {
             background: var(--card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             color: var(--text);
             border-radius: 12px;
             width: 100%;
@@ -1886,8 +1896,8 @@
             max-height: calc(100vh - 120px);
             display: flex;
             flex-direction: column;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-            border: 1px solid var(--border);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+            border: 0.5px solid var(--border);
             overflow: hidden;
         }
 

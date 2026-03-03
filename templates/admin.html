@@ -38,17 +38,21 @@
             --header-height: 56px;
             --radius: 10px;
             --radius-lg: 14px;
+            --glass-blur: 0px;
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
         html.dark {
-            --bg: #0f172a;
-            --card: #1e293b;
-            --border: #334155;
+            --bg: #0a0a0f;
+            --card: rgba(30, 41, 59, 0.4);
+            --border: rgba(51, 65, 85, 0.5);
             --text: #f8fafc;
             --text-secondary: #94a3b8;
             --text-tertiary: #64748b;
             --accent-light: rgba(37,99,235,0.2);
             --accent-light-border: rgba(37,99,235,0.3);
-            --sidebar-bg: #020617;
+            --sidebar-bg: #0f172a;
+            --glass-blur: 8px;
+            --card-shadow: none;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -110,7 +114,9 @@
             left: 0;
             right: 0;
             height: var(--header-height);
-            background: var(--sidebar-bg);
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -289,10 +295,13 @@
         /* Cards */
         .card {
             background: var(--card);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
             border-radius: var(--radius-lg);
             padding: 24px;
             margin-bottom: 20px;
             border: 1px solid var(--border);
+            box-shadow: var(--card-shadow);
         }
         .card-header {
             display: flex;
@@ -385,7 +394,8 @@
             outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
             font-family: inherit;
-            background: var(--card);
+            background: transparent;
+            backdrop-filter: blur(var(--glass-blur));
             color: var(--text);
         }
         .form-group input:focus, .form-group select:focus {
@@ -534,6 +544,8 @@
             cursor: pointer;
             transition: all 0.2s;
             background: var(--card);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
         }
         .user-card:hover {
             background: var(--accent-light);
@@ -550,6 +562,8 @@
             text-align: center;
             padding: 20px 16px;
             background: var(--card);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
             border-radius: var(--radius);
             border: 1px solid var(--border);
             position: relative;
@@ -666,10 +680,13 @@
         /* Chart containers */
         .chart-card {
             background: var(--card);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
             border: 1px solid var(--border);
             border-radius: var(--radius-lg);
             padding: 24px;
             margin-bottom: 20px;
+            box-shadow: var(--card-shadow);
         }
         .chart-card-header {
             display: flex;
@@ -706,11 +723,14 @@
         }
         .kpi-card {
             background: var(--card);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
             border: 1px solid var(--border);
             border-radius: var(--radius);
             padding: 20px 20px 16px;
             position: relative;
             overflow: hidden;
+            box-shadow: var(--card-shadow);
         }
         .kpi-card::before {
             content: '';
@@ -724,6 +744,7 @@
         }
         .kpi-card:hover::before {
             background: var(--accent);
+            box-shadow: 0 0 12px var(--accent);
         }
         .kpi-card .kpi-value {
             font-size: 26px;
