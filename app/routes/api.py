@@ -35,6 +35,7 @@ from utils import create_output_dir
 logger = logging.getLogger("cvtailro.api")
 
 api_bp = Blueprint("api", __name__)
+csrf.exempt(api_bp)
 
 
 def _validate_resume_file(resume_file) -> tuple[str | None, str]:

@@ -118,6 +118,12 @@ def _register_error_handlers(flask_app: Flask) -> None:
 
     @flask_app.errorhandler(Exception)
     def handle_exception(e):
+        from werkzeug.exceptions import HTTPException
+
+        if isinstance(e, HTTPException):
+            if request.path.startswith("/api/") or request.path.startswith("/admin/api/"):
+                return _jsonify({"error": e.description}), e.code
+            return e
         logger.exception("Unhandled exception in %s %s", request.method, request.path)
         if request.path.startswith("/api/") or request.path.startswith("/admin/api/"):
             return _jsonify({"error": "Internal server error"}), 500
