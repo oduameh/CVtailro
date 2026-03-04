@@ -362,12 +362,21 @@ def boost_bullet():
 
     job_title = data.get("job_title", "").strip()
 
+    from config import DEFAULT_NIM_MODEL
+
     admin_config = AdminConfigManager.load()
-    api_key = admin_config.api_key.strip()
+    provider = admin_config.active_provider or "openrouter"
+    api_key = admin_config.nim_api_key.strip() if provider == "nim" else admin_config.api_key.strip()
     if not api_key:
         return jsonify({"error": "Service not configured"}), 400
 
-    model = admin_config.default_model or DEFAULT_MODEL
+    provider_default = DEFAULT_NIM_MODEL if provider == "nim" else DEFAULT_MODEL
+    model = admin_config.default_model or provider_default
+    api_url = (
+        "https://integrate.api.nvidia.com/v1/chat/completions"
+        if provider == "nim"
+        else "https://openrouter.ai/api/v1/chat/completions"
+    )
 
     context = f" for a {job_title} role" if job_title else ""
     prompt = (
@@ -382,7 +391,7 @@ def boost_bullet():
         import requests as http_requests
 
         resp = http_requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
+            api_url,
             headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
             json={
                 "model": model,
@@ -431,8 +440,11 @@ def start_batch_tailoring():
     """Start tailoring a resume against multiple job descriptions."""
     from flask import current_app
 
+    from config import DEFAULT_NIM_MODEL, NIM_MODELS, RECOMMENDED_MODELS
+
     admin_config = AdminConfigManager.load()
-    api_key = admin_config.api_key.strip()
+    provider = admin_config.active_provider or "openrouter"
+    api_key = admin_config.nim_api_key.strip() if provider == "nim" else admin_config.api_key.strip()
     if not api_key:
         return jsonify({"error": "Service not configured"}), 400
 
@@ -463,6 +475,12 @@ def start_batch_tailoring():
     if error:
         return jsonify({"error": error}), 400
 
+    provider_default = DEFAULT_NIM_MODEL if provider == "nim" else DEFAULT_MODEL
+    valid_models = set(NIM_MODELS.values()) if provider == "nim" else set(RECOMMENDED_MODELS.values())
+    model = admin_config.default_model or provider_default
+    if model not in valid_models:
+        model = provider_default
+
     job_ids = []
     for i, jd in enumerate(job_descriptions):
         job_id = uuid.uuid4().hex[:16]
@@ -487,7 +505,6 @@ def start_batch_tailoring():
                 "batch_index": i,
             }
 
-        model = admin_config.default_model or DEFAULT_MODEL
         thread = threading.Thread(
             target=run_pipeline_job,
             args=(
@@ -501,6 +518,7 @@ def start_batch_tailoring():
                 api_key,
                 model,
                 user_id,
+                provider,
             ),
             daemon=True,
         )
