@@ -53,6 +53,7 @@ class BaseSettings:
     ADSENSE_SLOT_MID = os.environ.get("ADSENSE_SLOT_MID", "")
     ADSENSE_SLOT_BOTTOM = os.environ.get("ADSENSE_SLOT_BOTTOM", "")
     BLOG_BASE_URL = os.environ.get("BLOG_BASE_URL", "https://cvtailro-production.up.railway.app")
+    R2_PUBLIC_BASE_URL = os.environ.get("R2_PUBLIC_BASE_URL", "")
 
     # Pipeline concurrency is configured in app/services/pipeline.py (module-level constants).
 

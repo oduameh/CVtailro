@@ -1313,3 +1313,197 @@ def admin_login_history():
             for e in events
         ],
     })
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Blog CMS Endpoints
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@admin_bp.route("/admin/api/blog/posts")
+@_admin_required
+def admin_blog_list():
+    from app.services.blog_store import list_admin_posts
+
+    status_filter = request.args.get("status") or None
+    category = request.args.get("category") or None
+    search = request.args.get("search") or None
+    posts = list_admin_posts(status=status_filter, category=category, search=search)
+    return jsonify({"posts": [p.to_dict() for p in posts]})
+
+
+@admin_bp.route("/admin/api/blog/posts/<post_id>")
+@_admin_required
+def admin_blog_get(post_id: str):
+    from app.services.blog_store import get_post_by_id
+
+    post = get_post_by_id(post_id)
+    if not post:
+        return jsonify({"error": "Post not found"}), 404
+    return jsonify(post.to_dict(include_content=True))
+
+
+@admin_bp.route("/admin/api/blog/posts", methods=["POST"])
+@_admin_required
+def admin_blog_create():
+    from app.services.blog_store import create_post
+
+    data = request.get_json(force=True)
+    title = (data.get("title") or "").strip()
+    if not title:
+        return jsonify({"error": "Title is required"}), 400
+
+    author_id = None
+    if current_user.is_authenticated:
+        author_id = current_user.id
+
+    post = create_post(
+        title=title,
+        content_md=data.get("content_md", ""),
+        description=data.get("description", ""),
+        keywords=data.get("keywords", ""),
+        category=data.get("category", "General"),
+        audience=data.get("audience", "general"),
+        feature_image_url=data.get("feature_image_url", ""),
+        canonical_url=data.get("canonical_url", ""),
+        author_id=author_id,
+        status=data.get("status", "draft"),
+    )
+    track("admin.blog.created", category="admin", metadata={"post_id": post.id, "title": post.title})
+    return jsonify(post.to_dict(include_content=True)), 201
+
+
+@admin_bp.route("/admin/api/blog/posts/<post_id>", methods=["PUT"])
+@_admin_required
+def admin_blog_update(post_id: str):
+    from app.services.blog_store import update_post
+
+    data = request.get_json(force=True)
+    post = update_post(post_id, **data)
+    if not post:
+        return jsonify({"error": "Post not found"}), 404
+    track("admin.blog.updated", category="admin", metadata={"post_id": post.id})
+    return jsonify(post.to_dict(include_content=True))
+
+
+@admin_bp.route("/admin/api/blog/posts/<post_id>/publish", methods=["POST"])
+@_admin_required
+def admin_blog_publish(post_id: str):
+    from app.services.blog_store import publish_post
+
+    post = publish_post(post_id)
+    if not post:
+        return jsonify({"error": "Post not found"}), 404
+    track("admin.blog.published", category="admin", metadata={"post_id": post.id, "slug": post.slug})
+    return jsonify(post.to_dict())
+
+
+@admin_bp.route("/admin/api/blog/posts/<post_id>/unpublish", methods=["POST"])
+@_admin_required
+def admin_blog_unpublish(post_id: str):
+    from app.services.blog_store import unpublish_post
+
+    post = unpublish_post(post_id)
+    if not post:
+        return jsonify({"error": "Post not found"}), 404
+    track("admin.blog.unpublished", category="admin", metadata={"post_id": post.id})
+    return jsonify(post.to_dict())
+
+
+@admin_bp.route("/admin/api/blog/posts/<post_id>", methods=["DELETE"])
+@_admin_required
+def admin_blog_delete(post_id: str):
+    from app.services.blog_store import delete_post
+
+    ok = delete_post(post_id)
+    if not ok:
+        return jsonify({"error": "Post not found"}), 404
+    track("admin.blog.deleted", category="admin", metadata={"post_id": post_id})
+    return jsonify({"ok": True})
+
+
+@admin_bp.route("/admin/api/blog/import", methods=["POST"])
+@_admin_required
+def admin_blog_import():
+    from app.services.blog_store import import_file_posts
+
+    count = import_file_posts()
+    track("admin.blog.imported", category="admin", metadata={"imported_count": count})
+    return jsonify({"ok": True, "imported": count})
+
+
+@admin_bp.route("/admin/api/blog/images", methods=["POST"])
+@_admin_required
+def admin_blog_image_upload():
+    import mimetypes
+    import uuid as _uuid_mod
+    from pathlib import Path
+
+    from flask import current_app
+
+    from app.models.blog import BlogImage
+    from storage import r2_storage
+
+    if "file" not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+
+    f = request.files["file"]
+    if not f.filename:
+        return jsonify({"error": "No filename"}), 400
+
+    allowed = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"}
+    ext = Path(f.filename).suffix.lower()
+    if ext not in allowed:
+        return jsonify({"error": f"File type {ext} not allowed"}), 400
+
+    file_data = f.read()
+    if len(file_data) > 5 * 1024 * 1024:
+        return jsonify({"error": "File too large (max 5 MB)"}), 400
+
+    unique_name = f"{_uuid_mod.uuid4().hex}{ext}"
+    ct = mimetypes.guess_type(f.filename)[0] or "image/png"
+
+    if r2_storage.is_configured:
+        r2_key = f"blog/images/{unique_name}"
+        r2_storage._client.put_object(
+            Bucket=r2_storage._bucket,
+            Key=r2_key,
+            Body=file_data,
+            ContentType=ct,
+        )
+        base_url = current_app.config.get("R2_PUBLIC_BASE_URL", "").rstrip("/")
+        if base_url:
+            url = f"{base_url}/{r2_key}"
+        else:
+            url = r2_storage.generate_presigned_url(r2_key, expires_in=86400 * 365)
+    else:
+        static_dir = Path(current_app.static_folder) / "blog-images"
+        static_dir.mkdir(parents=True, exist_ok=True)
+        (static_dir / unique_name).write_bytes(file_data)
+        url = f"/static/blog-images/{unique_name}"
+        r2_key = ""
+
+    author_id = current_user.id if current_user.is_authenticated else None
+
+    img = BlogImage(
+        filename=f.filename,
+        url=url,
+        r2_key=r2_key,
+        size_bytes=len(file_data),
+        content_type=ct,
+        uploaded_by=author_id,
+    )
+    db.session.add(img)
+    db.session.commit()
+
+    track("admin.blog.image_uploaded", category="admin", metadata={"image_id": img.id, "filename": f.filename})
+    return jsonify(img.to_dict()), 201
+
+
+@admin_bp.route("/admin/api/blog/images")
+@_admin_required
+def admin_blog_images_list():
+    from app.models.blog import BlogImage
+
+    images = BlogImage.query.order_by(BlogImage.created_at.desc()).limit(100).all()
+    return jsonify({"images": [i.to_dict() for i in images]})

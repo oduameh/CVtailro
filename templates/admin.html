@@ -921,6 +921,11 @@
                     <span class="nav-icon">&#9881;</span>
                     <span class="nav-text">Settings</span>
                 </a>
+                <div class="nav-label">Content</div>
+                <a class="nav-item" data-tab="blog" onclick="switchTab('blog')">
+                    <span class="nav-icon">&#128221;</span>
+                    <span class="nav-text">Blog</span>
+                </a>
             </div>
             <div class="sidebar-footer">
                 <a class="nav-item" href="/admin/docs" target="_blank" style="color:var(--accent);">
@@ -1475,6 +1480,111 @@
                 </div>
             </div>
 
+            <!-- TAB: BLOG CMS -->
+            <div class="tab-content" id="tab-blog">
+                <div class="tab-header">
+                    <h1>Blog Management</h1>
+                    <p>Create, edit, publish, and manage blog posts</p>
+                </div>
+
+                <!-- Blog List View -->
+                <div id="blogListView">
+                    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+                        <button class="btn btn-primary" onclick="blogShowEditor(null)">+ New Post</button>
+                        <button class="btn btn-secondary" onclick="blogImportFiles()">Import from Files</button>
+                        <select id="blogFilterStatus" onchange="loadBlogPosts()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;">
+                            <option value="">All Statuses</option>
+                            <option value="draft">Drafts</option>
+                            <option value="published">Published</option>
+                        </select>
+                        <input type="text" id="blogSearchInput" placeholder="Search posts..." onkeyup="blogSearchDebounce()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;flex:1;min-width:180px;">
+                    </div>
+                    <div id="blogPostsTable"></div>
+                </div>
+
+                <!-- Blog Editor View -->
+                <div id="blogEditorView" style="display:none;">
+                    <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
+                        <button class="btn btn-secondary" onclick="blogShowList()">&#8592; Back to List</button>
+                        <button class="btn btn-primary" onclick="blogSavePost()">Save</button>
+                        <button class="btn btn-secondary" id="blogPublishBtn" onclick="blogTogglePublish()">Publish</button>
+                        <button class="btn btn-secondary" id="blogDeleteBtn" onclick="blogDeletePost()" style="color:var(--error);">Delete</button>
+                        <span id="blogSaveStatus" style="font-size:12px;color:var(--text-secondary);margin-left:auto;"></span>
+                    </div>
+
+                    <div class="grid-2">
+                        <div>
+                            <div class="card card-no-hover">
+                                <div class="card-header"><h2>Post Content</h2></div>
+                                <div class="form-group">
+                                    <label for="blogTitle">Title</label>
+                                    <input type="text" id="blogTitle" placeholder="Post title" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:16px;font-weight:600;">
+                                </div>
+                                <div class="form-group">
+                                    <label>Content (Markdown)</label>
+                                    <textarea id="blogContentMd" rows="24" style="width:100%;padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:monospace;font-size:13px;line-height:1.6;resize:vertical;" oninput="blogAutoPreview()"></textarea>
+                                </div>
+                                <div style="display:flex;gap:8px;margin-bottom:12px;">
+                                    <button class="btn btn-xs btn-secondary" onclick="blogTogglePreview()">Toggle Preview</button>
+                                    <label class="btn btn-xs btn-secondary" style="cursor:pointer;">
+                                        Upload Image
+                                        <input type="file" accept="image/*" onchange="blogUploadImage(this)" style="display:none;">
+                                    </label>
+                                </div>
+                                <div id="blogPreviewPane" style="display:none;border:1px solid var(--border);border-radius:8px;padding:16px;background:var(--card);max-height:500px;overflow-y:auto;line-height:1.7;"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="card card-no-hover">
+                                <div class="card-header"><h2>SEO &amp; Metadata</h2></div>
+                                <div class="form-group">
+                                    <label for="blogSlug">Slug</label>
+                                    <input type="text" id="blogSlug" placeholder="auto-generated-from-title" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;">
+                                </div>
+                                <div class="form-group">
+                                    <label for="blogDescription">Description</label>
+                                    <textarea id="blogDescription" rows="3" placeholder="Meta description for SEO" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;resize:vertical;"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="blogKeywords">Keywords (comma-separated)</label>
+                                    <input type="text" id="blogKeywords" placeholder="resume, CV, ATS" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;">
+                                </div>
+                                <div class="form-group">
+                                    <label for="blogCategory">Category</label>
+                                    <input type="text" id="blogCategory" value="General" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;">
+                                </div>
+                                <div class="form-group">
+                                    <label for="blogAudience">Audience</label>
+                                    <select id="blogAudience" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;">
+                                        <option value="general">General</option>
+                                        <option value="ads">Ads Optimized</option>
+                                        <option value="ai">AI Optimized</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="blogFeatureImage">Feature Image URL</label>
+                                    <input type="text" id="blogFeatureImage" placeholder="https://..." style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;">
+                                </div>
+                                <div class="form-group">
+                                    <label for="blogCanonical">Canonical URL (optional)</label>
+                                    <input type="text" id="blogCanonical" placeholder="https://..." style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;">
+                                </div>
+                            </div>
+
+                            <div class="card card-no-hover" style="margin-top:16px;">
+                                <div class="card-header"><h2>Image Library</h2></div>
+                                <label class="btn btn-xs btn-primary" style="cursor:pointer;margin-bottom:12px;">
+                                    Upload New Image
+                                    <input type="file" accept="image/*" onchange="blogUploadImage(this)" style="display:none;">
+                                </label>
+                                <div id="blogImageLibrary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;max-height:300px;overflow-y:auto;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -1611,6 +1721,7 @@
         else if (tabName === 'costs') { loadCostData(); }
         else if (tabName === 'security') { loadSecurityData(); }
         else if (tabName === 'settings') { loadSessionConfig(); }
+        else if (tabName === 'blog') { loadBlogPosts(); }
 
         var sidebar = document.getElementById('sidebarNav');
         if (sidebar) sidebar.classList.remove('mobile-open');
@@ -2975,6 +3086,253 @@
         navigator.clipboard.writeText(out.textContent).then(function() {
             showToast('Copied to clipboard', 'success');
         }).catch(function() { showToast('Could not copy', 'error'); });
+    }
+
+    /* ───────────────────────────────────────────────────
+       Blog CMS
+       ─────────────────────────────────────────────────── */
+    var blogCurrentPostId = null;
+    var blogSearchTimer = null;
+
+    function blogSearchDebounce() {
+        if (blogSearchTimer) clearTimeout(blogSearchTimer);
+        blogSearchTimer = setTimeout(loadBlogPosts, 400);
+    }
+
+    async function loadBlogPosts() {
+        var status = document.getElementById('blogFilterStatus').value;
+        var search = document.getElementById('blogSearchInput').value;
+        var params = new URLSearchParams();
+        if (status) params.set('status', status);
+        if (search) params.set('search', search);
+        try {
+            var r = await fetch('/admin/api/blog/posts?' + params.toString());
+            var d = await r.json();
+            renderBlogTable(d.posts || []);
+        } catch(e) { showToast('Failed to load posts', 'error'); }
+        loadBlogImages();
+    }
+
+    function renderBlogTable(posts) {
+        var html = '<table class="data-table" id="blogTable"><thead><tr><th>Title</th><th>Status</th><th>Category</th><th>Audience</th><th>Updated</th><th>Actions</th></tr></thead><tbody>';
+        for (var i = 0; i < posts.length; i++) {
+            var p = posts[i];
+            var statusClass = p.status === 'published' ? 'color:var(--success)' : 'color:var(--warning)';
+            html += '<tr>'
+                + '<td><a href="javascript:void(0)" onclick="blogShowEditor(\'' + p.id + '\')" style="color:var(--accent);font-weight:600;">' + esc(p.title) + '</a></td>'
+                + '<td><span style="' + statusClass + ';font-weight:600;text-transform:capitalize;">' + esc(p.status) + '</span></td>'
+                + '<td>' + esc(p.category) + '</td>'
+                + '<td>' + esc(p.audience) + '</td>'
+                + '<td>' + relativeTime(p.updated_at) + '</td>'
+                + '<td><div class="table-actions">'
+                + '<button class="btn btn-xs btn-secondary" onclick="blogShowEditor(\'' + p.id + '\')">Edit</button>'
+                + (p.status === 'published' ? '<a class="btn btn-xs btn-secondary" href="/blog/' + encodeURIComponent(p.slug) + '" target="_blank">View</a>' : '')
+                + '</div></td>'
+                + '</tr>';
+        }
+        html += '</tbody></table>';
+        if (posts.length === 0) html = '<p style="color:var(--text-secondary);padding:20px;">No posts found. Click <b>New Post</b> to create one, or <b>Import from Files</b> to import existing posts.</p>';
+        document.getElementById('blogPostsTable').innerHTML = html;
+        makeSortable('blogTable');
+    }
+
+    function blogShowList() {
+        document.getElementById('blogListView').style.display = '';
+        document.getElementById('blogEditorView').style.display = 'none';
+        blogCurrentPostId = null;
+        loadBlogPosts();
+    }
+
+    async function blogShowEditor(postId) {
+        document.getElementById('blogListView').style.display = 'none';
+        document.getElementById('blogEditorView').style.display = '';
+        document.getElementById('blogPreviewPane').style.display = 'none';
+
+        blogCurrentPostId = postId;
+        var delBtn = document.getElementById('blogDeleteBtn');
+        var pubBtn = document.getElementById('blogPublishBtn');
+
+        if (postId) {
+            try {
+                var r = await fetch('/admin/api/blog/posts/' + postId);
+                var p = await r.json();
+                document.getElementById('blogTitle').value = p.title || '';
+                document.getElementById('blogSlug').value = p.slug || '';
+                document.getElementById('blogContentMd').value = p.content_md || '';
+                document.getElementById('blogDescription').value = p.description || '';
+                document.getElementById('blogKeywords').value = p.keywords || '';
+                document.getElementById('blogCategory').value = p.category || 'General';
+                document.getElementById('blogAudience').value = p.audience || 'general';
+                document.getElementById('blogFeatureImage').value = p.feature_image_url || '';
+                document.getElementById('blogCanonical').value = p.canonical_url || '';
+                pubBtn.textContent = p.status === 'published' ? 'Unpublish' : 'Publish';
+                delBtn.style.display = '';
+            } catch(e) { showToast('Failed to load post', 'error'); }
+        } else {
+            document.getElementById('blogTitle').value = '';
+            document.getElementById('blogSlug').value = '';
+            document.getElementById('blogContentMd').value = '';
+            document.getElementById('blogDescription').value = '';
+            document.getElementById('blogKeywords').value = '';
+            document.getElementById('blogCategory').value = 'General';
+            document.getElementById('blogAudience').value = 'general';
+            document.getElementById('blogFeatureImage').value = '';
+            document.getElementById('blogCanonical').value = '';
+            pubBtn.textContent = 'Publish';
+            delBtn.style.display = 'none';
+        }
+        document.getElementById('blogSaveStatus').textContent = '';
+        loadBlogImages();
+    }
+
+    async function blogSavePost() {
+        var data = {
+            title: document.getElementById('blogTitle').value,
+            slug: document.getElementById('blogSlug').value,
+            content_md: document.getElementById('blogContentMd').value,
+            description: document.getElementById('blogDescription').value,
+            keywords: document.getElementById('blogKeywords').value,
+            category: document.getElementById('blogCategory').value,
+            audience: document.getElementById('blogAudience').value,
+            feature_image_url: document.getElementById('blogFeatureImage').value,
+            canonical_url: document.getElementById('blogCanonical').value,
+        };
+        if (!data.title.trim()) { showToast('Title is required', 'error'); return; }
+
+        try {
+            var url, method;
+            if (blogCurrentPostId) {
+                url = '/admin/api/blog/posts/' + blogCurrentPostId;
+                method = 'PUT';
+            } else {
+                url = '/admin/api/blog/posts';
+                method = 'POST';
+            }
+            var r = await fetch(url, { method: method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+            var result = await r.json();
+            if (!r.ok) { showToast(result.error || 'Save failed', 'error'); return; }
+            blogCurrentPostId = result.id;
+            document.getElementById('blogSlug').value = result.slug || '';
+            document.getElementById('blogDeleteBtn').style.display = '';
+            document.getElementById('blogPublishBtn').textContent = result.status === 'published' ? 'Unpublish' : 'Publish';
+            document.getElementById('blogSaveStatus').textContent = 'Saved ' + new Date().toLocaleTimeString();
+            showToast('Post saved', 'success');
+        } catch(e) { showToast('Failed to save', 'error'); }
+    }
+
+    async function blogTogglePublish() {
+        if (!blogCurrentPostId) { showToast('Save the post first', 'info'); return; }
+        var btn = document.getElementById('blogPublishBtn');
+        var action = btn.textContent.trim() === 'Publish' ? 'publish' : 'unpublish';
+        try {
+            var r = await fetch('/admin/api/blog/posts/' + blogCurrentPostId + '/' + action, { method: 'POST' });
+            var result = await r.json();
+            if (!r.ok) { showToast(result.error || 'Action failed', 'error'); return; }
+            btn.textContent = result.status === 'published' ? 'Unpublish' : 'Publish';
+            showToast(action === 'publish' ? 'Post published' : 'Post unpublished', 'success');
+        } catch(e) { showToast('Failed', 'error'); }
+    }
+
+    async function blogDeletePost() {
+        if (!blogCurrentPostId) return;
+        if (!confirm('Delete this post permanently?')) return;
+        try {
+            var r = await fetch('/admin/api/blog/posts/' + blogCurrentPostId, { method: 'DELETE' });
+            if (!r.ok) { showToast('Delete failed', 'error'); return; }
+            showToast('Post deleted', 'success');
+            blogShowList();
+        } catch(e) { showToast('Failed', 'error'); }
+    }
+
+    async function blogImportFiles() {
+        if (!confirm('Import all file-based blog posts into the database? Duplicates (same slug) will be skipped.')) return;
+        try {
+            var r = await fetch('/admin/api/blog/import', { method: 'POST' });
+            var d = await r.json();
+            showToast('Imported ' + (d.imported || 0) + ' posts', 'success');
+            loadBlogPosts();
+        } catch(e) { showToast('Import failed', 'error'); }
+    }
+
+    function blogTogglePreview() {
+        var pane = document.getElementById('blogPreviewPane');
+        if (pane.style.display === 'none') {
+            pane.style.display = '';
+            blogAutoPreview();
+        } else {
+            pane.style.display = 'none';
+        }
+    }
+
+    function blogAutoPreview() {
+        var pane = document.getElementById('blogPreviewPane');
+        if (pane.style.display === 'none') return;
+        var md = document.getElementById('blogContentMd').value;
+        pane.innerHTML = blogSimpleRender(md);
+    }
+
+    function blogSimpleRender(md) {
+        var html = esc(md);
+        html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+        html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+        html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        html = html.replace(/`([^`]+)`/g, '<code style="background:var(--accent-light);padding:2px 4px;border-radius:3px;">$1</code>');
+        html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%;border-radius:8px;margin:8px 0;">');
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:var(--accent);">$1</a>');
+        html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+        html = html.replace(/\n\n/g, '</p><p>');
+        html = '<p>' + html + '</p>';
+        return html;
+    }
+
+    async function blogUploadImage(input) {
+        if (!input.files || !input.files[0]) return;
+        var formData = new FormData();
+        formData.append('file', input.files[0]);
+        try {
+            var r = await fetch('/admin/api/blog/images', { method: 'POST', body: formData });
+            var d = await r.json();
+            if (!r.ok) { showToast(d.error || 'Upload failed', 'error'); return; }
+            var mdTag = '![' + esc(d.filename) + '](' + d.url + ')';
+            var ta = document.getElementById('blogContentMd');
+            var pos = ta.selectionStart || ta.value.length;
+            ta.value = ta.value.substring(0, pos) + '\n' + mdTag + '\n' + ta.value.substring(pos);
+            blogAutoPreview();
+            showToast('Image uploaded', 'success');
+            loadBlogImages();
+        } catch(e) { showToast('Upload failed', 'error'); }
+        input.value = '';
+    }
+
+    async function loadBlogImages() {
+        try {
+            var r = await fetch('/admin/api/blog/images');
+            var d = await r.json();
+            var lib = document.getElementById('blogImageLibrary');
+            if (!lib) return;
+            var html = '';
+            var images = d.images || [];
+            for (var i = 0; i < images.length && i < 50; i++) {
+                html += '<div style="cursor:pointer;border:1px solid var(--border);border-radius:6px;overflow:hidden;aspect-ratio:1;" '
+                    + 'onclick="blogInsertImage(\'' + images[i].url + '\',\'' + esc(images[i].filename) + '\')" '
+                    + 'title="Click to insert: ' + esc(images[i].filename) + '">'
+                    + '<img src="' + images[i].url + '" alt="' + esc(images[i].filename) + '" style="width:100%;height:100%;object-fit:cover;" loading="lazy">'
+                    + '</div>';
+            }
+            if (!html) html = '<p style="font-size:12px;color:var(--text-tertiary);grid-column:1/-1;">No images uploaded yet.</p>';
+            lib.innerHTML = html;
+        } catch(e) {}
+    }
+
+    function blogInsertImage(url, filename) {
+        var ta = document.getElementById('blogContentMd');
+        var mdTag = '![' + filename + '](' + url + ')';
+        var pos = ta.selectionStart || ta.value.length;
+        ta.value = ta.value.substring(0, pos) + '\n' + mdTag + '\n' + ta.value.substring(pos);
+        blogAutoPreview();
+        showToast('Image inserted', 'info');
     }
 
     /* ───────────────────────────────────────────────────
