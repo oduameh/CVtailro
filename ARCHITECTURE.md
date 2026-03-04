@@ -33,7 +33,7 @@ config.py      Pipeline config
 models.py      Pydantic schemas (JobAnalysis, ResumeData, etc.)
 base_agent.py  OpenRouter client, retries, JSON extraction
 storage.py     Cloudflare R2 client
-pdf_generator  WeasyPrint, 3 CSS templates
+pdf_generator  WeasyPrint, 8 CSS templates
 docx_generator python-docx
 ```
 
@@ -76,11 +76,13 @@ All queries (admin analytics, alerts, reliability, cost) must use `"complete"` -
 ## Key Design Decisions
 
 - **Unified resume** -- One optimized resume (not separate ATS/Recruiter). `recruiter_resume_md` column is deprecated (same as `ats_resume_md`).
-- **3 PDF templates** -- Modern, Executive, Minimal -- user picks at download
+- **8 PDF templates** -- Modern, Executive, Minimal, Creative, Compact, Professional, Tech, Elegant
 - **Gap Analysis** -- Pure Python, no LLM (instant, cheap)
 - **Bullet Optimiser** -- Parallel per role for speed
 - **DB fallback** -- PDFs regenerated from stored markdown when R2/local missing
-- **Admin config** -- DB-backed for multi-instance deployments
+- **Admin config** -- DB-backed for multi-instance deployments; `OPENROUTER_API_KEY` env var always overrides DB
+- **CSRF** -- `admin_bp` and `api_bp` blueprints are CSRF-exempt (session auth). CSRF cookie auto-regenerates when session token is lost.
+- **Error handling** -- HTTP exceptions (400, 403, 404) return proper status codes; only true unhandled exceptions return 500
 - **Telemetry** -- Analytics events with PII redaction, stored in `AnalyticsEvent` table
 
 ## Logging

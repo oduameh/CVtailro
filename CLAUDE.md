@@ -2,7 +2,7 @@
 
 ## What This Is
 Production AI resume tailoring SaaS. Live at https://cvtailro-production.up.railway.app
-Users sign in with Google, upload a PDF resume + paste a job description, get back an AI-optimized resume in 3 PDF templates (Modern/Executive/Minimal) + DOCX + match report + interview talking points.
+Users sign in with Google, upload a PDF resume + paste a job description, get back an AI-optimized resume in 8 PDF templates + DOCX + match report + interview talking points.
 
 **Business model**: Admin (Emmanuel) provides the OpenRouter API key. Users get the service for free. Admin pays API costs.
 
@@ -22,12 +22,13 @@ Stage 3: Gap Analysis (pure Python, instant)
 Stage 4: Bullet Optimiser (parallel per role if 3+ roles)
 Stages 5+6 PARALLEL: Resume Optimiser + Talking Points
 ```
-One unified resume output (was two ATS+Recruiter, merged). All 3 PDF templates generated per job.
+One unified resume output (was two ATS+Recruiter, merged). All 8 PDF templates generated per job.
 
 ## Documentation
 - [README.md](README.md) — Public overview, quick start
 - [ARCHITECTURE.md](ARCHITECTURE.md) — Technical architecture for maintainers
 - [SETUP.md](SETUP.md) — Infrastructure and deployment
+- `/admin/docs` — Comprehensive HTML docs (accessible from admin panel sidebar)
 
 ## Project Structure
 ```
@@ -66,7 +67,7 @@ CVtailro/
   similarity.py                # TF-IDF cosine similarity
   analytics.py                 # Token/cost tracking singleton
   storage.py                   # Cloudflare R2 client
-  pdf_generator.py             # 3 CSS templates, markdown→HTML→PDF
+  pdf_generator.py             # 8 CSS templates, markdown→HTML→PDF
   docx_generator.py            # Markdown→DOCX (Calibri)
   resume_quality.py            # Pure Python resume quality scoring
   email_templates.py           # Follow-up email templates
@@ -112,7 +113,7 @@ See SETUP.md for full infrastructure guide.
 
 ## Key Design Decisions
 1. Unified resume (not separate ATS/Recruiter) — one great resume > two decent ones
-2. All 3 templates generated per job — user picks when downloading
+2. All 8 templates generated per job — user picks when downloading
 3. Gap Analysis is pure Python (no LLM) — instant, saves API costs
 4. Bullet Optimiser splits by role (parallel) — 5min → 10sec
 5. Pipeline semaphore: max 5 concurrent, queue 50
@@ -125,6 +126,9 @@ See SETUP.md for full infrastructure guide.
 12. Admin config DB-backed — works across multiple instances/containers
 13. Structured JSON logging in production — request IDs for tracing
 14. Dark mode — CSS variables, localStorage persistence, system preference
+15. CSRF exempt on admin_bp and api_bp — session-based auth, no form tokens needed
+16. Env var `OPENROUTER_API_KEY` always overrides DB — ensures Railway key rotation works
+17. CSRF cookie regeneration — auto-recovers when session loses its token
 
 ## How to Extend
 1. Modify prompts: edit `.txt` files in `prompts/` — no code changes

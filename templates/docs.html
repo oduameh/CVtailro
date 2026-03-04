@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CVtailro — Technical Documentation</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f1117;--card:#1a1d27;--card-border:#2a2d3a;--accent:#6366f1;--accent-dim:#4f46e5;--text:#e2e8f0;--text-muted:#94a3b8;--text-dim:#64748b;--green:#22c55e;--red:#ef4444;--yellow:#eab308;--blue:#3b82f6;--orange:#f97316;--sidebar-w:260px;--font-mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;--font-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--text);line-height:1.65;display:flex;min-height:100vh}
+
+/* ── Sidebar ─────────────────────────────────────── */
+.sidebar{position:fixed;top:0;left:0;width:var(--sidebar-w);height:100vh;background:var(--card);border-right:1px solid var(--card-border);overflow-y:auto;z-index:100;padding:20px 0;display:flex;flex-direction:column}
+.sidebar-header{padding:0 20px 16px;border-bottom:1px solid var(--card-border);margin-bottom:12px}
+.sidebar-header h2{font-size:15px;font-weight:700;color:var(--accent);letter-spacing:.5px}
+.sidebar-header .sub{font-size:11px;color:var(--text-dim);margin-top:2px}
+.sidebar nav{flex:1;padding:0 12px}
+.sidebar nav a{display:block;padding:7px 12px;font-size:13px;color:var(--text-muted);text-decoration:none;border-radius:6px;margin-bottom:1px;transition:all .15s}
+.sidebar nav a:hover,.sidebar nav a.active{color:var(--text);background:rgba(99,102,241,.12)}
+.sidebar nav a.active{border-left:3px solid var(--accent);padding-left:9px;color:#fff}
+.sidebar nav .nav-group{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);padding:14px 12px 5px;margin-top:4px}
+.sidebar-footer{padding:12px 20px;border-top:1px solid var(--card-border);margin-top:auto}
+.sidebar-footer a{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--accent);text-decoration:none;padding:6px 0}
+.sidebar-footer a:hover{text-decoration:underline}
+
+/* ── Main Content ────────────────────────────────── */
+.main{margin-left:var(--sidebar-w);flex:1;padding:40px 48px 80px;max-width:960px}
+.main h1{font-size:28px;font-weight:800;margin-bottom:8px;background:linear-gradient(135deg,var(--accent),#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.main .lead{color:var(--text-muted);font-size:15px;margin-bottom:32px}
+.main h2{font-size:20px;font-weight:700;color:#fff;margin:40px 0 16px;padding-top:20px;border-top:1px solid var(--card-border)}
+.main h2:first-of-type{border-top:none;margin-top:24px}
+.main h3{font-size:16px;font-weight:600;color:var(--text);margin:24px 0 10px}
+.main p{margin-bottom:12px;color:var(--text-muted);font-size:14px}
+.main ul,.main ol{margin:0 0 12px 20px;color:var(--text-muted);font-size:14px}
+.main li{margin-bottom:4px}
+.main code{font-family:var(--font-mono);font-size:12.5px;background:rgba(99,102,241,.1);color:var(--accent);padding:2px 6px;border-radius:4px}
+.main strong{color:var(--text)}
+
+/* ── Cards & Tables ──────────────────────────────── */
+.card{background:var(--card);border:1px solid var(--card-border);border-radius:10px;padding:20px;margin-bottom:16px}
+.card h3{margin-top:0}
+table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px}
+th{text-align:left;padding:10px 12px;background:rgba(99,102,241,.08);color:var(--accent);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--card-border)}
+td{padding:9px 12px;border-bottom:1px solid var(--card-border);color:var(--text-muted);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(99,102,241,.04)}
+
+/* ── Badges ──────────────────────────────────────── */
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px}
+.badge-required{background:rgba(239,68,68,.15);color:var(--red)}
+.badge-optional{background:rgba(34,197,94,.12);color:var(--green)}
+.badge-get{background:rgba(59,130,246,.15);color:var(--blue)}
+.badge-post{background:rgba(249,115,22,.15);color:var(--orange)}
+.badge-delete{background:rgba(239,68,68,.15);color:var(--red)}
+.badge-put{background:rgba(234,179,8,.15);color:var(--yellow)}
+.badge-parallel{background:rgba(34,197,94,.12);color:var(--green)}
+.badge-sequential{background:rgba(234,179,8,.12);color:var(--yellow)}
+.badge-pure-python{background:rgba(99,102,241,.12);color:var(--accent)}
+.badge-llm{background:rgba(249,115,22,.12);color:var(--orange)}
+
+/* ── Pre / Code blocks ───────────────────────────── */
+pre{background:#13151e;border:1px solid var(--card-border);border-radius:8px;padding:16px;overflow-x:auto;font-family:var(--font-mono);font-size:12.5px;color:var(--text-muted);line-height:1.6;margin-bottom:16px;white-space:pre}
+
+/* ── Info / Warning boxes ────────────────────────── */
+.info-box{padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;display:flex;gap:10px;align-items:flex-start}
+.info-box.info{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);color:var(--blue)}
+.info-box.warning{background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.2);color:var(--yellow)}
+.info-box.success{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);color:var(--green)}
+.info-box .icon{font-size:16px;flex-shrink:0;margin-top:1px}
+
+/* ── Responsive ──────────────────────────────────── */
+@media(max-width:800px){
+  .sidebar{position:relative;width:100%;height:auto;max-height:none;border-right:none;border-bottom:1px solid var(--card-border)}
+  .sidebar nav{display:flex;flex-wrap:wrap;gap:4px}
+  .sidebar nav .nav-group{width:100%}
+  .main{margin-left:0;padding:24px 16px 60px}
+  body{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════ SIDEBAR ════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <h2>CVtailro Docs</h2>
+    <div class="sub">Technical Reference</div>
+  </div>
+  <nav>
+    <div class="nav-group">System</div>
+    <a href="#architecture">Architecture Overview</a>
+    <a href="#pipeline">Pipeline</a>
+    <a href="#output">Output Generation</a>
+    <div class="nav-group">Backend</div>
+    <a href="#backend">App Factory &amp; Config</a>
+    <a href="#database">Database Schema</a>
+    <a href="#api">API Reference</a>
+    <div class="nav-group">Client</div>
+    <a href="#frontend">Frontend Flow</a>
+    <div class="nav-group">Operations</div>
+    <a href="#deployment">Deployment</a>
+    <a href="#troubleshooting">Troubleshooting</a>
+  </nav>
+  <div class="sidebar-footer">
+    <a href="/admin">&#8592; Back to Admin Panel</a>
+  </div>
+</aside>
+
+<!-- ════════════════════════ CONTENT ════════════════════════ -->
+<div class="main">
+
+<h1>CVtailro Technical Documentation</h1>
+<p class="lead">
+  Production AI resume tailoring SaaS &mdash; comprehensive reference for maintainers, operators, and contributors.
+</p>
+
+<!-- ────────────────────── 1. ARCHITECTURE ────────────────────── -->
+<h2 id="architecture">1. Architecture Overview</h2>
+
+<h3>Tech Stack</h3>
+<div class="card">
+<table>
+  <tr><th style="width:30%">Layer</th><th>Technology</th></tr>
+  <tr><td><strong>Runtime</strong></td><td>Python 3.13, Flask (app factory + blueprints)</td></tr>
+  <tr><td><strong>ORM / Validation</strong></td><td>SQLAlchemy 2.x, Pydantic v2</td></tr>
+  <tr><td><strong>Database</strong></td><td>PostgreSQL (Railway) &mdash; SQLite fallback in dev</td></tr>
+  <tr><td><strong>Object Storage</strong></td><td>Cloudflare R2 (S3-compatible)</td></tr>
+  <tr><td><strong>Cache / Rate Limit</strong></td><td>Redis (optional, graceful fallback to in-memory)</td></tr>
+  <tr><td><strong>Auth</strong></td><td>Google OAuth 2.0 (Authlib) + email/password, Flask-Login sessions</td></tr>
+  <tr><td><strong>LLM Provider</strong></td><td>OpenRouter API (OpenAI-compatible, default model: GPT-4o-mini)</td></tr>
+  <tr><td><strong>PDF Generation</strong></td><td>WeasyPrint (HTML/CSS &rarr; PDF), 8 CSS templates</td></tr>
+  <tr><td><strong>DOCX Generation</strong></td><td>python-docx (Markdown &rarr; Word, Calibri font)</td></tr>
+  <tr><td><strong>WSGI Server</strong></td><td>Gunicorn (2 workers, 4 threads, 300s timeout)</td></tr>
+  <tr><td><strong>Containerization</strong></td><td>Docker (python:3.13-slim + tini)</td></tr>
+  <tr><td><strong>Deployment</strong></td><td>Railway (auto-deploy on push to <code>main</code>)</td></tr>
+  <tr><td><strong>CI</strong></td><td>GitHub Actions &mdash; Ruff lint + pytest (179 tests)</td></tr>
+  <tr><td><strong>Security</strong></td><td>CSRF (Flask-WTF), Flask-Limiter, Sentry (optional), security headers</td></tr>
+  <tr><td><strong>Telemetry</strong></td><td>Analytics events with PII redaction, stored in <code>analytics_events</code> table</td></tr>
+</table>
+</div>
+
+<h3>Business Model</h3>
+<p>
+  Admin (owner) provides the OpenRouter API key. Users access the full service for free.
+  Admin pays API costs. Rate limiting controls per-user consumption.
+</p>
+
+<h3>End-to-End Data Flow</h3>
+<div class="card">
+<pre>
+ User uploads PDF + pastes Job Description
+                  │
+                  ▼
+ ┌─────────────────────────────────────────────────────────────┐
+ │  /api/tailor  (POST)                                        │
+ │  Validate PDF ─► Extract text ─► Create TailoringJob in DB  │
+ │  Enqueue pipeline thread (semaphore: max 5 concurrent)      │
+ └─────────────────┬───────────────────────────────────────────┘
+                   │
+     ┌─────────────┴──────────────┐
+     ▼                            ▼
+ ┌──────────────┐         ┌─────────────────┐
+ │ Stage 1:     │         │ Stage 2:        │
+ │ Job Intel    │         │ Resume Parser   │     PARALLEL
+ │ (LLM)       │         │ (LLM)           │
+ └──────┬───────┘         └────────┬────────┘
+        └──────────┬───────────────┘
+                   ▼
+          ┌────────────────┐
+          │ Stage 3:       │
+          │ Gap Analysis   │     SEQUENTIAL (pure Python, instant)
+          │ (no LLM)       │
+          └───────┬────────┘
+                  ▼
+        ┌─────────────────┐
+        │ Stage 4:        │
+        │ Bullet Optimiser│     PARALLEL per role (if 3+ roles)
+        │ (LLM)           │
+        └────────┬────────┘
+                 │
+     ┌───────────┴──────────────┐
+     ▼                          ▼
+ ┌──────────────┐        ┌──────────────────┐
+ │ Stage 5:     │        │ Stage 6:         │
+ │ Resume       │        │ Talking Points   │   PARALLEL
+ │ Optimiser    │        │ (Final Assembly) │
+ │ (LLM)       │        │ (LLM)            │
+ └──────┬───────┘        └────────┬─────────┘
+        └──────────┬──────────────┘
+                   ▼
+ ┌─────────────────────────────────────────────────────────────┐
+ │  Output Generation                                          │
+ │  8 PDF templates + DOCX + Match Report + Talking Points     │
+ │  Upload to R2 ─► Save metadata to DB ─► Update job status   │
+ └─────────────────────────────────────────────────────────────┘
+                   │
+                   ▼
+ SSE progress stream (/api/progress/&lt;job_id&gt;) ─► Frontend
+ Results + Download (/api/result, /api/download)
+</pre>
+</div>
+
+<!-- ────────────────────── 2. PIPELINE ────────────────────── -->
+<h2 id="pipeline">2. Pipeline</h2>
+
+<h3>6-Stage Pipeline</h3>
+<div class="card">
+<table>
+  <tr><th>Stage</th><th>Agent</th><th>Execution</th><th>Type</th><th>Purpose</th></tr>
+  <tr>
+    <td>1</td>
+    <td><code>JobIntelligenceAgent</code></td>
+    <td><span class="badge badge-parallel">Parallel</span> with Stage 2</td>
+    <td><span class="badge badge-llm">LLM</span></td>
+    <td>Extract structured job requirements, skills, seniority</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><code>ResumeParserAgent</code></td>
+    <td><span class="badge badge-parallel">Parallel</span> with Stage 1</td>
+    <td><span class="badge badge-llm">LLM</span></td>
+    <td>Parse resume into structured roles, skills, education</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><code>GapAnalysisAgent</code></td>
+    <td><span class="badge badge-sequential">Sequential</span></td>
+    <td><span class="badge badge-pure-python">Pure Python</span></td>
+    <td>Compare job vs resume: match score, missing keywords, TF-IDF cosine similarity</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td><code>BulletOptimiserAgent</code></td>
+    <td><span class="badge badge-parallel">Parallel</span> per role</td>
+    <td><span class="badge badge-llm">LLM</span></td>
+    <td>Rewrite bullets to inject keywords, strengthen verbs, add metrics</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td><code>ResumeOptimiserAgent</code></td>
+    <td><span class="badge badge-parallel">Parallel</span> with Stage 6</td>
+    <td><span class="badge badge-llm">LLM</span></td>
+    <td>Produce unified optimised resume (ATS + recruiter friendly)</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td><code>FinalAssemblyAgent</code></td>
+    <td><span class="badge badge-parallel">Parallel</span> with Stage 5</td>
+    <td><span class="badge badge-llm">LLM</span></td>
+    <td>Generate interview talking points from tailored resume</td>
+  </tr>
+</table>
+</div>
+
+<h3>Concurrency Controls</h3>
+<div class="card">
+<table>
+  <tr><th>Parameter</th><th>Value</th><th>Location</th></tr>
+  <tr><td><code>MAX_CONCURRENT_PIPELINES</code></td><td>5</td><td><code>app/services/pipeline.py</code></td></tr>
+  <tr><td><code>MAX_QUEUE_DEPTH</code></td><td>50</td><td><code>app/services/pipeline.py</code></td></tr>
+  <tr><td><code>JOB_TTL_SECONDS</code></td><td>900 (15 min)</td><td><code>app/services/pipeline.py</code></td></tr>
+  <tr><td>Mechanism</td><td colspan="2"><code>threading.Semaphore</code> for concurrency, counter for queue depth</td></tr>
+</table>
+</div>
+<div class="info-box info">
+  <span class="icon">&#9432;</span>
+  <span>Bullet Optimiser splits into parallel threads when 3 or more roles are detected, reducing processing time from ~5 minutes to ~10 seconds.</span>
+</div>
+
+<h3>Agent Details</h3>
+<div class="card">
+<table>
+  <tr><th>Agent</th><th>Prompt File</th><th>Max Tokens</th><th>Output Model (Pydantic)</th></tr>
+  <tr><td>JobIntelligenceAgent</td><td><code>prompts/job_intelligence.txt</code></td><td>16000</td><td><code>JobAnalysis</code></td></tr>
+  <tr><td>ResumeParserAgent</td><td><code>prompts/resume_parser.txt</code></td><td>16000</td><td><code>ResumeData</code></td></tr>
+  <tr><td>GapAnalysisAgent</td><td><code>prompts/gap_analysis.txt</code></td><td>&mdash;</td><td><code>GapReport</code></td></tr>
+  <tr><td>BulletOptimiserAgent</td><td><code>prompts/bullet_optimiser.txt</code></td><td>16000</td><td><code>OptimisedBullets</code></td></tr>
+  <tr><td>ResumeOptimiserAgent</td><td><code>prompts/resume_optimiser.txt</code></td><td>16000</td><td><code>ATSResume</code></td></tr>
+  <tr><td>FinalAssemblyAgent</td><td><code>prompts/final_assembly.txt</code></td><td>16000</td><td><code>FinalOutput</code></td></tr>
+</table>
+</div>
+
+<h3>Key Data Models (Pydantic)</h3>
+<div class="card">
+<table>
+  <tr><th>Model</th><th>Source</th><th>Key Fields</th></tr>
+  <tr><td><code>JobAnalysis</code></td><td>Stage 1</td><td>job_title, company, required_skills, preferred_skills, tools, inferred_seniority, domain_keywords, responsibilities, inferred_priority_skills</td></tr>
+  <tr><td><code>ResumeData</code></td><td>Stage 2</td><td>name, contact_info, summary, roles[], education[], certifications[], global_skills, total_years_estimate</td></tr>
+  <tr><td><code>GapReport</code></td><td>Stage 3</td><td>match_score (0-100), cosine_similarity, missing_keywords[], keyword_frequency[], section_scores{}</td></tr>
+  <tr><td><code>OptimisedBullets</code></td><td>Stage 4</td><td>bullets[] (original, optimised, keywords_injected, fabrication_flag, quality_score), summary_rewrite</td></tr>
+  <tr><td><code>ATSResume</code></td><td>Stage 5</td><td>markdown_content, ats_checks[], keyword_density{}</td></tr>
+  <tr><td><code>FinalOutput</code></td><td>Stage 6</td><td>ats_resume_md, match_report (MatchReport), talking_points[] (TalkingPoint)</td></tr>
+  <tr><td><code>MatchReport</code></td><td>Final</td><td>overall_match_score, cosine_similarity, missing_keywords, ats_checks, rewrite_mode</td></tr>
+</table>
+</div>
+
+<!-- ────────────────────── 3. OUTPUT ────────────────────── -->
+<h2 id="output">3. Output Generation</h2>
+
+<h3>PDF Templates (8 total)</h3>
+<div class="card">
+<table>
+  <tr><th>Template</th><th>Style</th><th>Best For</th></tr>
+  <tr><td><strong>Modern</strong></td><td>Clean lines, blue accent, generous whitespace</td><td>Tech, startups, design</td></tr>
+  <tr><td><strong>Executive</strong></td><td>Serif headers, traditional layout, navy tones</td><td>C-suite, consulting, finance</td></tr>
+  <tr><td><strong>Minimal</strong></td><td>No colour, maximum content density</td><td>ATS parsing, conservative industries</td></tr>
+  <tr><td><strong>Creative</strong></td><td>Bold colours, asymmetric layout</td><td>Marketing, design, media</td></tr>
+  <tr><td><strong>Compact</strong></td><td>Tight spacing, small fonts, two-column skills</td><td>Experienced professionals with dense history</td></tr>
+  <tr><td><strong>Professional</strong></td><td>Balanced serif/sans-serif, subtle dividers</td><td>General corporate, all industries</td></tr>
+  <tr><td><strong>Tech</strong></td><td>Monospace accents, dark header, code-friendly</td><td>Software engineering, DevOps, data</td></tr>
+  <tr><td><strong>Elegant</strong></td><td>Thin borders, refined typography, light palette</td><td>Academic, legal, luxury brands</td></tr>
+</table>
+</div>
+<p>All 8 PDFs are generated for every tailoring job. The user chooses which template to download from the results page.</p>
+<p>
+  <strong>Smart filenames:</strong> <code>Software_Engineer_Google_Modern.pdf</code> &mdash;
+  built from <code>{job_title}_{company}_{template}.pdf</code>.
+</p>
+
+<h3>DOCX Generation</h3>
+<p>
+  A single Word document is generated using <code>python-docx</code> with Calibri font.
+  The markdown content is parsed and converted to styled paragraphs, bullet lists, and heading levels.
+  Filename pattern: <code>Software_Engineer_Google.docx</code>.
+</p>
+
+<h3>File Storage &amp; Retrieval (3-Tier Fallback)</h3>
+<div class="card">
+<table>
+  <tr><th>Priority</th><th>Source</th><th>Details</th></tr>
+  <tr><td>1</td><td><strong>Local disk</strong></td><td>In-memory job dict &rarr; <code>output_dir</code> path &rarr; <code>send_from_directory</code></td></tr>
+  <tr><td>2</td><td><strong>Cloudflare R2</strong></td><td><code>JobFile.r2_key</code> &rarr; presigned URL redirect</td></tr>
+  <tr><td>3</td><td><strong>DB regeneration</strong></td><td>Stored <code>ats_resume_md</code> &rarr; WeasyPrint/python-docx on the fly</td></tr>
+</table>
+</div>
+
+<!-- ────────────────────── 4. BACKEND ────────────────────── -->
+<h2 id="backend">4. Backend</h2>
+
+<h3>App Factory Init Order</h3>
+<p>The <code>create_app()</code> function in <code>app/__init__.py</code> initialises components in this order:</p>
+<div class="card">
+<table>
+  <tr><th>#</th><th>Step</th><th>Function</th></tr>
+  <tr><td>1</td><td>Load settings class (Dev/Prod/Test)</td><td><code>flask_app.config.from_object()</code></td></tr>
+  <tr><td>2</td><td>Secret key check (production only)</td><td><code>ProductionSettings._check_secret_key()</code></td></tr>
+  <tr><td>3</td><td>ProxyFix middleware (non-dev)</td><td><code>ProxyFix(x_for=1, x_proto=1, x_host=1)</code></td></tr>
+  <tr><td>4</td><td>Structured logging + Sentry</td><td><code>init_structured_logging(), init_sentry()</code></td></tr>
+  <tr><td>5</td><td>Extensions init</td><td>db, migrate, login_manager, csrf, limiter, r2_storage</td></tr>
+  <tr><td>6</td><td>OAuth (Google)</td><td><code>_init_oauth()</code></td></tr>
+  <tr><td>7</td><td>Redis</td><td><code>init_redis()</code> (graceful fallback)</td></tr>
+  <tr><td>8</td><td>Register blueprints</td><td><code>register_blueprints()</code></td></tr>
+  <tr><td>9</td><td>Security headers</td><td>CSP, HSTS, X-Frame-Options, CSRF cookie</td></tr>
+  <tr><td>10</td><td>Error handlers</td><td>404, 500, generic Exception handler</td></tr>
+  <tr><td>11</td><td>Request ID middleware</td><td><code>init_request_id()</code></td></tr>
+  <tr><td>12</td><td>Database migrations</td><td><code>db.create_all()</code> + column migration</td></tr>
+</table>
+</div>
+
+<h3>Configuration Classes</h3>
+<div class="card">
+<table>
+  <tr><th>Class</th><th>Key Differences</th></tr>
+  <tr><td><code>DevelopmentSettings</code></td><td>DEBUG=True, SESSION_COOKIE_SECURE=False, SQLite default</td></tr>
+  <tr><td><code>ProductionSettings</code></td><td>DEBUG=False, SESSION_COOKIE_SECURE=True, requires FLASK_SECRET_KEY env var</td></tr>
+  <tr><td><code>TestingSettings</code></td><td>TESTING=True, SQLite in-memory, CSRF disabled, rate limiting disabled</td></tr>
+</table>
+<p style="margin-top:10px">Common: <code>MAX_CONTENT_LENGTH=10MB</code>, <code>PERMANENT_SESSION_LIFETIME=24h</code>, <code>WTF_CSRF_TIME_LIMIT=1h</code>, <code>REMEMBER_COOKIE_DURATION=14d</code></p>
+</div>
+
+<h3>AdminConfigManager</h3>
+<div class="card">
+<p><strong>Load order</strong> (each layer overrides the previous):</p>
+<table>
+  <tr><th>Priority</th><th>Source</th><th>Details</th></tr>
+  <tr><td>1 (lowest)</td><td>Defaults</td><td>Empty <code>AdminConfig</code> dataclass</td></tr>
+  <tr><td>2</td><td><code>admin_config.json</code></td><td>File fallback for backward compatibility</td></tr>
+  <tr><td>3</td><td>Database</td><td><code>admin_settings</code> table (preferred for multi-instance)</td></tr>
+  <tr><td>4 (highest)</td><td>Environment variables</td><td><code>OPENROUTER_API_KEY</code> &amp; <code>ADMIN_PASSWORD</code> always override</td></tr>
+</table>
+</div>
+<div class="info-box warning">
+  <span class="icon">&#9888;</span>
+  <span><code>OPENROUTER_API_KEY</code> env var <strong>always overrides</strong> the DB value. This ensures Railway key rotation works without touching the database.</span>
+</div>
+<p><strong>Caching:</strong> In-memory cache with 5-second TTL. Thread-safe via <code>threading.Lock</code>.</p>
+<p><strong>Password hashing:</strong> pbkdf2:sha256 (Werkzeug). Legacy SHA-256 hashes are auto-upgraded on successful login.</p>
+
+<h3 id="database">Database Schema</h3>
+<div class="card">
+<table>
+  <tr><th>Table</th><th>Key Columns</th><th>Purpose</th></tr>
+  <tr>
+    <td><code>users</code></td>
+    <td>id (PK), google_id, email (unique), name, picture_url, is_admin, password_hash, email_verified, auth_provider, created_at, last_login_at</td>
+    <td>User accounts (Google OAuth + email/password)</td>
+  </tr>
+  <tr>
+    <td><code>tailoring_jobs</code></td>
+    <td>id (PK), user_id (FK), status, job_title, company, match_score, original_match_score, model_used, ats_resume_md, talking_points_md, cover_letter_md, section_scores (JSON), resume_quality_json, duration_seconds, created_at</td>
+    <td>Pipeline results &amp; full job data</td>
+  </tr>
+  <tr>
+    <td><code>job_files</code></td>
+    <td>id (PK), job_id (FK, CASCADE), filename, r2_key, content_type, size_bytes, created_at</td>
+    <td>R2 file metadata for each generated file</td>
+  </tr>
+  <tr>
+    <td><code>job_applications</code></td>
+    <td>id (PK), user_id (FK), tailoring_job_id (FK), company, job_title, status, url, notes, applied_date, interview_date</td>
+    <td>Job application tracker</td>
+  </tr>
+  <tr>
+    <td><code>saved_resumes</code></td>
+    <td>id (PK), user_id (FK), name, resume_text, file_hash, created_at, updated_at</td>
+    <td>Reusable master resumes</td>
+  </tr>
+  <tr>
+    <td><code>admin_settings</code></td>
+    <td>id (PK), key (unique), value, updated_at</td>
+    <td>Key-value config store (api_key, model, rate limit, password)</td>
+  </tr>
+  <tr>
+    <td><code>analytics_events</code></td>
+    <td>id (PK), event_name, category, event_time, user_id_hash, request_id, job_id, metadata_json</td>
+    <td>Raw telemetry events (90-day retention)</td>
+  </tr>
+  <tr>
+    <td><code>daily_metrics</code></td>
+    <td>id (PK), date, metric_name, metric_value, dimension_key, dimensions (JSON)</td>
+    <td>Pre-aggregated daily metrics for dashboards</td>
+  </tr>
+</table>
+</div>
+<p><strong>Job Status values:</strong> <code>running</code>, <code>complete</code>, <code>error</code> &mdash; defined in <code>JobStatus</code> class. Always use <code>"complete"</code> (never <code>"completed"</code>).</p>
+
+<!-- ────────────────────── 5. API REFERENCE ────────────────────── -->
+<h2 id="api">5. API Reference</h2>
+
+<h3>Authentication Routes (<code>auth_bp</code> &mdash; <code>/auth</code>)</h3>
+<div class="card">
+<table>
+  <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/auth/login/google</code></td><td>None</td><td>Initiate Google OAuth flow</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/auth/callback</code></td><td>None</td><td>Google OAuth callback</td></tr>
+  <tr><td><span class="badge badge-post">POST</span></td><td><code>/auth/register</code></td><td>None</td><td>Email/password registration</td></tr>
+  <tr><td><span class="badge badge-post">POST</span></td><td><code>/auth/login</code></td><td>None</td><td>Email/password login</td></tr>
+  <tr><td><span class="badge badge-post">POST</span></td><td><code>/auth/logout</code></td><td>Session</td><td>Log out current user</td></tr>
+  <tr><td><span class="badge badge-post">POST</span></td><td><code>/auth/forgot-password</code></td><td>None</td><td>Send password reset email</td></tr>
+  <tr><td><span class="badge badge-post">POST</span></td><td><code>/auth/reset-password</code></td><td>Token</td><td>Reset password with token</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/auth/verify-email/&lt;token&gt;</code></td><td>Token</td><td>Confirm email address</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/auth/me</code></td><td>Session</td><td>Current user info</td></tr>
+</table>
+</div>
+
+<h3>Main Routes (<code>main_bp</code>)</h3>
+<div class="card">
+<table>
+  <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/</code></td><td>Main app page</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/health</code></td><td>Health check (DB connectivity)</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/status</code></td><td>API key + service configuration status</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/models</code></td><td>Available LLM models list</td></tr>
+</table>
+</div>
+
+<h3>Tailoring API (<code>api_bp</code> &mdash; CSRF-exempt)</h3>
+<div class="card">
+<table>
+  <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Rate Limit</th><th>Description</th></tr>
+  <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/tailor</code></td><td>Session</td><td>10/hr</td><td>Start tailoring pipeline (multipart: resume file + job description)</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/result/&lt;job_id&gt;</code></td><td>Session</td><td>&mdash;</td><td>Get completed job results (scores, markdown, files list)</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/progress/&lt;job_id&gt;</code></td><td>Session</td><td>&mdash;</td><td>SSE stream &mdash; real-time pipeline progress events</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/download/&lt;job_id&gt;/&lt;filename&gt;</code></td><td>Session</td><td>&mdash;</td><td>Download generated file (PDF/DOCX/MD)</td></tr>
+  <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/score-resume</code></td><td>Session</td><td>20/hr</td><td>Score a resume against a job description (no tailoring)</td></tr>
+  <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/boost-bullet</code></td><td>Session</td><td>30/hr</td><td>Optimise a single bullet point</td></tr>
+  <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/batch-tailor</code></td><td>Session</td><td>3/hr</td><td>Batch tailoring for multiple job descriptions</td></tr>
+</table>
+</div>
+
+<h3>Admin API (<code>admin_bp</code> &mdash; CSRF-exempt)</h3>
+<div class="card">
+<table>
+  <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/admin</code></td><td>Admin panel page</td></tr>
+  <tr><td><span class="badge badge-post">POST</span></td><td><code>/admin/api/login</code></td><td>Admin password authentication (5/min limit)</td></tr>
+  <tr><td><span class="badge badge-post">POST</span></td><td><code>/admin/api/logout</code></td><td>Clear admin session</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/admin/api/config</code></td><td>Get current configuration (API key masked)</td></tr>
+  <tr><td><span class="badge badge-post">POST</span></td><td><code>/admin/api/config</code></td><td>Save configuration changes</td></tr>
+  <tr><td><span class="badge badge-post">POST</span></td><td><code>/admin/api/test-key</code></td><td>Test OpenRouter API key validity</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/admin/api/stats</code></td><td>Dashboard stats: totals, success rate, score improvement</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/admin/api/analytics</code></td><td>Pipeline analytics: tokens, cost, jobs over time</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/admin/api/users</code></td><td>All users with job counts</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/admin/api/user-jobs/&lt;id&gt;</code></td><td>All jobs for a specific user</td></tr>
+  <tr><td><span class="badge badge-post">POST</span></td><td><code>/admin/api/users/&lt;id&gt;/admin</code></td><td>Promote/demote user to admin</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/admin/api/live-stats</code></td><td>Live pipeline state, memory, threads</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/admin/api/recent-jobs</code></td><td>Last 20 jobs across all users</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/admin/api/errors</code></td><td>Pipeline error log</td></tr>
+  <tr><td><span class="badge badge-post">POST</span></td><td><code>/admin/api/errors/clear</code></td><td>Clear pipeline error log</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/admin/api/diagnostics</code></td><td>Health checks (DB, OpenRouter, R2, Redis, pipeline)</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/admin/api/download/&lt;job_id&gt;/&lt;file&gt;</code></td><td>Admin file download (bypasses ownership)</td></tr>
+</table>
+</div>
+
+<h3>Observability Hub (<code>admin_bp</code>)</h3>
+<div class="card">
+<table>
+  <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/admin/api/observability/product-usage</code></td><td>DAU/WAU/MAU, feature adoption, job/user trends</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/admin/api/observability/reliability</code></td><td>Success rate, duration p50/p95, errors by model</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/admin/api/observability/cost</code></td><td>Cost per resume, model usage, token spend</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/admin/api/observability/audit</code></td><td>Admin actions, auth events, heavy users</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/admin/api/observability/events</code></td><td>Paginated analytics event feed</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/admin/api/observability/alerts</code></td><td>SLO breach alerts (error rate, queue, cost)</td></tr>
+  <tr><td><span class="badge badge-post">POST</span></td><td><code>/admin/api/observability/retention</code></td><td>Prune old analytics events</td></tr>
+</table>
+</div>
+
+<h3>History, Saved Resumes &amp; Tracker</h3>
+<div class="card">
+<table>
+  <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/history</code></td><td>Login</td><td>Paginated tailoring job history</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/saved-resumes</code></td><td>Login</td><td>List saved resumes</td></tr>
+  <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/saved-resumes</code></td><td>Login</td><td>Create saved resume</td></tr>
+  <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/saved-resumes/&lt;id&gt;</code></td><td>Login</td><td>Update saved resume</td></tr>
+  <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/api/saved-resumes/&lt;id&gt;</code></td><td>Login</td><td>Delete saved resume</td></tr>
+  <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/tracker</code></td><td>Login</td><td>List job applications</td></tr>
+  <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/tracker</code></td><td>Login</td><td>Create job application</td></tr>
+  <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/tracker/&lt;id&gt;</code></td><td>Login</td><td>Update job application</td></tr>
+  <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/api/tracker/&lt;id&gt;</code></td><td>Login</td><td>Delete job application</td></tr>
+</table>
+</div>
+
+<!-- ────────────────────── 6. FRONTEND ────────────────────── -->
+<h2 id="frontend">6. Frontend</h2>
+
+<h3>Main App Flow</h3>
+<div class="card">
+<table>
+  <tr><th>#</th><th>Step</th><th>Details</th></tr>
+  <tr><td>1</td><td><strong>Page load</strong></td><td>Fetch <code>/api/status</code> to check service config. Fetch <code>/api/models</code> if user model selection is enabled. Load saved resumes list.</td></tr>
+  <tr><td>2</td><td><strong>Model selection</strong></td><td>Dropdown populated from <code>RECOMMENDED_MODELS</code>. Admin can disable user model selection.</td></tr>
+  <tr><td>3</td><td><strong>Submit tailoring</strong></td><td><code>POST /api/tailor</code> with multipart form: resume PDF + job description text + selected model + rewrite mode.</td></tr>
+  <tr><td>4</td><td><strong>SSE progress</strong></td><td><code>EventSource(/api/progress/&lt;job_id&gt;)</code> &mdash; receives stage names, percentages, status updates in real-time.</td></tr>
+  <tr><td>5</td><td><strong>Results display</strong></td><td>On <code>complete</code> event: fetch <code>/api/result/&lt;job_id&gt;</code>. Show match scores (before/after), optimised resume, talking points, section scores.</td></tr>
+  <tr><td>6</td><td><strong>Downloads</strong></td><td>Template picker (8 PDFs) + DOCX download. Each links to <code>/api/download/&lt;job_id&gt;/&lt;filename&gt;</code>.</td></tr>
+</table>
+</div>
+
+<h3>Admin Panel</h3>
+<div class="card">
+<p><strong>Auth:</strong> Password login via <code>/admin/api/login</code> or auto-auth if logged-in user has <code>is_admin=True</code>.</p>
+<p><strong>Dashboard tabs:</strong></p>
+<ul>
+  <li><strong>Overview</strong> &mdash; Stats cards, recent jobs, live pipeline state</li>
+  <li><strong>Users</strong> &mdash; User list with job counts, admin promotion</li>
+  <li><strong>Analytics</strong> &mdash; Jobs over time chart, token usage, cost</li>
+  <li><strong>Configuration</strong> &mdash; API key, default model, rate limits, model selection toggle</li>
+  <li><strong>Diagnostics</strong> &mdash; Health checks (DB, OpenRouter, R2, Redis, pipeline)</li>
+  <li><strong>Errors</strong> &mdash; Pipeline error log (in-memory, last 50)</li>
+  <li><strong>Observability Hub</strong> &mdash; Product usage, reliability, cost, audit trail, alerts</li>
+</ul>
+<p><strong>Config save flow:</strong> Frontend POSTs JSON to <code>/admin/api/config</code>. API key is masked on read (<code>sk-or-v1***</code>). Masked values are ignored on write (only real keys are persisted).</p>
+<p><strong>Key testing:</strong> <code>POST /admin/api/test-key</code> hits <code>https://openrouter.ai/api/v1/models</code> with the provided key.</p>
+</div>
+
+<h3>CSRF Double-Submit Pattern</h3>
+<div class="card">
+<p>CSRF is handled at the framework level via Flask-WTF, but <code>admin_bp</code> and <code>api_bp</code> are <strong>CSRF-exempt</strong> (session-based auth, no form tokens needed).</p>
+<p>For non-exempt routes, the <code>after_request</code> handler sets a <code>csrf_token</code> cookie (httponly=False, SameSite=Lax). Frontend reads this cookie and sends it in the <code>X-CSRFToken</code> header.</p>
+<p><strong>Auto-recovery:</strong> If the session loses its CSRF token (e.g., session expiry or backend change), the cookie is automatically regenerated on the next response.</p>
+</div>
+
+<!-- ────────────────────── 7. DEPLOYMENT ────────────────────── -->
+<h2 id="deployment">7. Deployment</h2>
+
+<h3>Docker Configuration</h3>
+<div class="card">
+<table>
+  <tr><th>Setting</th><th>Value</th></tr>
+  <tr><td>Base image</td><td><code>python:3.13-slim</code></td></tr>
+  <tr><td>Init system</td><td><code>tini</code> (PID 1, proper signal handling)</td></tr>
+  <tr><td>System deps</td><td>libcairo2, libpango, libgdk-pixbuf, libpq-dev, fonts-liberation, fonts-dejavu</td></tr>
+  <tr><td>User</td><td><code>app</code> (UID 1000, non-root)</td></tr>
+  <tr><td>Health check</td><td><code>/api/health</code> every 30s, 60s start period, 5 retries</td></tr>
+  <tr><td>Port</td><td><code>${PORT:-5050}</code> (Railway injects PORT)</td></tr>
+</table>
+</div>
+
+<h3>Gunicorn Settings</h3>
+<div class="card">
+<table>
+  <tr><th>Parameter</th><th>Value</th><th>Rationale</th></tr>
+  <tr><td>Workers</td><td>2</td><td>Balanced for Railway's memory limits</td></tr>
+  <tr><td>Threads</td><td>4</td><td>8 total concurrent requests per container</td></tr>
+  <tr><td>Timeout</td><td>300s</td><td>Pipeline can take up to 5 min for complex resumes</td></tr>
+  <tr><td>Keep-alive</td><td>65s</td><td>Above Railway's 60s load balancer timeout</td></tr>
+  <tr><td>Preload</td><td>Yes</td><td>Shared memory across workers, faster boot</td></tr>
+</table>
+</div>
+
+<h3>Railway Auto-Deploy</h3>
+<div class="card">
+<p>Push to <code>main</code> branch on GitHub &rarr; Railway detects Dockerfile &rarr; builds image &rarr; deploys with zero-downtime rolling update.</p>
+<p><strong>Live URL:</strong> <code>https://cvtailro-production.up.railway.app</code></p>
+</div>
+
+<h3>CI Pipeline (GitHub Actions)</h3>
+<div class="card">
+<table>
+  <tr><th>Job</th><th>Runs</th><th>Depends On</th></tr>
+  <tr><td><strong>lint</strong></td><td><code>ruff check .</code> + <code>ruff format --check .</code></td><td>&mdash;</td></tr>
+  <tr><td><strong>unit</strong></td><td><code>pytest tests/ -m unit</code></td><td>&mdash;</td></tr>
+  <tr><td><strong>integration</strong></td><td><code>pytest tests/ -m integration</code> (installs cairo)</td><td>lint, unit</td></tr>
+  <tr><td><strong>test-all</strong></td><td>All tests with coverage (fail under 30%)</td><td>lint, unit</td></tr>
+</table>
+</div>
+
+<h3>Environment Variables</h3>
+<div class="card">
+<table>
+  <tr><th>Variable</th><th>Status</th><th>Description</th></tr>
+  <tr><td><code>FLASK_SECRET_KEY</code></td><td><span class="badge badge-required">Required</span></td><td>Session encryption key (required in production)</td></tr>
+  <tr><td><code>DATABASE_URL</code></td><td><span class="badge badge-required">Required</span></td><td>PostgreSQL connection string (<code>postgres://</code> auto-normalized)</td></tr>
+  <tr><td><code>OPENROUTER_API_KEY</code></td><td><span class="badge badge-required">Required</span></td><td>OpenRouter API key &mdash; always overrides DB value</td></tr>
+  <tr><td><code>ADMIN_PASSWORD</code></td><td><span class="badge badge-required">Required</span></td><td>Admin panel login password</td></tr>
+  <tr><td><code>GOOGLE_CLIENT_ID</code></td><td><span class="badge badge-required">Required</span></td><td>Google OAuth 2.0 client ID</td></tr>
+  <tr><td><code>GOOGLE_CLIENT_SECRET</code></td><td><span class="badge badge-required">Required</span></td><td>Google OAuth 2.0 client secret</td></tr>
+  <tr><td><code>FLASK_ENV</code></td><td><span class="badge badge-optional">Optional</span></td><td>Environment: <code>development</code>, <code>production</code> (default), <code>testing</code></td></tr>
+  <tr><td><code>PORT</code></td><td><span class="badge badge-optional">Optional</span></td><td>Server port (Railway injects; default 5050)</td></tr>
+  <tr><td><code>REDIS_URL</code></td><td><span class="badge badge-optional">Optional</span></td><td>Redis connection for rate limiting &amp; caching (graceful fallback)</td></tr>
+  <tr><td><code>R2_ACCOUNT_ID</code></td><td><span class="badge badge-optional">Optional</span></td><td>Cloudflare R2 account ID</td></tr>
+  <tr><td><code>R2_ACCESS_KEY_ID</code></td><td><span class="badge badge-optional">Optional</span></td><td>R2 access key</td></tr>
+  <tr><td><code>R2_SECRET_ACCESS_KEY</code></td><td><span class="badge badge-optional">Optional</span></td><td>R2 secret key</td></tr>
+  <tr><td><code>R2_BUCKET</code></td><td><span class="badge badge-optional">Optional</span></td><td>R2 bucket name</td></tr>
+  <tr><td><code>SENTRY_DSN</code></td><td><span class="badge badge-optional">Optional</span></td><td>Sentry error tracking DSN</td></tr>
+  <tr><td><code>ADMIN_EMAILS</code></td><td><span class="badge badge-optional">Optional</span></td><td>Comma-separated emails auto-promoted to admin on login</td></tr>
+  <tr><td><code>ADSENSE_CLIENT_ID</code></td><td><span class="badge badge-optional">Optional</span></td><td>Google AdSense client ID (blog pages)</td></tr>
+  <tr><td><code>MAIL_SERVER</code></td><td><span class="badge badge-optional">Optional</span></td><td>SMTP server for email verification &amp; password reset</td></tr>
+</table>
+</div>
+
+<!-- ────────────────────── 8. TROUBLESHOOTING ────────────────────── -->
+<h2 id="troubleshooting">8. Troubleshooting</h2>
+
+<div class="card">
+<table>
+  <tr><th style="width:25%">Issue</th><th style="width:35%">Cause</th><th style="width:40%">Fix</th></tr>
+  <tr>
+    <td><strong>CSRF token missing/invalid</strong></td>
+    <td>Session expired or cookie cleared. The <code>csrf_token</code> cookie was lost or the session token doesn't match.</td>
+    <td>Reload the page &mdash; the <code>after_request</code> handler auto-regenerates the cookie when missing. For <code>api_bp</code> and <code>admin_bp</code> routes, CSRF is already exempt.</td>
+  </tr>
+  <tr>
+    <td><strong>API key not working / "Service not configured"</strong></td>
+    <td>No <code>OPENROUTER_API_KEY</code> env var set, or DB key is empty/masked.</td>
+    <td>Set the <code>OPENROUTER_API_KEY</code> environment variable in Railway. Use the admin panel's "Test Key" button to validate. Remember: env var always overrides DB.</td>
+  </tr>
+  <tr>
+    <td><strong>Model returns empty/malformed JSON</strong></td>
+    <td>Free models often fail on structured JSON output. Model doesn't support the required output complexity.</td>
+    <td>Switch to GPT-4o-mini (default, most reliable). Avoid free models for production. The <code>BaseAgent</code> has retry logic with JSON extraction/fix, but some models are fundamentally unreliable.</td>
+  </tr>
+  <tr>
+    <td><strong>Download returns 404 / "Job not found"</strong></td>
+    <td>In-memory job expired (TTL 15 min), R2 file missing, and DB has no stored markdown to regenerate from.</td>
+    <td>Check <code>JOB_TTL_SECONDS</code> (900s default). Ensure R2 is configured for persistent storage. The DB fallback regenerates PDFs from <code>ats_resume_md</code> &mdash; verify that column is populated.</td>
+  </tr>
+  <tr>
+    <td><strong>Queue saturation / "Service is busy"</strong></td>
+    <td>More than 50 jobs queued (MAX_QUEUE_DEPTH) or all 5 semaphore slots in use.</td>
+    <td>Wait for current jobs to complete. Increase <code>MAX_CONCURRENT_PIPELINES</code> or <code>MAX_QUEUE_DEPTH</code> in <code>app/services/pipeline.py</code> (requires restart). Monitor via <code>/admin/api/live-stats</code>.</td>
+  </tr>
+  <tr>
+    <td><strong>Rate limited (429)</strong></td>
+    <td>User exceeded per-endpoint limits (e.g., 10 tailoring jobs/hr) or admin login attempts (5/min).</td>
+    <td>Wait for the rate limit window to reset. Adjust limits in route decorators (<code>@limiter.limit()</code>). Admin login has a separate IP-based lockout (15 min after repeated failures).</td>
+  </tr>
+  <tr>
+    <td><strong>DB connection error / "Could not connect to server"</strong></td>
+    <td>PostgreSQL unreachable, connection pool exhausted, or <code>DATABASE_URL</code> misconfigured.</td>
+    <td>Check Railway database status. Verify <code>DATABASE_URL</code> uses <code>postgresql://</code> prefix (auto-corrected from <code>postgres://</code>). Pool config: 20 connections + 30 overflow, 10s timeout, 5min recycle, pre-ping enabled.</td>
+  </tr>
+  <tr>
+    <td><strong>Local dev: WeasyPrint / cairo errors</strong></td>
+    <td>Missing system libraries for WeasyPrint (cairo, pango, gdk-pixbuf).</td>
+    <td>
+      macOS: <code>brew install cairo pango gdk-pixbuf libffi</code><br>
+      Ubuntu: <code>apt install libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf-2.0-0</code><br>
+      The Dockerfile already installs these.
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Local dev: Google OAuth redirect mismatch</strong></td>
+    <td>OAuth redirect URI doesn't match Google Cloud Console configuration.</td>
+    <td>Add <code>http://localhost:5050/auth/callback</code> as an authorized redirect URI in the Google Cloud Console. Set <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> env vars.</td>
+  </tr>
+  <tr>
+    <td><strong>Pipeline timeout / Gunicorn worker killed</strong></td>
+    <td>Complex resume + slow model exceeds Gunicorn's 300s timeout.</td>
+    <td>The pipeline runs in a background thread and shouldn't be affected by Gunicorn timeout. If the SSE connection drops, the frontend should reconnect. Ensure Gunicorn <code>--timeout 300</code> is set.</td>
+  </tr>
+  <tr>
+    <td><strong>R2 upload fails silently</strong></td>
+    <td>R2 credentials missing or bucket doesn't exist. Pipeline continues without cloud storage.</td>
+    <td>Set all R2 env vars (<code>R2_ACCOUNT_ID</code>, <code>R2_ACCESS_KEY_ID</code>, <code>R2_SECRET_ACCESS_KEY</code>, <code>R2_BUCKET</code>). Check <code>/admin/api/diagnostics</code> for R2 health status.</td>
+  </tr>
+</table>
+</div>
+
+<div class="info-box success" style="margin-top:24px">
+  <span class="icon">&#10003;</span>
+  <span>Run <code>/admin/api/diagnostics</code> for a comprehensive health check covering database, OpenRouter, R2, Redis, and pipeline status.</span>
+</div>
+
+</div><!-- /.main -->
+
+<script>
+(function(){
+  const links=document.querySelectorAll('.sidebar nav a[href^="#"]');
+  const sections=[];
+  links.forEach(a=>{const id=a.getAttribute('href').slice(1);const el=document.getElementById(id);if(el)sections.push({el,a})});
+  function update(){
+    let cur=sections[0];
+    for(const s of sections){if(s.el.getBoundingClientRect().top<=80)cur=s}
+    links.forEach(a=>a.classList.remove('active'));
+    if(cur)cur.a.classList.add('active');
+  }
+  window.addEventListener('scroll',update,{passive:true});
+  update();
+})();
+</script>
+</body>
+</html>

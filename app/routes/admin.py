@@ -97,6 +97,11 @@ def admin_page():
     return render_template("admin.html")
 
 
+@admin_bp.route("/admin/docs")
+def admin_docs():
+    return render_template("docs.html")
+
+
 @admin_bp.route("/admin/api/login", methods=["POST"])
 @limiter.limit("5 per minute")
 def admin_login():
