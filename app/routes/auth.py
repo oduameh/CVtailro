@@ -90,7 +90,7 @@ def google_callback():
         user.picture_url = picture
         user.email = email
 
-    user.is_admin = email in _get_admin_emails() or user.is_admin
+    user.is_admin = email in _get_admin_emails()
     user.last_login_at = datetime.now(timezone.utc)
     db.session.commit()
     login_user(user, remember=True)

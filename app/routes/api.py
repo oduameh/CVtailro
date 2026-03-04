@@ -288,7 +288,8 @@ def score_resume():
             resume_file.stream.seek(0)
             resume_text = resume_file.stream.read().decode("utf-8", errors="replace")
     except Exception as e:
-        return jsonify({"error": f"Could not read file: {e}"}), 400
+        logger.warning(f"Could not read uploaded file: {e}")
+        return jsonify({"error": "Could not read uploaded file"}), 400
 
     if not resume_text or len(resume_text.strip()) < 50:
         return jsonify({"error": "Resume appears to be empty or too short"}), 400

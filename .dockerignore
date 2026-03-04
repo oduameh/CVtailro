@@ -3,6 +3,8 @@ __pycache__/
 *.pyc
 output/
 .env
+.env.*
 .git/
 *.pdf
 *.tex
+admin_config.json
