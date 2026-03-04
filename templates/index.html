@@ -39,8 +39,7 @@
     <script>
     (function() {
         var saved = localStorage.getItem('cvtailro-theme');
-        var prefersDark = window.matchMedia('(prefers-reduced-motion: no-preference)').matches
-                        && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (saved === 'dark' || (!saved && prefersDark)) {
             document.documentElement.classList.add('dark');
         }
@@ -3076,7 +3075,7 @@
                 <!-- Upload Zone (horizontal) -->
                 <div class="editorial-card" id="uploadCard" style="border-radius:var(--radius);overflow:hidden;">
                     <div class="upload-zone" id="uploadZone">
-                        <input type="file" id="resumeFile" accept=".pdf,.md,.txt">
+                        <input type="file" id="resumeFile" accept=".pdf,.md,.txt" aria-label="Upload resume file">
                         <div class="upload-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -3095,7 +3094,7 @@
 
                 <!-- Job Description (editorial card) -->
                 <div class="editorial-card" style="border-radius:var(--radius);overflow:hidden;padding:4px;">
-                    <textarea id="jobDescription" placeholder="Paste the full job description here..."></textarea>
+                    <textarea id="jobDescription" placeholder="Paste the full job description here..." aria-label="Job description"></textarea>
                     <div class="inline-error" id="jdError">Job description is too short. Please paste at least 50 characters.</div>
                     <div style="padding:10px 20px;border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;">
                         <span><span id="charCount">0</span> chars &middot; <span id="wordCount">0</span> words</span>
@@ -3107,7 +3106,7 @@
             <!-- Model Selector (shown only when admin enables it) -->
             <div id="modelSection" style="display:none; margin: 12px 0;">
                 <label style="font-size:12px; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:6px;">AI Model</label>
-                <select id="modelSelect" onchange="selectedModel=this.value; saveModelPref();"
+                <select id="modelSelect" aria-label="AI model" onchange="selectedModel=this.value; saveModelPref();"
                     style="width:100%; padding:10px 14px; border:0.5px solid var(--border);
                            border-radius:var(--radius); font-size:14px; font-family:inherit; outline:none; background:var(--card);
                            cursor:pointer; color:var(--text);">
@@ -3272,7 +3271,7 @@
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;height:500px;">
                         <div style="display:flex;flex-direction:column;">
                             <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;">Markdown Editor</div>
-                            <textarea id="resumeEditor" style="flex:1;width:100%;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'Courier New',monospace;font-size:12px;line-height:1.5;background:var(--card);color:var(--text);resize:none;outline:none;" oninput="updateEditPreview()"></textarea>
+                            <textarea id="resumeEditor" aria-label="Resume markdown editor" style="flex:1;width:100%;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'Courier New',monospace;font-size:12px;line-height:1.5;background:var(--card);color:var(--text);resize:none;outline:none;" oninput="updateEditPreview()"></textarea>
                         </div>
                         <div style="display:flex;flex-direction:column;">
                             <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;">Live Preview</div>
@@ -3356,7 +3355,7 @@
             <h3 style="font-size:16px;font-weight:700;margin-bottom:12px;">Score My Resume</h3>
             <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">Upload your resume to get an instant quality score with actionable feedback. No job description needed.</p>
             <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-                <input type="file" id="scorerFile" accept=".pdf,.md,.txt" style="font-size:13px;">
+                <input type="file" id="scorerFile" accept=".pdf,.md,.txt" aria-label="Upload resume file for scoring" style="font-size:13px;">
                 <button id="btnScore" onclick="scoreResume()" style="padding:10px 20px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Score Resume</button>
             </div>
             <div id="scorerResults" style="margin-top:16px;"></div>
@@ -3366,9 +3365,9 @@
         <div id="boosterPanel" class="card" style="display:none;margin-bottom:16px;">
             <h3 style="font-size:16px;font-weight:700;margin-bottom:12px;">Achievement Booster</h3>
             <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">Paste a bullet point and get an AI-improved version with stronger verbs and metrics.</p>
-            <textarea id="boosterInput" placeholder="Paste a resume bullet point here..." style="width:100%;height:60px;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;font-family:inherit;background:var(--card);color:var(--text);resize:vertical;"></textarea>
+            <textarea id="boosterInput" placeholder="Paste a resume bullet point here..." aria-label="Resume bullet point" style="width:100%;height:60px;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;font-family:inherit;background:var(--card);color:var(--text);resize:vertical;"></textarea>
             <div style="display:flex;gap:12px;align-items:center;margin-top:8px;flex-wrap:wrap;">
-                <input type="text" id="boosterJobTitle" placeholder="Target job title (optional)" style="flex:1;min-width:180px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--card);color:var(--text);">
+                <input type="text" id="boosterJobTitle" placeholder="Target job title (optional)" aria-label="Target job title" style="flex:1;min-width:180px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--card);color:var(--text);">
                 <button id="btnBoost" onclick="boostBullet()" style="padding:10px 20px;background:#8b5cf6;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Boost It</button>
             </div>
             <div id="boosterResults" style="margin-top:16px;"></div>
@@ -3382,9 +3381,9 @@
             </div>
             <div id="trackerContent" style="display:none;">
                 <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-                    <input type="text" id="trackerCompany" placeholder="Company" style="flex:1;min-width:120px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--card);color:var(--text);">
-                    <input type="text" id="trackerTitle" placeholder="Job Title" style="flex:1;min-width:120px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--card);color:var(--text);">
-                    <select id="trackerStatus" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--card);color:var(--text);">
+                    <input type="text" id="trackerCompany" placeholder="Company" aria-label="Company" style="flex:1;min-width:120px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--card);color:var(--text);">
+                    <input type="text" id="trackerTitle" placeholder="Job Title" aria-label="Job title" style="flex:1;min-width:120px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--card);color:var(--text);">
+                    <select id="trackerStatus" aria-label="Application status" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--card);color:var(--text);">
                         <option value="saved">Saved</option>
                         <option value="applied">Applied</option>
                         <option value="interview">Interview</option>
@@ -3402,9 +3401,9 @@
             <h3 style="font-size:16px;font-weight:700;margin-bottom:12px;">Batch Tailoring</h3>
             <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">Upload your resume once and tailor it to multiple job descriptions. Separate each job description with "---" on its own line.</p>
             <div style="margin-bottom:12px;">
-                <input type="file" id="batchFile" accept=".pdf,.md,.txt" style="font-size:13px;">
+                <input type="file" id="batchFile" accept=".pdf,.md,.txt" aria-label="Upload resume file for batch tailoring" style="font-size:13px;">
             </div>
-            <textarea id="batchJobDescs" placeholder="Paste job description 1 here...&#10;---&#10;Paste job description 2 here...&#10;---&#10;Paste job description 3 here..." style="width:100%;height:200px;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;font-family:inherit;background:var(--card);color:var(--text);resize:vertical;"></textarea>
+            <textarea id="batchJobDescs" placeholder="Paste job description 1 here...&#10;---&#10;Paste job description 2 here...&#10;---&#10;Paste job description 3 here..." aria-label="Batch job descriptions" style="width:100%;height:200px;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;font-family:inherit;background:var(--card);color:var(--text);resize:vertical;"></textarea>
             <div style="display:flex;gap:12px;align-items:center;margin-top:10px;">
                 <button id="btnBatch" onclick="startBatchTailoring()" style="padding:10px 20px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Start Batch Tailoring</button>
                 <span style="font-size:12px;color:var(--text-secondary);">Max 5 job descriptions</span>
