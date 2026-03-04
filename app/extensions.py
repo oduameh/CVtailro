@@ -13,7 +13,6 @@ from flask_wtf.csrf import CSRFProtect
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
-login_manager.session_protection = "strong"
 oauth = OAuth()
 csrf = CSRFProtect()
 limiter = Limiter(

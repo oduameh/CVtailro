@@ -69,42 +69,22 @@ def start_tailoring():
 
     cleanup_old_jobs()
 
-    from config import DEFAULT_NIM_MODEL, RECOMMENDED_MODELS
-
     admin_config = AdminConfigManager.load()
-    provider = admin_config.active_provider or "openrouter"
-    api_key = admin_config.nim_api_key.strip() if provider == "nim" else admin_config.api_key.strip()
+    api_key = admin_config.api_key.strip()
     uid = current_user.id if current_user.is_authenticated else None
 
     if not api_key:
         track("tailor.request.rejected", category="tailor", user_id=uid, metadata={"reason": "no_api_key"})
         return jsonify({"error": "Service not configured. An admin must set the API key at /admin."}), 400
 
-    # Use provider-appropriate default and model list
-    if provider == "nim":
-        from app.routes.main import _get_nim_models
-
-        nim_models = _get_nim_models(api_key)
-        valid_models = set(nim_models.values())
-        provider_default = next(iter(nim_models.values())) if nim_models else DEFAULT_NIM_MODEL
-    else:
-        valid_models = set(RECOMMENDED_MODELS.values())
-        provider_default = DEFAULT_MODEL
-
     if admin_config.allow_user_model_selection:
-        model = request.form.get("model", provider_default).strip()
+        model = request.form.get("model", admin_config.default_model or DEFAULT_MODEL).strip()
     else:
-        model = admin_config.default_model or provider_default
-
-    # If model doesn't match current provider, fall back to provider default
-    if model not in valid_models:
-        model = provider_default
+        model = admin_config.default_model or DEFAULT_MODEL
 
     with pipeline_queue_lock:
         if pipeline_queue_depth >= MAX_QUEUE_DEPTH:
-            track(
-                "tailor.request.rejected", category="tailor", user_id=uid, metadata={"reason": "queue_full"}
-            )
+            track("tailor.request.rejected", category="tailor", user_id=uid, metadata={"reason": "queue_full"})
             return jsonify({"error": "Server is at capacity. Please try again in a few minutes."}), 503
 
     client_ip = request.remote_addr or "unknown"
@@ -173,19 +153,13 @@ def start_tailoring():
             api_key,
             model,
             user_id,
-            provider,
         ),
         daemon=True,
     )
     thread.start()
 
-    track(
-        "tailor.job.created",
-        category="tailor",
-        user_id=uid,
-        job_id=job_id,
-        metadata={"model": model, "mode": mode, "template": template, "resume_ext": resume_ext},
-    )
+    track("tailor.job.created", category="tailor", user_id=uid, job_id=job_id,
+          metadata={"model": model, "mode": mode, "template": template, "resume_ext": resume_ext})
     return jsonify({"job_id": job_id})
 
 
@@ -369,21 +343,12 @@ def boost_bullet():
 
     job_title = data.get("job_title", "").strip()
 
-    from config import DEFAULT_NIM_MODEL
-
     admin_config = AdminConfigManager.load()
-    provider = admin_config.active_provider or "openrouter"
-    api_key = admin_config.nim_api_key.strip() if provider == "nim" else admin_config.api_key.strip()
+    api_key = admin_config.api_key.strip()
     if not api_key:
         return jsonify({"error": "Service not configured"}), 400
 
-    provider_default = DEFAULT_NIM_MODEL if provider == "nim" else DEFAULT_MODEL
-    model = admin_config.default_model or provider_default
-    api_url = (
-        "https://integrate.api.nvidia.com/v1/chat/completions"
-        if provider == "nim"
-        else "https://openrouter.ai/api/v1/chat/completions"
-    )
+    model = admin_config.default_model or DEFAULT_MODEL
 
     context = f" for a {job_title} role" if job_title else ""
     prompt = (
@@ -398,7 +363,7 @@ def boost_bullet():
         import requests as http_requests
 
         resp = http_requests.post(
-            api_url,
+            "https://openrouter.ai/api/v1/chat/completions",
             headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
             json={
                 "model": model,
@@ -447,11 +412,8 @@ def start_batch_tailoring():
     """Start tailoring a resume against multiple job descriptions."""
     from flask import current_app
 
-    from config import DEFAULT_NIM_MODEL, NIM_MODELS, RECOMMENDED_MODELS
-
     admin_config = AdminConfigManager.load()
-    provider = admin_config.active_provider or "openrouter"
-    api_key = admin_config.nim_api_key.strip() if provider == "nim" else admin_config.api_key.strip()
+    api_key = admin_config.api_key.strip()
     if not api_key:
         return jsonify({"error": "Service not configured"}), 400
 
@@ -482,12 +444,6 @@ def start_batch_tailoring():
     if error:
         return jsonify({"error": error}), 400
 
-    provider_default = DEFAULT_NIM_MODEL if provider == "nim" else DEFAULT_MODEL
-    valid_models = set(NIM_MODELS.values()) if provider == "nim" else set(RECOMMENDED_MODELS.values())
-    model = admin_config.default_model or provider_default
-    if model not in valid_models:
-        model = provider_default
-
     job_ids = []
     for i, jd in enumerate(job_descriptions):
         job_id = uuid.uuid4().hex[:16]
@@ -512,6 +468,7 @@ def start_batch_tailoring():
                 "batch_index": i,
             }
 
+        model = admin_config.default_model or DEFAULT_MODEL
         thread = threading.Thread(
             target=run_pipeline_job,
             args=(
@@ -525,7 +482,6 @@ def start_batch_tailoring():
                 api_key,
                 model,
                 user_id,
-                provider,
             ),
             daemon=True,
         )
@@ -541,13 +497,8 @@ def start_batch_tailoring():
 def download_file(job_id: str, filename: str):
     uid = current_user.id if current_user.is_authenticated else None
     ext = Path(filename).suffix.lower()
-    track(
-        "download.requested",
-        category="download",
-        user_id=uid,
-        job_id=job_id,
-        metadata={"filename_ext": ext, "filename": filename},
-    )
+    track("download.requested", category="download", user_id=uid, job_id=job_id,
+          metadata={"filename_ext": ext, "filename": filename})
     return serve_download(job_id, filename)
 
 

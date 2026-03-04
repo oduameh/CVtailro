@@ -1034,10 +1034,6 @@
                 </a>
             </div>
             <div class="sidebar-footer">
-                <a class="nav-item" href="/admin/docs" target="_blank" style="color:var(--accent,#22c55e);">
-                    <span class="nav-icon">&#128214;</span>
-                    <span class="nav-text">Documentation</span>
-                </a>
                 <a class="nav-item" onclick="logout()">
                     <span class="nav-icon">&#9211;</span>
                     <span class="nav-text">Logout</span>
@@ -1178,18 +1174,7 @@
                 <!-- API Key -->
                 <div class="card">
                     <div class="card-header">
-                        <h2>LLM Provider</h2>
-                    </div>
-                    <div class="form-group">
-                        <label style="font-weight:600;margin-bottom:8px;display:block;">Active Provider</label>
-                        <div style="display:flex;gap:8px;">
-                            <label style="display:flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">
-                                <input type="radio" name="activeProvider" value="openrouter" id="providerOpenRouter" checked onchange="loadModels(null, this.value)"> OpenRouter
-                            </label>
-                            <label style="display:flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">
-                                <input type="radio" name="activeProvider" value="nim" id="providerNIM" onchange="loadModels(null, this.value)"> NVIDIA NIM
-                            </label>
-                        </div>
+                        <h2>API Key</h2>
                     </div>
                     <div class="form-group">
                         <label for="apiKeyInput">OpenRouter API Key</label>
@@ -1203,20 +1188,8 @@
                             style="color:var(--accent);text-decoration:none;font-weight:600;">openrouter.ai/keys</a>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label for="nimKeyInput">NVIDIA NIM API Key</label>
-                        <div class="input-with-btn">
-                            <input type="password" id="nimKeyInput" placeholder="nvapi-..."
-                                   style="font-family: 'Inter', monospace;">
-                            <button class="btn btn-sm btn-secondary" onclick="var i=document.getElementById('nimKeyInput');i.type=i.type==='password'?'text':'password';">Show</button>
-                        </div>
-                        <div class="hint">
-                            Get your key at <a href="https://build.nvidia.com" target="_blank" rel="noopener noreferrer"
-                            style="color:var(--accent);text-decoration:none;font-weight:600;">build.nvidia.com</a> (free developer program)
-                        </div>
-                    </div>
                     <div style="display:flex;align-items:center;gap:12px;">
-                        <button class="btn btn-sm btn-secondary" onclick="testApiKey()">Test Active Key</button>
+                        <button class="btn btn-sm btn-secondary" onclick="testApiKey()">Test Key</button>
                         <span id="testResult" style="font-size:13px;font-weight:600;"></span>
                     </div>
                 </div>
@@ -1980,19 +1953,6 @@
         } else {
             apiInput.value = config.api_key || '';
         }
-        // NIM key
-        var nimInput = document.getElementById('nimKeyInput');
-        if (config.nim_api_key && config.nim_api_key.includes('...')) {
-            nimInput.value = '';
-            nimInput.placeholder = config.nim_api_key + ' (saved — enter new key to change)';
-        } else {
-            nimInput.value = config.nim_api_key || '';
-        }
-        // Active provider
-        var providerVal = config.active_provider || 'openrouter';
-        var providerRadio = document.getElementById(providerVal === 'nim' ? 'providerNIM' : 'providerOpenRouter');
-        if (providerRadio) providerRadio.checked = true;
-
         document.getElementById('allowUserModel').checked = config.allow_user_model_selection !== false;
         document.getElementById('rateLimit').value = config.rate_limit_per_hour || 0;
         document.getElementById('lastUpdated').textContent = config.updated_at || 'Never';
@@ -2017,31 +1977,23 @@
         switchTab('dashboard');
     }
 
-    async function loadModels(selectedModel, providerOverride) {
+    async function loadModels(selectedModel) {
         try {
-            var url = '/api/models';
-            if (providerOverride) url += '?provider=' + encodeURIComponent(providerOverride);
-            var r = await fetch(url);
+            var r = await fetch('/api/models');
             var d = await r.json();
             var select = document.getElementById('defaultModel');
             var free = d.models.filter(function(m) { return m.name.includes('(Free)') || m.name.includes('(Auto)'); });
             var paid = d.models.filter(function(m) { return !m.name.includes('(Free)') && !m.name.includes('(Auto)'); });
             var chosen = selectedModel || d.default;
-            var html = '';
-            if (free.length > 0) {
-                html += '<optgroup label="Free (no credits needed)">';
-                free.forEach(function(m) {
-                    html += '<option value="' + m.id + '"' + (m.id === chosen ? ' selected' : '') + '>' + m.name + '</option>';
-                });
-                html += '</optgroup>';
-            }
-            if (paid.length > 0) {
-                html += '<optgroup label="Paid (requires credits)">';
-                paid.forEach(function(m) {
-                    html += '<option value="' + m.id + '"' + (m.id === chosen ? ' selected' : '') + '>' + m.name + '</option>';
-                });
-                html += '</optgroup>';
-            }
+            var html = '<optgroup label="Free (no credits needed)">';
+            free.forEach(function(m) {
+                html += '<option value="' + m.id + '"' + (m.id === chosen ? ' selected' : '') + '>' + m.name + '</option>';
+            });
+            html += '</optgroup><optgroup label="Paid (requires credits)">';
+            paid.forEach(function(m) {
+                html += '<option value="' + m.id + '"' + (m.id === chosen ? ' selected' : '') + '>' + m.name + '</option>';
+            });
+            html += '</optgroup>';
             select.innerHTML = html;
         } catch(e) {
             console.error('Failed to load models:', e);
@@ -2413,20 +2365,18 @@
     }
 
     async function testApiKey() {
-        var activeProvider = document.querySelector('input[name="activeProvider"]:checked');
-        var provider = activeProvider ? activeProvider.value : 'openrouter';
-        var key = provider === 'nim'
-            ? document.getElementById('nimKeyInput').value.trim()
-            : document.getElementById('apiKeyInput').value.trim();
+        var key = document.getElementById('apiKeyInput').value.trim();
         var result = document.getElementById('testResult');
-        var label = provider === 'nim' ? 'NVIDIA NIM' : 'OpenRouter';
-        result.style.color = 'var(--text-secondary)';
-        result.textContent = 'Testing ' + label + (key ? '...' : ' (saved key)...');
+        if (!key) {
+            result.style.color = 'var(--error)'; result.textContent = 'Enter a key first.';
+            return;
+        }
+        result.style.color = 'var(--text-secondary)'; result.textContent = 'Testing...';
         try {
             var r = await fetch('/admin/api/test-key', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({api_key: key, provider: provider})
+                body: JSON.stringify({api_key: key})
             });
             var d = await r.json();
             if (d.valid) {
@@ -2441,11 +2391,8 @@
 
     async function saveConfig() {
         var alert = document.getElementById('saveAlert');
-        var activeProvider = document.querySelector('input[name="activeProvider"]:checked');
         var payload = {
             api_key: document.getElementById('apiKeyInput').value.trim(),
-            nim_api_key: document.getElementById('nimKeyInput').value.trim(),
-            active_provider: activeProvider ? activeProvider.value : 'openrouter',
             default_model: document.getElementById('defaultModel').value,
             allow_user_model_selection: document.getElementById('allowUserModel').checked,
             rate_limit_per_hour: parseInt(document.getElementById('rateLimit').value) || 0
@@ -2467,8 +2414,6 @@
                     dashApi.className = 'metric-value ' + (hasKey ? 'status-good' : 'status-bad');
                 }
                 document.getElementById('lastUpdated').textContent = d.updated_at || 'Just now';
-                // Refresh model dropdown to reflect the (possibly changed) provider
-                loadModels();
             } else {
                 alert.className = 'alert error'; alert.textContent = d.error || 'Save failed.';
             }

@@ -69,18 +69,9 @@ def _init_extensions(flask_app: Flask) -> None:
 
     @login_manager.user_loader
     def load_user(user_id: str):
-        from flask import session as flask_session
-
         from app.models import User
 
-        user = db.session.get(User, user_id)
-        if user is None:
-            return None
-        stored_ver = flask_session.get("_session_version")
-        if stored_ver is not None and stored_ver != user.session_version:
-            flask_session.clear()
-            return None
-        return user
+        return db.session.get(User, user_id)
 
     @login_manager.unauthorized_handler
     def unauthorized():
@@ -164,17 +155,13 @@ def _register_security_headers(flask_app: Flask) -> None:
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
 
-        # Double-submit CSRF cookie for SPA requests.
-        # Regenerate when cookie is missing OR when the session lost its
-        # CSRF token (e.g. after switching session backends).
-        from flask import session as _sess
-        from flask_wtf.csrf import generate_csrf
+        # Double-submit CSRF cookie for SPA requests
+        if "csrf_token" not in request.cookies:
+            from flask_wtf.csrf import generate_csrf
 
-        if "csrf_token" not in request.cookies or "csrf_token" not in _sess:
-            token = generate_csrf()
             response.set_cookie(
                 "csrf_token",
-                token,
+                generate_csrf(),
                 httponly=False,
                 samesite="Lax",
                 secure=request.is_secure,
@@ -281,9 +268,6 @@ def _apply_column_migrations() -> None:
             ("email_verified", "BOOLEAN DEFAULT FALSE"),
             ("email_verified_at", "TIMESTAMP WITH TIME ZONE"),
             ("auth_provider", "VARCHAR(20) DEFAULT 'google'"),
-            ("session_version", "INTEGER DEFAULT 0 NOT NULL"),
-            ("failed_login_attempts", "INTEGER DEFAULT 0 NOT NULL"),
-            ("locked_until", "TIMESTAMP WITH TIME ZONE"),
         ]
         for col_name, col_type in user_new_columns:
             if col_name not in user_columns:

@@ -29,7 +29,6 @@ T = TypeVar("T", bound=BaseModel)
 logger = logging.getLogger(__name__)
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-NVIDIA_NIM_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
 
 # ── Module-level HTTP session for connection pooling ──────────────────────────
 # Reusing a single Session across all agent calls avoids the overhead of
@@ -136,12 +135,11 @@ class BaseAgent(ABC, Generic[T]):
         Raises:
             AgentError: On HTTP errors, timeouts, or empty responses.
         """
-        # Route to correct provider
-        is_nim = getattr(self.config, "provider", "openrouter") == "nim"
-        api_url = NVIDIA_NIM_URL if is_nim else OPENROUTER_URL
-
-        # NIM models cap max_tokens at 4096; OpenRouter supports higher values
-        max_tokens = min(self.AGENT_MAX_TOKENS, 4096) if is_nim else self.AGENT_MAX_TOKENS
+        # Only the Authorization header varies per call; the rest are
+        # already set on the shared session.
+        auth_header = {
+            "Authorization": f"Bearer {self.config.api_key}",
+        }
 
         payload = {
             "model": self.config.model,
@@ -149,45 +147,22 @@ class BaseAgent(ABC, Generic[T]):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message},
             ],
-            "max_tokens": max_tokens,
+            "max_tokens": self.AGENT_MAX_TOKENS,
             "temperature": 0.3,
         }
-        if is_nim:
-            payload["top_p"] = 0.7
-
-        # NIM requires clean headers (no OpenRouter-specific HTTP-Referer/X-Title)
-        if is_nim:
-            request_headers = {
-                "Authorization": f"Bearer {self.config.api_key}",
-                "Content-Type": "application/json",
-            }
-        else:
-            request_headers = {
-                "Authorization": f"Bearer {self.config.api_key}",
-            }
 
         try:
-            if is_nim:
-                response = requests.post(
-                    api_url, headers=request_headers, json=payload, timeout=self.API_TIMEOUT
-                )
-            else:
-                response = _http_session.post(
-                    api_url, headers=request_headers,
+            response = _http_session.post(
+                OPENROUTER_URL,
+                headers=auth_header,
                 json=payload,
                 timeout=self.API_TIMEOUT,
             )
 
-            provider_name = "NVIDIA NIM" if is_nim else "OpenRouter"
             if response.status_code == 401:
-                raise AgentError(f"Invalid {provider_name} API key. Check your key and try again.")
+                raise AgentError("Invalid OpenRouter API key. Check your key and try again.")
             if response.status_code == 402:
-                raise AgentError(f"Insufficient {provider_name} credits.")
-            if response.status_code == 410:
-                raise AgentError(
-                    f"The model '{self.config.model}' has been deprecated by {provider_name} and is no longer available. "
-                    f"Please select a different model."
-                )
+                raise AgentError("Insufficient OpenRouter credits. Add credits at openrouter.ai.")
             if response.status_code == 429:
                 # Wait for rate limit to clear, then retry
                 retry_after = int(response.headers.get("Retry-After", "10"))
@@ -200,26 +175,15 @@ class BaseAgent(ABC, Generic[T]):
             if response.status_code >= 400:
                 error_detail = ""
                 try:
-                    err_body = response.json()
-                    # OpenAI/OpenRouter format: {"error": {"message": "..."}}
-                    error_detail = err_body.get("error", {}).get("message", "")
-                    # NIM format: {"detail": "...", "title": "..."}
-                    if not error_detail:
-                        error_detail = err_body.get("detail") or err_body.get("title") or ""
+                    error_detail = response.json().get("error", {}).get("message", "")
                 except (ValueError, json.JSONDecodeError):
-                    pass
-                if not error_detail:
-                    error_detail = response.text[:300]
-                logger.error(
-                    f"[{self.AGENT_NAME}] {provider_name} error {response.status_code} "
-                    f"for model={self.config.model}: {error_detail}"
-                )
-                raise AgentError(f"{provider_name} API error {response.status_code}: {error_detail}")
+                    error_detail = response.text[:200]
+                raise AgentError(f"OpenRouter API error {response.status_code}: {error_detail}")
 
             try:
                 data = response.json()
             except (ValueError, json.JSONDecodeError) as e:
-                raise AgentError(f"{provider_name} returned non-JSON response: {response.text[:300]}") from e
+                raise AgentError(f"OpenRouter returned non-JSON response: {response.text[:300]}") from e
 
             # Log token usage at DEBUG level
             usage = data.get("usage", {})
@@ -244,15 +208,11 @@ class BaseAgent(ABC, Generic[T]):
 
             choices = data.get("choices", [])
             if not choices:
-                raise AgentError("API returned no choices in response")
+                raise AgentError("OpenRouter returned no choices in response")
 
-            message = choices[0].get("message", {})
-            content = (message.get("content") or "").strip()
-            # Thinking/reasoning models (e.g. Kimi K2 Thinking) put output in reasoning_content
+            content = choices[0].get("message", {}).get("content", "").strip()
             if not content:
-                content = (message.get("reasoning_content") or "").strip()
-            if not content:
-                raise AgentError("API returned empty content")
+                raise AgentError("OpenRouter returned empty content")
 
             return content
 
@@ -311,9 +271,8 @@ class BaseAgent(ABC, Generic[T]):
                 logger.warning(f"[{self.AGENT_NAME}] Attempt {attempt}/{self.MAX_RETRIES} API error: {e}")
                 if self.config.job_id:
                     pipeline_analytics.record_retry(self.config.job_id)
-                # Do NOT retry on permanent errors — they won't self-resolve
-                err_str = str(e)
-                if any(s in err_str for s in ("Invalid", "Insufficient", "deprecated", "no longer available")):
+                # Do NOT retry on auth errors — they won't self-resolve
+                if "Invalid OpenRouter API key" in str(e) or "Insufficient" in str(e):
                     break
                 if attempt < self.MAX_RETRIES:
                     delay = self.RETRY_DELAY_BASE**attempt

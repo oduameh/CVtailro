@@ -29,8 +29,6 @@ _SETTING_KEYS = [
     "rate_limit_per_hour",
     "admin_password_hash",
     "updated_at",
-    "nim_api_key",
-    "active_provider",
 ]
 
 
@@ -42,8 +40,6 @@ class AdminConfig:
     rate_limit_per_hour: int = 0
     admin_password_hash: str = ""
     updated_at: str = ""
-    nim_api_key: str = ""
-    active_provider: str = "openrouter"  # "openrouter" or "nim"
 
 
 def _try_load_from_db() -> AdminConfig | None:
@@ -77,10 +73,6 @@ def _try_load_from_db() -> AdminConfig | None:
             config.admin_password_hash = data["admin_password_hash"]
         if "updated_at" in data:
             config.updated_at = data["updated_at"] or ""
-        if "nim_api_key" in data and data["nim_api_key"] and "..." not in data["nim_api_key"]:
-            config.nim_api_key = data["nim_api_key"]
-        if "active_provider" in data and data["active_provider"] in ("openrouter", "nim"):
-            config.active_provider = data["active_provider"]
         return config
     except Exception:
         return None
@@ -99,8 +91,6 @@ def _save_to_db(config: AdminConfig) -> bool:
             "rate_limit_per_hour": str(config.rate_limit_per_hour),
             "admin_password_hash": config.admin_password_hash,
             "updated_at": config.updated_at,
-            "nim_api_key": config.nim_api_key,
-            "active_provider": config.active_provider,
         }
         from datetime import datetime, timezone
 
@@ -151,15 +141,10 @@ class AdminConfigManager:
                     except Exception as e:
                         logger.error(f"Failed to load admin config from file: {e}")
 
-            # Env vars always take precedence (Railway deployment model).
-            # This ensures rotated keys on Railway are picked up immediately
-            # instead of being shadowed by stale DB-persisted copies.
+            # Env var fallbacks
             env_key = os.environ.get("OPENROUTER_API_KEY", "")
-            if env_key:
+            if env_key and not config.api_key:
                 config.api_key = env_key
-            env_nim = os.environ.get("NVIDIA_NIM_API_KEY", "")
-            if env_nim:
-                config.nim_api_key = env_nim
             env_pw = os.environ.get("ADMIN_PASSWORD", "")
             if env_pw and not config.admin_password_hash:
                 config.admin_password_hash = cls._hash_password(env_pw)
@@ -221,4 +206,4 @@ class AdminConfigManager:
 
     @staticmethod
     def _hash_password(password: str) -> str:
-        return generate_password_hash(password, method="pbkdf2:sha256:600000")
+        return generate_password_hash(password, method="pbkdf2:sha256", salt_length=16)

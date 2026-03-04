@@ -39,27 +39,14 @@ RECOMMENDED_MODELS: dict[str, str] = {
     "Grok 3": "x-ai/grok-3",
 }
 
-# NVIDIA NIM models (used when active_provider == "nim")
-# Only models confirmed available on integrate.api.nvidia.com
-NIM_MODELS: dict[str, str] = {
-    "Mistral Large 2": "mistralai/mistral-large-2-instruct",
-    "Llama 3.3 70B": "meta/llama-3.3-70b-instruct",
-    "DeepSeek R1": "deepseek-ai/deepseek-r1",
-    "Gemma 2 27B": "google/gemma-2-27b-it",
-    "Llama 3 70B": "meta/llama3-70b-instruct",
-    "Mixtral 8x22B": "mistralai/mixtral-8x22b-instruct",
-    "Nemotron 4 340B": "nvidia/nemotron-4-340b-instruct",
-}
-
 DEFAULT_MODEL = "openai/gpt-4o-mini"
-DEFAULT_NIM_MODEL = "mistralai/mistral-large-2-instruct"
 
 
 @dataclass(frozen=True)
 class AppConfig:
     """Immutable application configuration.
 
-    Supports OpenRouter and NVIDIA NIM as LLM backends.
+    Uses the OpenRouter API as the LLM backend.
     API key is provided per-request from the frontend.
     """
 
@@ -70,7 +57,6 @@ class AppConfig:
     api_key: str = ""
     model: str = DEFAULT_MODEL
     job_id: str = ""  # Set by app.py so agents can report analytics
-    provider: str = "openrouter"  # "openrouter" or "nim"
 
     def validate_api_config(self) -> None:
         """Verify the API key and model are set.

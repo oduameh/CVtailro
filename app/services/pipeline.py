@@ -99,7 +99,6 @@ def run_pipeline_job(
     api_key: str,
     model: str,
     user_id: str | None = None,
-    provider: str = "openrouter",
 ) -> None:
     """Run the full pipeline in a background thread, pushing progress events."""
     global pipeline_queue_depth
@@ -140,7 +139,6 @@ def run_pipeline_job(
             api_key=api_key,
             model=model,
             job_id=job_id,
-            provider=provider,
         )
 
         with flask_app.app_context():
@@ -551,20 +549,17 @@ def run_pipeline_job(
                 f"${job_stats.get('estimated_cost_usd', 0):.4f} est. cost"
             )
 
-        _te(
-            "tailor.job.completed",
-            metadata={
-                "duration_s": round(total_elapsed, 1),
-                "model": model,
-                "total_tokens": job_stats.get("total_tokens", 0) if job_stats else 0,
-                "api_calls": job_stats.get("api_calls", 0) if job_stats else 0,
-                "retries": job_stats.get("retries", 0) if job_stats else 0,
-                "estimated_cost_usd": job_stats.get("estimated_cost_usd", 0) if job_stats else 0,
-                "tailored_match_score": tailored_match_score,
-                "original_match_score": gap_report.match_score,
-                "queue_wait_ms": queue_wait_ms,
-            },
-        )
+        _te("tailor.job.completed", metadata={
+            "duration_s": round(total_elapsed, 1),
+            "model": model,
+            "total_tokens": job_stats.get("total_tokens", 0) if job_stats else 0,
+            "api_calls": job_stats.get("api_calls", 0) if job_stats else 0,
+            "retries": job_stats.get("retries", 0) if job_stats else 0,
+            "estimated_cost_usd": job_stats.get("estimated_cost_usd", 0) if job_stats else 0,
+            "tailored_match_score": tailored_match_score,
+            "original_match_score": gap_report.match_score,
+            "queue_wait_ms": queue_wait_ms,
+        })
 
         # ── Persist to DB and upload to R2 ───────────────────────────────────
         files_list = template_pdf_names + [resume_docx_name, resume_md_name, report_name, tp_name]
@@ -663,10 +658,7 @@ def run_pipeline_job(
         logging.getLogger("cvtailro.pipeline").exception("Pipeline failed")
         error_msg = str(e)
         pipeline_analytics.complete_job(job_id)
-        _te(
-            "tailor.job.failed",
-            metadata={"model": model, "error": error_msg[:500], "queue_wait_ms": queue_wait_ms},
-        )
+        _te("tailor.job.failed", metadata={"model": model, "error": error_msg[:500], "queue_wait_ms": queue_wait_ms})
         import traceback
 
         with pipeline_errors_lock:

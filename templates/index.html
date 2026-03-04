@@ -3330,11 +3330,7 @@
                         <label for="loginPassword">Password</label>
                         <input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password">
                     </div>
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-                        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;color:var(--text-secondary,#666);">
-                            <input type="checkbox" id="loginRemember" style="accent-color:var(--primary,#6366f1);width:15px;height:15px;cursor:pointer;">
-                            Remember me
-                        </label>
+                    <div style="text-align:right;margin-bottom:14px;">
                         <button class="auth-link" type="button" onclick="showForgotPassword()">Forgot password?</button>
                     </div>
                     <button class="auth-btn" id="btnLogin" onclick="doLogin()">Sign In</button>
@@ -3892,7 +3888,6 @@
     async function doLogin() {
         var email = document.getElementById('loginEmail').value.trim();
         var password = document.getElementById('loginPassword').value;
-        var rememberMe = document.getElementById('loginRemember').checked;
         if (!email || !password) { _showAuthError('Please fill in all fields.'); return; }
 
         var btn = document.getElementById('btnLogin');
@@ -3903,7 +3898,7 @@
             var resp = await fetch('/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email, password: password, remember_me: rememberMe }),
+                body: JSON.stringify({ email: email, password: password }),
                 credentials: 'same-origin'
             });
             var data = await resp.json();
