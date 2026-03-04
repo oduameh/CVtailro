@@ -149,6 +149,31 @@ def test_heartbeat(client):
 
 
 @pytest.mark.integration
+def test_dev_login_blocked_for_non_localhost(client, monkeypatch):
+    """Dev login must reject non-local requests even with bypass enabled."""
+    monkeypatch.setenv("DEV_AUTH_BYPASS", "1")
+    monkeypatch.setenv("FLASK_ENV", "development")
+
+    resp = client.get("/auth/dev-login", headers={"X-Forwarded-For": "203.0.113.9"})
+    assert resp.status_code == 302
+
+
+@pytest.mark.integration
+def test_dev_login_allows_localhost_with_explicit_bypass(client, monkeypatch):
+    """Dev login should only work for local requests with explicit bypass."""
+    monkeypatch.setenv("DEV_AUTH_BYPASS", "1")
+    monkeypatch.setenv("FLASK_ENV", "development")
+    monkeypatch.setenv("DEV_AUTH_EMAIL", "localdev@example.com")
+
+    resp = client.get("/auth/dev-login", headers={"X-Forwarded-For": "127.0.0.1"})
+    assert resp.status_code == 302
+
+    me = client.get("/auth/me").get_json()
+    assert me["authenticated"] is True
+    assert me["email"] == "localdev@example.com"
+
+
+@pytest.mark.integration
 def test_revoke_other_sessions(client):
     """User can revoke all other sessions."""
     user = _create_google_user()

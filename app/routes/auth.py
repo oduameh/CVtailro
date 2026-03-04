@@ -27,6 +27,11 @@ def _client_ip() -> str:
     return request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.remote_addr or "unknown"
 
 
+def _is_local_request() -> bool:
+    ip = _client_ip()
+    return ip in {"127.0.0.1", "::1", "localhost"}
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 #  Google OAuth
 # ═══════════════════════════════════════════════════════════════════════════
@@ -265,7 +270,12 @@ def me():
 def dev_login():
     from flask import current_app
 
-    if not current_app.debug or os.environ.get("DEV_AUTH_BYPASS") != "1":
+    if (
+        not current_app.debug
+        or os.environ.get("FLASK_ENV") == "production"
+        or os.environ.get("DEV_AUTH_BYPASS") != "1"
+        or not _is_local_request()
+    ):
         return redirect("/")
 
     email = os.environ.get("DEV_AUTH_EMAIL", "dev@example.com").lower()
