@@ -1018,11 +1018,182 @@
             .folder-wrap { transform: scale(0.85); }
         }
 
-        .dl-usage-hint {
-            font-size: 13px;
+        .dl-usage-hint { display: none; }
+
+        /* --- Download Popup --- */
+        .dl-popup-trigger {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 32px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 100px;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 0 20px rgba(37, 99, 235, 0.3);
+        }
+        .dl-popup-trigger:hover { transform: scale(1.02); box-shadow: 0 0 32px rgba(37, 99, 235, 0.4); }
+        .dl-popup-trigger:active { transform: scale(0.98); }
+
+        .dl-popup-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 500;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            justify-content: center;
+            align-items: center;
+        }
+        .dl-popup-overlay.active { display: flex; }
+
+        .dl-popup {
+            background: var(--card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 0.5px solid var(--border);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 480px;
+            max-height: 85vh;
+            overflow-y: auto;
+            margin: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: dlPopupIn 0.2s ease-out;
+        }
+        @keyframes dlPopupIn {
+            from { opacity: 0; transform: translateY(12px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .dl-popup-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 0.5px solid var(--border);
+        }
+        .dl-popup-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0;
+        }
+        .dl-popup-close {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
             color: var(--text-secondary);
-            line-height: 1.6;
-            margin-bottom: 24px;
+            font-size: 20px;
+            transition: background 0.15s;
+        }
+        .dl-popup-close:hover { background: rgba(255,255,255,0.1); }
+
+        .dl-popup-body { padding: 20px 24px 24px; }
+
+        .dl-popup-section-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .dl-popup-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .dl-popup-item {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            padding: 0 14px;
+            height: 56px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.05);
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s;
+            text-decoration: none;
+            color: var(--text);
+            border: none;
+            font-family: inherit;
+            width: 100%;
+        }
+        :root .dl-popup-item { background: rgba(0,0,0,0.04); }
+        .dl-popup-item:hover { background: rgba(255,255,255,0.1); transform: scale(1.01); }
+        :root .dl-popup-item:hover { background: rgba(0,0,0,0.07); }
+        .dl-popup-item:active { transform: scale(0.97); }
+
+        .dl-popup-accent {
+            width: 3px;
+            height: 24px;
+            border-radius: 2px;
+            flex-shrink: 0;
+            margin-right: 12px;
+        }
+        .dl-popup-item-info { flex: 1; min-width: 0; text-align: left; }
+        .dl-popup-item-name { font-size: 13px; font-weight: 700; }
+        .dl-popup-item-desc { font-size: 10px; color: var(--text-secondary); }
+        .dl-popup-item-formats {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        .dl-fmt-btn {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            border: 0.5px solid var(--border);
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+        .dl-fmt-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+        .dl-popup-extras {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .dl-extra-btn {
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            border: 0.5px solid var(--border);
+            background: rgba(255,255,255,0.03);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .dl-extra-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+        @media (max-width: 480px) {
+            .dl-popup-grid { grid-template-columns: 1fr; }
+            .dl-popup { margin: 8px; max-height: 90vh; }
         }
 
         /* --- Additional Files (collapsible) --- */
@@ -2948,11 +3119,29 @@
                 </div>
             </div>
 
-            <!-- Downloads (right after score) -->
-            <div class="card" id="downloadCard">
-                <div class="downloads-heading">Download Your Resume</div>
-                <div class="template-grid" id="templateGrid"></div>
-                <div class="dl-usage-hint" style="text-align:center;margin-top:4px;">Tap a template to download as PDF</div>
+            <!-- Download CTA Button -->
+            <div style="text-align:center;margin:16px 0;" id="downloadCard">
+                <button class="dl-popup-trigger" onclick="openDownloadPopup()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download Resume
+                </button>
+                <div class="template-grid" id="templateGrid" style="display:none;"></div>
+            </div>
+
+            <!-- Download Popup Modal -->
+            <div class="dl-popup-overlay" id="dlPopupOverlay" onclick="if(event.target===this)closeDownloadPopup()">
+                <div class="dl-popup">
+                    <div class="dl-popup-header">
+                        <h3>Download Your Resume</h3>
+                        <button class="dl-popup-close" onclick="closeDownloadPopup()">&times;</button>
+                    </div>
+                    <div class="dl-popup-body">
+                        <div class="dl-popup-section-label">Choose Template &amp; Format</div>
+                        <div class="dl-popup-grid" id="dlPopupGrid"></div>
+                        <div class="dl-popup-section-label" style="margin-top:16px;">Other Formats</div>
+                        <div class="dl-popup-extras" id="dlPopupExtras"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- What Changed -->
@@ -3686,6 +3875,58 @@
     function downloadTemplate(tpl) { downloadFormat(tpl, 'pdf'); }
 
     window.selectTemplate = selectTemplate;
+
+    // --- Download Popup ---
+    function openDownloadPopup() {
+        var overlay = document.getElementById('dlPopupOverlay');
+        overlay.classList.add('active');
+        if (document.documentElement.classList.contains('dark')) overlay.classList.add('dark');
+        document.body.style.overflow = 'hidden';
+        populateDownloadPopup();
+    }
+    function closeDownloadPopup() {
+        var overlay = document.getElementById('dlPopupOverlay');
+        overlay.classList.remove('active', 'dark');
+        document.body.style.overflow = '';
+    }
+    function populateDownloadPopup() {
+        var templates = [
+            { id: 'modern', label: 'Modern', desc: 'Clean sans-serif', color: '#1a3a5c' },
+            { id: 'executive', label: 'Executive', desc: 'Classic serif', color: '#8B7355' },
+            { id: 'minimal', label: 'Minimal', desc: 'Typography-focused', color: '#6b7280' },
+            { id: 'creative', label: 'Creative', desc: 'Teal accent', color: '#0d9488' },
+            { id: 'compact', label: 'Compact', desc: 'Dense 1-page', color: '#ea580c' },
+            { id: 'professional', label: 'Professional', desc: 'Classic layout', color: '#475569' },
+            { id: 'tech', label: 'Tech', desc: 'Bold modern', color: '#06b6d4' },
+            { id: 'elegant', label: 'Elegant', desc: 'Refined serif', color: '#f43f5e' }
+        ];
+        var grid = document.getElementById('dlPopupGrid');
+        grid.innerHTML = templates.map(function(t) {
+            return '<div class="dl-popup-item" onclick="downloadFormat(\'' + t.id + '\',\'pdf\');closeDownloadPopup();">' +
+                '<div class="dl-popup-accent" style="background:' + t.color + ';"></div>' +
+                '<div class="dl-popup-item-info">' +
+                    '<div class="dl-popup-item-name">' + t.label + '</div>' +
+                    '<div class="dl-popup-item-desc">' + t.desc + '</div>' +
+                '</div>' +
+                '<div class="dl-popup-item-formats">' +
+                    '<button class="dl-fmt-btn" onclick="event.stopPropagation();downloadFormat(\'' + t.id + '\',\'pdf\');">PDF</button>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+        var extras = document.getElementById('dlPopupExtras');
+        extras.innerHTML =
+            '<button class="dl-extra-btn" onclick="downloadFormat(\'modern\',\'docx\')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> DOCX</button>' +
+            '<button class="dl-extra-btn" onclick="downloadFormat(\'modern\',\'md\')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Markdown</button>' +
+            '<button class="dl-extra-btn" onclick="downloadFormat(\'modern\',\'json\')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Match Report</button>';
+    }
+    window.openDownloadPopup = openDownloadPopup;
+    window.closeDownloadPopup = closeDownloadPopup;
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && document.getElementById('dlPopupOverlay').classList.contains('active')) {
+            closeDownloadPopup();
+        }
+    });
 
     // --- Scroll Reveal Animation ---
     (function() {
