@@ -164,13 +164,17 @@ def _register_security_headers(flask_app: Flask) -> None:
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
 
-        # Double-submit CSRF cookie for SPA requests
-        if "csrf_token" not in request.cookies:
-            from flask_wtf.csrf import generate_csrf
+        # Double-submit CSRF cookie for SPA requests.
+        # Regenerate when cookie is missing OR when the session lost its
+        # CSRF token (e.g. after switching session backends).
+        from flask import session as _sess
+        from flask_wtf.csrf import generate_csrf
 
+        if "csrf_token" not in request.cookies or "csrf_token" not in _sess:
+            token = generate_csrf()
             response.set_cookie(
                 "csrf_token",
-                generate_csrf(),
+                token,
                 httponly=False,
                 samesite="Lax",
                 secure=request.is_secure,
