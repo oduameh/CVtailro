@@ -223,7 +223,17 @@ def _regenerate_docx(source_md: str, filename: str):
     try:
         with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
             tmp_path = tmp.name
-        generate_resume_docx(source_md, tmp_path)
+        all_templates = (
+            "executive", "modern", "minimal", "creative",
+            "compact", "professional", "tech", "elegant",
+        )
+        template = "modern"
+        lower_name = filename.lower()
+        for tpl in all_templates:
+            if tpl in lower_name:
+                template = tpl
+                break
+        generate_resume_docx(source_md, tmp_path, template=template)
         with open(tmp_path, "rb") as f:
             docx_data = f.read()
         return Response(

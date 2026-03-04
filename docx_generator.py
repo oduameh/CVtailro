@@ -84,6 +84,46 @@ def _strip_inline_md(text: str) -> str:
     return text
 
 
+_INLINE_MD_RE = re.compile(
+    r"\*\*(.+?)\*\*"
+    r"|\*(.+?)\*"
+    r"|\[([^\]]+)\]\([^)]+\)"
+)
+
+
+def _add_run(paragraph, text: str, font_size, font_name: str, color: tuple,
+             bold: bool = False, italic: bool = False):
+    """Append a single formatted run to a paragraph."""
+    run = paragraph.add_run(text)
+    run.font.size = Pt(font_size)
+    run.font.name = font_name
+    run.font.color.rgb = RGBColor(*color)
+    if bold:
+        run.bold = True
+    if italic:
+        run.italic = True
+
+
+def _add_formatted_runs(paragraph, text: str, font_size, font_name: str, color: tuple):
+    """Add runs to a paragraph preserving **bold**, *italic*, and [link](url) formatting.
+
+    Links are rendered as bold text (hyperlinks require OPC manipulation).
+    """
+    pos = 0
+    for m in _INLINE_MD_RE.finditer(text):
+        if m.start() > pos:
+            _add_run(paragraph, text[pos:m.start()], font_size, font_name, color)
+        if m.group(1) is not None:
+            _add_run(paragraph, m.group(1), font_size, font_name, color, bold=True)
+        elif m.group(2) is not None:
+            _add_run(paragraph, m.group(2), font_size, font_name, color, italic=True)
+        elif m.group(3) is not None:
+            _add_run(paragraph, m.group(3), font_size, font_name, color, bold=True)
+        pos = m.end()
+    if pos < len(text):
+        _add_run(paragraph, text[pos:], font_size, font_name, color)
+
+
 # ---------------------------------------------------------------------------
 # Contact block parser (mirrors pdf_generator._parse_contact_block)
 # ---------------------------------------------------------------------------
@@ -340,6 +380,7 @@ def generate_resume_docx(md_content: str, output_path: str | Path, template: str
             "experience" in current_section
             or "employment" in current_section
             or "work history" in current_section
+            or "project" in current_section
         ):
             parts = [p.strip() for p in re.split(r"\s*\|\s*", re.sub(r"^###\s*", "", line)) if p.strip()]
             title = parts[0] if len(parts) > 0 else ""
@@ -389,6 +430,7 @@ def generate_resume_docx(md_content: str, output_path: str | Path, template: str
             "experience" in current_section
             or "employment" in current_section
             or "work history" in current_section
+            or "project" in current_section
         ):
             title, company, location = (
                 role3.group(1),
@@ -440,6 +482,7 @@ def generate_resume_docx(md_content: str, output_path: str | Path, template: str
             "experience" in current_section
             or "employment" in current_section
             or "work history" in current_section
+            or "project" in current_section
         ):
             title, company = role2.group(1), role2.group(2)
             date = ""
@@ -563,16 +606,10 @@ def generate_resume_docx(md_content: str, output_path: str | Path, template: str
         # Bullet point
         bullet_match = re.match(r"^\s*[-*]\s+(.+)", line)
         if bullet_match:
-            bullet_text = _strip_inline_md(bullet_match.group(1))
             p = doc.add_paragraph(style="List Bullet")
             _set_paragraph_spacing(p, before=0, after=1)
-            # Clear default run and add our own with proper formatting
             p.clear()
-            run = p.add_run(bullet_text)
-            run.font.size = Pt(ts["size"])
-            run.font.name = ts["font"]
-            run.font.color.rgb = RGBColor(*ts["text_color"])
-            # Set left indent for proper bullet indentation
+            _add_formatted_runs(p, bullet_match.group(1), ts["size"], ts["font"], ts["text_color"])
             p.paragraph_format.left_indent = Inches(0.25)
             i += 1
             continue
@@ -615,12 +652,9 @@ def generate_resume_docx(md_content: str, output_path: str | Path, template: str
 
         # Skills -- bold category fallback
         if stripped and "skill" in current_section and re.match(r"^\*\*", stripped):
-            clean = _strip_inline_md(stripped)
             p = doc.add_paragraph()
             _set_paragraph_spacing(p, before=1, after=2)
-            run = p.add_run(clean)
-            run.font.size = Pt(ts["size"])
-            run.font.name = ts["font"]
+            _add_formatted_runs(p, stripped, ts["size"], ts["font"], ts["text_color"])
             i += 1
             continue
 
@@ -637,10 +671,7 @@ def generate_resume_docx(md_content: str, output_path: str | Path, template: str
                 summary_text += " " + nl
             p = doc.add_paragraph()
             _set_paragraph_spacing(p, before=0, after=4)
-            run = p.add_run(_strip_inline_md(summary_text))
-            run.font.size = Pt(ts["size"])
-            run.font.name = ts["font"]
-            run.font.color.rgb = RGBColor(*ts["text_color"])
+            _add_formatted_runs(p, summary_text, ts["size"], ts["font"], ts["text_color"])
             i += 1
             continue
 
@@ -648,10 +679,7 @@ def generate_resume_docx(md_content: str, output_path: str | Path, template: str
         if stripped:
             p = doc.add_paragraph()
             _set_paragraph_spacing(p, before=0, after=2)
-            run = p.add_run(_strip_inline_md(stripped))
-            run.font.size = Pt(ts["size"])
-            run.font.name = ts["font"]
-            run.font.color.rgb = RGBColor(*ts["text_color"])
+            _add_formatted_runs(p, stripped, ts["size"], ts["font"], ts["text_color"])
 
         i += 1
 

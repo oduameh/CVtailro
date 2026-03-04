@@ -36,6 +36,7 @@ body {
     font-family: Georgia, "Times New Roman", serif;
     font-size: 10pt; line-height: 1.35; color: #2d2d2d;
     word-break: break-word;
+    print-color-adjust: exact; -webkit-print-color-adjust: exact;
 }
 
 /* --- Name & Contact --- */
@@ -134,6 +135,7 @@ body {
     font-family: Helvetica, Arial, sans-serif;
     font-size: 10pt; line-height: 1.35; color: #2b2b2b;
     word-break: break-word;
+    print-color-adjust: exact; -webkit-print-color-adjust: exact;
 }
 
 /* --- Name & Contact --- */
@@ -230,6 +232,7 @@ body {
     font-family: Helvetica, Arial, sans-serif;
     font-size: 10pt; line-height: 1.35; color: #2b2b2b;
     word-break: break-word;
+    print-color-adjust: exact; -webkit-print-color-adjust: exact;
 }
 
 /* --- Name & Contact --- */
@@ -330,6 +333,7 @@ body {
     font-family: Helvetica, Arial, sans-serif;
     font-size: 10pt; line-height: 1.35; color: #2b2b2b;
     word-break: break-word;
+    print-color-adjust: exact; -webkit-print-color-adjust: exact;
 }
 .name {
     font-size: 22pt; font-weight: 800; color: #0d9488;
@@ -358,10 +362,9 @@ body {
     white-space: nowrap; flex-shrink: 0; margin-left: 12pt; text-align: right;
 }
 .role-company { font-size: 9.5pt; color: #0d7d73; font-weight: 500; margin-bottom: 2pt; }
-ul { margin-left: 15pt; margin-bottom: 1pt; padding-left: 0; page-break-inside: avoid; }
+ul { margin-left: 15pt; margin-bottom: 1pt; padding-left: 0; page-break-inside: avoid; orphans: 2; widows: 2; }
 li { font-size: 10pt; margin-bottom: 2pt; line-height: 1.35; color: #2b2b2b; padding-left: 2pt; }
 li::marker { color: #0d9488; font-size: 8pt; }
-ul { orphans: 2; widows: 2; }
 .summary { font-size: 10pt; line-height: 1.4; color: #333; margin-bottom: 2pt; text-align: justify; }
 .skills-text { font-size: 10pt; line-height: 1.4; color: #2b2b2b; margin-bottom: 2pt; }
 .skills-category { font-size: 10pt; line-height: 1.4; margin-bottom: 1pt; }
@@ -388,8 +391,9 @@ COMPACT_CSS = """
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     font-family: Helvetica, Arial, sans-serif;
-    font-size: 9pt; line-height: 1.25; color: #2b2b2b;
+    font-size: 9.5pt; line-height: 1.25; color: #2b2b2b;
     word-break: break-word;
+    print-color-adjust: exact; -webkit-print-color-adjust: exact;
 }
 .name {
     font-size: 16pt; font-weight: 700; color: #1a1a1a;
@@ -450,6 +454,7 @@ body {
     font-family: Helvetica, Arial, sans-serif;
     font-size: 10pt; line-height: 1.35; color: #2d2d2d;
     word-break: break-word;
+    print-color-adjust: exact; -webkit-print-color-adjust: exact;
 }
 .name {
     font-size: 20pt; font-weight: 700; color: #334155;
@@ -510,6 +515,7 @@ body {
     font-family: Helvetica, Arial, sans-serif;
     font-size: 10pt; line-height: 1.35; color: #1e1e1e;
     word-break: break-word;
+    print-color-adjust: exact; -webkit-print-color-adjust: exact;
 }
 .name {
     font-size: 20pt; font-weight: 700; color: #0f172a;
@@ -572,6 +578,7 @@ body {
     font-family: Georgia, "Times New Roman", serif;
     font-size: 10pt; line-height: 1.4; color: #2d2d2d;
     word-break: break-word;
+    print-color-adjust: exact; -webkit-print-color-adjust: exact;
 }
 .name {
     font-family: Helvetica, Arial, sans-serif;
