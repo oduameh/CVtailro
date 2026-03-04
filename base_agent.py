@@ -161,10 +161,11 @@ class BaseAgent(ABC, Generic[T]):
                 timeout=self.API_TIMEOUT,
             )
 
+            provider_name = "NVIDIA NIM" if is_nim else "OpenRouter"
             if response.status_code == 401:
-                raise AgentError("Invalid OpenRouter API key. Check your key and try again.")
+                raise AgentError(f"Invalid {provider_name} API key. Check your key and try again.")
             if response.status_code == 402:
-                raise AgentError("Insufficient OpenRouter credits. Add credits at openrouter.ai.")
+                raise AgentError(f"Insufficient {provider_name} credits.")
             if response.status_code == 429:
                 # Wait for rate limit to clear, then retry
                 retry_after = int(response.headers.get("Retry-After", "10"))
@@ -180,12 +181,12 @@ class BaseAgent(ABC, Generic[T]):
                     error_detail = response.json().get("error", {}).get("message", "")
                 except (ValueError, json.JSONDecodeError):
                     error_detail = response.text[:200]
-                raise AgentError(f"OpenRouter API error {response.status_code}: {error_detail}")
+                raise AgentError(f"{provider_name} API error {response.status_code}: {error_detail}")
 
             try:
                 data = response.json()
             except (ValueError, json.JSONDecodeError) as e:
-                raise AgentError(f"OpenRouter returned non-JSON response: {response.text[:300]}") from e
+                raise AgentError(f"{provider_name} returned non-JSON response: {response.text[:300]}") from e
 
             # Log token usage at DEBUG level
             usage = data.get("usage", {})
@@ -210,11 +211,15 @@ class BaseAgent(ABC, Generic[T]):
 
             choices = data.get("choices", [])
             if not choices:
-                raise AgentError("OpenRouter returned no choices in response")
+                raise AgentError("API returned no choices in response")
 
-            content = choices[0].get("message", {}).get("content", "").strip()
+            message = choices[0].get("message", {})
+            content = (message.get("content") or "").strip()
+            # Thinking/reasoning models (e.g. Kimi K2 Thinking) put output in reasoning_content
             if not content:
-                raise AgentError("OpenRouter returned empty content")
+                content = (message.get("reasoning_content") or "").strip()
+            if not content:
+                raise AgentError("API returned empty content")
 
             return content
 
