@@ -2367,11 +2367,8 @@
     async function testApiKey() {
         var key = document.getElementById('apiKeyInput').value.trim();
         var result = document.getElementById('testResult');
-        if (!key) {
-            result.style.color = 'var(--error)'; result.textContent = 'Enter a key first.';
-            return;
-        }
-        result.style.color = 'var(--text-secondary)'; result.textContent = 'Testing...';
+        result.style.color = 'var(--text-secondary)';
+        result.textContent = key ? 'Testing...' : 'Testing saved key...';
         try {
             var r = await fetch('/admin/api/test-key', {
                 method: 'POST',

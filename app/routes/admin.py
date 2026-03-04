@@ -15,7 +15,7 @@ from flask_login import current_user
 from sqlalchemy import case, func, text
 
 from analytics import pipeline_analytics
-from app.extensions import db, limiter
+from app.extensions import csrf, db, limiter
 from app.models import AnalyticsEvent, SavedResume, TailoringJob, User
 from app.models.job import JobApplication
 from app.services.admin_config import AdminConfigManager
@@ -34,6 +34,7 @@ from app.services.usage import login_rate_limiter, usage_tracker
 logger = logging.getLogger("cvtailro.admin")
 
 admin_bp = Blueprint("admin", __name__)
+csrf.exempt(admin_bp)
 
 
 # ── Shared query helpers ─────────────────────────────────────────────────────
@@ -183,7 +184,10 @@ def admin_test_key():
     data = request.get_json(force=True)
     api_key = data.get("api_key", "").strip()
     if not api_key:
-        return jsonify({"valid": False, "error": "No key provided"})
+        config = AdminConfigManager.load()
+        api_key = config.api_key.strip()
+    if not api_key:
+        return jsonify({"valid": False, "error": "No API key configured"})
     try:
         r = http_requests.get(
             "https://openrouter.ai/api/v1/models",
