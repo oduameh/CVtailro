@@ -37,6 +37,11 @@ def contact():
     return render_template("contact.html")
 
 
+@main_bp.route("/ads.txt")
+def ads_txt():
+    return current_app.send_static_file("ads.txt")
+
+
 @main_bp.route("/robots.txt")
 def robots_txt():
     base_url = current_app.config.get("BLOG_BASE_URL", "https://cvtailro-production.up.railway.app").rstrip("/")

@@ -26,9 +26,7 @@
     <meta name="theme-color" content="#f8fafc" id="theme-color-meta">
     <meta name="color-scheme" content="light dark">
 
-    {% if ads_config.enabled and ads_config.client_id %}
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ ads_config.client_id }}" crossorigin="anonymous"></script>
-    {% endif %}
+    {% include 'partials/adsense.html' %}
 
     <script>
     (function() {

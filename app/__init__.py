@@ -57,6 +57,7 @@ def create_app(config_name: str | None = None) -> Flask:
     _register_session_validation(flask_app)
     init_request_id(flask_app)
     _run_migrations(flask_app)
+    _register_context_processors(flask_app)
 
     return flask_app
 
@@ -220,6 +221,21 @@ def _register_session_validation(flask_app: Flask) -> None:
             return
 
         update_activity(token)
+
+
+def _register_context_processors(flask_app: Flask) -> None:
+    @flask_app.context_processor
+    def inject_ads_config():
+        from app.services.admin_config import AdminConfigManager
+
+        client_id = AdminConfigManager.get("adsense_client_id") or flask_app.config.get("ADSENSE_CLIENT_ID", "")
+        enabled = AdminConfigManager.get("adsense_enabled")
+        return {
+            "ads_config": {
+                "enabled": enabled == "true" and bool(client_id),
+                "client_id": client_id,
+            }
+        }
 
 
 def _run_migrations(flask_app: Flask) -> None:

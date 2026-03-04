@@ -9,18 +9,6 @@ from flask import Blueprint, abort, current_app, jsonify, render_template, reque
 blog_bp = Blueprint("blog", __name__, url_prefix="/blog")
 
 
-def _ads_config() -> dict[str, str | bool]:
-    config = current_app.config
-    client_id = config.get("ADSENSE_CLIENT_ID", "")
-    return {
-        "enabled": bool(client_id),
-        "client_id": client_id,
-        "slot_top": config.get("ADSENSE_SLOT_TOP", ""),
-        "slot_mid": config.get("ADSENSE_SLOT_MID", ""),
-        "slot_bottom": config.get("ADSENSE_SLOT_BOTTOM", ""),
-    }
-
-
 @dataclass
 class _TemplatePost:
     """Unified view object for blog templates (works for both DB and file posts)."""
@@ -121,14 +109,12 @@ def blog_index():
         posts = list_posts(audience=audience, category=category)
         categories = available_categories()
 
-    ads_config = _ads_config()
     return render_template(
         "blog/index.html",
         posts=posts,
         categories=categories or [],
         active_audience=audience,
         active_category=category,
-        ads_config=ads_config,
     )
 
 
@@ -170,10 +156,8 @@ def blog_post(slug: str):
 
     base_url = current_app.config.get("BLOG_BASE_URL") or request.url_root.rstrip("/")
     canonical_url = post.canonical or f"{base_url}/blog/{post.slug}"
-    ads_config = _ads_config()
     return render_template(
         "blog/post.html",
         post=post,
         canonical_url=canonical_url,
-        ads_config=ads_config,
     )

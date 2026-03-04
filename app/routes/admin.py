@@ -1213,6 +1213,30 @@ def admin_save_session_config():
     return jsonify({"ok": True})
 
 
+@admin_bp.route("/admin/api/adsense-config", methods=["GET"])
+@_admin_required
+def admin_get_adsense_config():
+    """Get current AdSense settings."""
+    return jsonify({
+        "adsense_enabled": AdminConfigManager.get("adsense_enabled") or "false",
+        "adsense_client_id": AdminConfigManager.get("adsense_client_id") or "",
+    })
+
+
+@admin_bp.route("/admin/api/adsense-config", methods=["POST"])
+@_admin_required
+def admin_save_adsense_config():
+    """Update AdSense settings."""
+    data = request.get_json(force=True)
+    changed = []
+    for key in ("adsense_enabled", "adsense_client_id"):
+        if key in data:
+            AdminConfigManager.set(key, str(data[key]).strip())
+            changed.append(key)
+    track("admin.adsense_config.updated", category="admin", metadata={"changed_keys": changed})
+    return jsonify({"ok": True})
+
+
 @admin_bp.route("/admin/api/sessions")
 @_admin_required
 def admin_list_sessions():
