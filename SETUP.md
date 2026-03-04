@@ -301,7 +301,7 @@ When no `DATABASE_URL` is set, the application falls back to a local SQLite data
 
 #### Prerequisites
 
-- Python 3.13+
+- Python 3.11+ (3.13 recommended; CI and Docker run 3.13)
 - System libraries for WeasyPrint (cairo, pango, gdk-pixbuf). On macOS:
 
 ```bash
