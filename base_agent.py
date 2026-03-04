@@ -186,9 +186,20 @@ class BaseAgent(ABC, Generic[T]):
             if response.status_code >= 400:
                 error_detail = ""
                 try:
-                    error_detail = response.json().get("error", {}).get("message", "")
+                    err_body = response.json()
+                    # OpenAI/OpenRouter format: {"error": {"message": "..."}}
+                    error_detail = err_body.get("error", {}).get("message", "")
+                    # NIM format: {"detail": "...", "title": "..."}
+                    if not error_detail:
+                        error_detail = err_body.get("detail") or err_body.get("title") or ""
                 except (ValueError, json.JSONDecodeError):
-                    error_detail = response.text[:200]
+                    pass
+                if not error_detail:
+                    error_detail = response.text[:300]
+                logger.error(
+                    f"[{self.AGENT_NAME}] {provider_name} error {response.status_code} "
+                    f"for model={self.config.model}: {error_detail}"
+                )
                 raise AgentError(f"{provider_name} API error {response.status_code}: {error_detail}")
 
             try:
