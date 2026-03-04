@@ -1,6 +1,6 @@
-"""Main routes — index page, health check, status, and model listing."""
+"""Main routes — index page, health check, status, model listing, and SEO assets."""
 
-from flask import Blueprint, jsonify, render_template
+from flask import Blueprint, Response, current_app, jsonify, render_template
 from sqlalchemy import text
 
 from app.extensions import db
@@ -35,6 +35,44 @@ def pricing():
 @main_bp.route("/contact")
 def contact():
     return render_template("contact.html")
+
+
+@main_bp.route("/robots.txt")
+def robots_txt():
+    base_url = current_app.config.get("BLOG_BASE_URL", "https://cvtailro-production.up.railway.app").rstrip("/")
+    body = "\n".join(
+        [
+            "User-agent: *",
+            "Allow: /",
+            f"Sitemap: {base_url}/sitemap.xml",
+            "",
+        ]
+    )
+    return Response(body, mimetype="text/plain")
+
+
+@main_bp.route("/sitemap.xml")
+def sitemap_xml():
+    base_url = current_app.config.get("BLOG_BASE_URL", "https://cvtailro-production.up.railway.app").rstrip("/")
+    urls = [
+        f"{base_url}/",
+        f"{base_url}/pricing",
+        f"{base_url}/blog/",
+        f"{base_url}/privacy",
+        f"{base_url}/terms",
+        f"{base_url}/contact",
+    ]
+    for post in list_posts():
+        urls.append(f"{base_url}/blog/{post.slug}")
+
+    items = "\n".join(f"  <url><loc>{u}</loc></url>" for u in urls)
+    xml = (
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n"
+        f"{items}\n"
+        "</urlset>\n"
+    )
+    return Response(xml, mimetype="application/xml")
 
 
 @main_bp.route("/api/health")
