@@ -76,6 +76,16 @@
             justify-content: center;
             background: var(--bg);
             padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        .auth-wrapper::before {
+            content: '';
+            position: absolute; inset: 0;
+            background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+            background-size: 24px 24px;
+            opacity: 0.5;
+            pointer-events: none;
         }
         .auth-card {
             background: var(--card);
@@ -239,18 +249,45 @@
         .card-header h2 { font-size: 14px; font-weight: 600; }
         .card-no-hover:hover { transform: none; box-shadow: var(--card-shadow); }
 
+        /* Hero Status Bar */
+        .hero-bar {
+            background: var(--accent-light);
+            border: 1px solid var(--accent-light-border);
+            border-radius: var(--radius-lg);
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .hero-left h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+        .hero-left p { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+        .hero-center {
+            font-size: 14px; font-weight: 600; color: var(--text-secondary);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.2px;
+        }
+        .hero-center b { color: var(--text); font-weight: 700; }
+        .hero-right { display: flex; align-items: center; gap: 12px; }
+        .hero-status {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 13px; font-weight: 500;
+        }
+
         /* KPI Cards */
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 16px;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
         .kpi-card {
             background: var(--card);
             backdrop-filter: blur(var(--glass-blur));
             border-radius: var(--radius);
-            padding: 20px;
+            padding: 18px 20px;
             border: 1px solid var(--border);
             box-shadow: var(--card-shadow);
             transition: transform 0.2s, box-shadow 0.2s;
@@ -272,17 +309,26 @@
             0%, 100% { box-shadow: var(--card-shadow); }
             50% { box-shadow: 0 0 0 3px var(--accent-light-border); }
         }
-        .kpi-icon {
-            width: 40px; height: 40px; border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px; margin-bottom: 14px;
+        .kpi-top {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 12px;
         }
-        .kpi-icon.indigo { background: rgba(99,102,241,0.1); }
-        .kpi-icon.green { background: rgba(5,150,105,0.1); }
-        .kpi-icon.amber { background: rgba(217,119,6,0.1); }
-        .kpi-icon.red { background: rgba(220,38,38,0.08); }
-        .kpi-icon.violet { background: rgba(139,92,246,0.1); }
-        .kpi-icon.cyan { background: rgba(6,182,212,0.1); }
+        .kpi-icon {
+            width: 36px; height: 36px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+        }
+        .kpi-icon svg { width: 18px; height: 18px; }
+        .kpi-icon.indigo { background: rgba(99,102,241,0.1); color: #6366f1; }
+        .kpi-icon.green { background: rgba(5,150,105,0.1); color: #059669; }
+        .kpi-icon.amber { background: rgba(217,119,6,0.1); color: #d97706; }
+        .kpi-icon.red { background: rgba(220,38,38,0.08); color: #dc2626; }
+        .kpi-icon.violet { background: rgba(139,92,246,0.1); color: #8b5cf6; }
+        .kpi-icon.cyan { background: rgba(6,182,212,0.1); color: #06b6d4; }
+        .kpi-bottom {
+            display: flex; justify-content: space-between; align-items: flex-end;
+            margin-top: 8px;
+        }
         .kpi-value {
             font-size: 28px; font-weight: 700; letter-spacing: -0.5px;
             font-variant-numeric: tabular-nums;
@@ -294,14 +340,102 @@
         .kpi-value.error { color: var(--error); }
         .kpi-label {
             font-size: 12px; font-weight: 500;
-            color: var(--text-secondary); margin-top: 4px;
+            color: var(--text-secondary); margin-top: 2px;
         }
         .kpi-trend {
-            display: inline-flex; align-items: center; gap: 3px;
-            font-size: 11px; font-weight: 600; margin-left: 6px;
+            display: inline-flex; align-items: center; gap: 2px;
+            font-size: 11px; font-weight: 600;
+            padding: 2px 6px; border-radius: 6px;
         }
-        .kpi-trend.up { color: var(--success); }
-        .kpi-trend.down { color: var(--error); }
+        .kpi-trend.up { color: var(--success); background: var(--success-light); }
+        .kpi-trend.down { color: var(--error); background: var(--error-light); }
+        .kpi-trend.neutral { color: var(--text-tertiary); }
+        .kpi-spark { display: block; }
+
+        /* Health Card */
+        .health-card {
+            display: flex; gap: 16px; flex-wrap: wrap;
+            align-items: center;
+            padding: 16px 20px;
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--success);
+            margin-bottom: 24px;
+            box-shadow: var(--card-shadow);
+            transition: border-color 0.3s;
+        }
+        .health-card.warn-border { border-left-color: var(--warning); }
+        .health-card.error-border { border-left-color: var(--error); }
+        .health-item {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 13px; font-weight: 500;
+        }
+        .health-item strong { font-size: 12px; }
+        .health-detail {
+            display: block; font-size: 11px; font-weight: 400;
+            color: var(--text-secondary);
+        }
+        .health-divider {
+            width: 1px; height: 28px;
+            background: var(--border);
+            flex-shrink: 0;
+        }
+
+        /* Status Stats (below chart) */
+        .status-stats {
+            display: flex; gap: 12px; margin-top: 16px;
+            padding-top: 16px; border-top: 1px solid var(--border);
+        }
+        .stat-box {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border-left: 3px solid var(--border);
+            background: var(--accent-light);
+            font-size: 13px; font-weight: 500;
+            color: var(--text-secondary);
+        }
+        .stat-box .stat-num {
+            font-size: 20px; font-weight: 700;
+            display: block; line-height: 1.2;
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
+        }
+        .stat-box.stat-success { border-left-color: var(--success); }
+        .stat-box.stat-info { border-left-color: var(--accent); }
+        .stat-box.stat-error { border-left-color: var(--error); }
+
+        /* Activity Feed enhancements */
+        .activity-item-v2 {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 12px;
+            border-left: 3px solid var(--border);
+            border-radius: 0 8px 8px 0;
+            transition: background 0.15s;
+            margin-bottom: 2px;
+        }
+        .activity-item-v2:nth-child(even) { background: var(--accent-light); }
+        .activity-item-v2.status-completed { border-left-color: var(--success); }
+        .activity-item-v2.status-error { border-left-color: var(--error); }
+        .activity-item-v2.status-running { border-left-color: var(--accent); }
+        .activity-status-icon {
+            width: 28px; height: 28px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; font-size: 14px;
+        }
+        .activity-status-icon.completed { background: var(--success-light); color: var(--success); }
+        .activity-status-icon.error { background: var(--error-light); color: var(--error); }
+        .activity-status-icon.running { background: var(--accent-light); color: var(--accent); }
+        .score-bar {
+            width: 40px; height: 6px; border-radius: 3px;
+            background: var(--border); overflow: hidden;
+            display: inline-block; vertical-align: middle; margin-left: 4px;
+        }
+        .score-bar-fill {
+            height: 100%; border-radius: 3px;
+            transition: width 0.4s ease;
+        }
 
         /* Alert Banner */
         .alert-banner {
@@ -646,6 +780,9 @@
             .kpi-grid { grid-template-columns: repeat(2, 1fr); }
             .grid-2, .grid-3 { grid-template-columns: 1fr; }
             .grid-2-1 { grid-template-columns: 1fr; }
+            .hero-bar { flex-direction: column; align-items: flex-start; }
+            .hero-center { font-size: 13px; }
+            .status-stats { flex-direction: column; }
         }
         @media (max-width: 768px) {
             .sidebar {
@@ -677,6 +814,9 @@
             }
             .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
             .tab-header h1 { font-size: 22px; }
+            .hero-left h1 { font-size: 18px; }
+            .health-card { gap: 12px; }
+            .health-divider { display: none; }
             .sub-tabs { flex-wrap: wrap; }
             .data-table { font-size: 12px; }
             .data-table th, .data-table td { padding: 8px 10px; }
@@ -799,76 +939,123 @@
 
             <!-- TAB: OVERVIEW -->
             <div class="tab-content active" id="tab-overview">
-                <div class="tab-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
-                    <div>
-                        <h1>Overview</h1>
-                        <p style="display:flex;align-items:center;gap:8px;">
-                            <span id="dashHealthDot" class="status-dot healthy pulse"></span>
-                            <span id="dashHealthLabel">Service healthy</span>
-                        </p>
+
+                <div class="hero-bar">
+                    <div class="hero-left">
+                        <h1 id="heroGreeting">Good morning</h1>
+                        <p id="heroDate"></p>
                     </div>
-                    <button class="btn btn-sm btn-secondary" onclick="refreshOverview()">&#8635; Refresh</button>
+                    <div class="hero-center" id="heroSummary">Loading...</div>
+                    <div class="hero-right">
+                        <div class="hero-status">
+                            <span class="status-dot healthy pulse" id="dashHealthDot"></span>
+                            <span id="dashHealthLabel">All systems operational</span>
+                        </div>
+                        <button class="btn btn-sm btn-secondary" onclick="refreshOverview()">&#8635; Refresh</button>
+                    </div>
                 </div>
 
                 <div class="kpi-grid" id="overviewKpis">
                     <div class="kpi-card">
-                        <div class="kpi-icon indigo">&#128101;</div>
+                        <div class="kpi-top">
+                            <div class="kpi-icon indigo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+                            <span class="kpi-trend neutral" id="trendUsers"></span>
+                        </div>
                         <div class="kpi-value accent" id="dashUsers">--</div>
                         <div class="kpi-label">Total Users</div>
                     </div>
                     <div class="kpi-card">
-                        <div class="kpi-icon green">&#128196;</div>
+                        <div class="kpi-top">
+                            <div class="kpi-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>
+                            <span class="kpi-trend neutral" id="trendJobsToday"></span>
+                        </div>
                         <div class="kpi-value" id="dashJobsToday">--</div>
-                        <div class="kpi-label">Jobs Today</div>
+                        <div class="kpi-bottom">
+                            <div class="kpi-label">Jobs Today</div>
+                            <canvas class="kpi-spark" id="sparkJobsToday" width="64" height="24"></canvas>
+                        </div>
                     </div>
                     <div class="kpi-card">
-                        <div class="kpi-icon green">&#9989;</div>
+                        <div class="kpi-top">
+                            <div class="kpi-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                            <span class="kpi-trend neutral" id="trendSuccessRate"></span>
+                        </div>
                         <div class="kpi-value success" id="dashSuccessRate">--</div>
-                        <div class="kpi-label">Success Rate</div>
+                        <div class="kpi-bottom">
+                            <div class="kpi-label">Success Rate</div>
+                            <canvas class="kpi-spark" id="sparkSuccessRate" width="64" height="24"></canvas>
+                        </div>
                     </div>
                     <div class="kpi-card">
-                        <div class="kpi-icon cyan">&#128273;</div>
-                        <div class="kpi-value" id="dashActiveSessions">--</div>
-                        <div class="kpi-label">Active Sessions</div>
+                        <div class="kpi-top">
+                            <div class="kpi-icon cyan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+                            <span class="kpi-trend neutral" id="trendDAU"></span>
+                        </div>
+                        <div class="kpi-value" id="dashDAU">--</div>
+                        <div class="kpi-bottom">
+                            <div class="kpi-label">Daily Active Users</div>
+                            <canvas class="kpi-spark" id="sparkDAU" width="64" height="24"></canvas>
+                        </div>
                     </div>
                     <div class="kpi-card">
-                        <div class="kpi-icon amber">&#128176;</div>
+                        <div class="kpi-top">
+                            <div class="kpi-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+                            <span class="kpi-trend neutral" id="trendCost"></span>
+                        </div>
                         <div class="kpi-value" id="dashCost">--</div>
-                        <div class="kpi-label">Est. Cost (session)</div>
+                        <div class="kpi-bottom">
+                            <div class="kpi-label">Est. Cost (session)</div>
+                            <canvas class="kpi-spark" id="sparkCost" width="64" height="24"></canvas>
+                        </div>
                     </div>
                     <div class="kpi-card">
-                        <div class="kpi-icon violet">&#9881;</div>
-                        <div class="kpi-value" id="dashPipelines">--</div>
-                        <div class="kpi-label">Active Pipelines</div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-icon red">&#128203;</div>
-                        <div class="kpi-value" id="dashQueueDepth">--</div>
-                        <div class="kpi-label">Queue Depth</div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-icon green">&#128200;</div>
+                        <div class="kpi-top">
+                            <div class="kpi-icon violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+                            <span class="kpi-trend neutral" id="trendMatch"></span>
+                        </div>
                         <div class="kpi-value success" id="dashMatchImprovement">--</div>
                         <div class="kpi-label">Avg Match Improvement</div>
                     </div>
                 </div>
 
-                <div class="grid-2-1">
-                    <div class="card card-no-hover">
-                        <div class="card-header">
-                            <h2>Jobs &amp; Users (30 days)</h2>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="overviewChart"></canvas>
-                        </div>
+                <div class="health-card" id="healthCard">
+                    <div class="health-item">
+                        <span class="status-dot" id="healthDB"></span>
+                        <div><strong>Database</strong><span class="health-detail" id="healthDBDetail">checking...</span></div>
                     </div>
-                    <div class="card card-no-hover">
-                        <div class="card-header">
-                            <h2>Job Status</h2>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="statusChart"></canvas>
-                        </div>
+                    <div class="health-divider"></div>
+                    <div class="health-item">
+                        <span class="status-dot" id="healthOpenRouter"></span>
+                        <div><strong>OpenRouter</strong><span class="health-detail" id="healthOpenRouterDetail">checking...</span></div>
+                    </div>
+                    <div class="health-divider"></div>
+                    <div class="health-item">
+                        <span class="status-dot" id="healthR2"></span>
+                        <div><strong>R2 Storage</strong><span class="health-detail" id="healthR2Detail">checking...</span></div>
+                    </div>
+                    <div class="health-divider"></div>
+                    <div class="health-item">
+                        <span class="status-dot" id="healthRedis"></span>
+                        <div><strong>Redis</strong><span class="health-detail" id="healthRedisDetail">checking...</span></div>
+                    </div>
+                    <div class="health-divider"></div>
+                    <div class="health-item">
+                        <span class="status-dot healthy pulse" id="healthPipeline"></span>
+                        <div><strong>Pipeline</strong><span class="health-detail" id="healthPipeDetail">0/5 active</span></div>
+                    </div>
+                </div>
+
+                <div class="card card-no-hover">
+                    <div class="card-header">
+                        <h2>Jobs &amp; Users (30 days)</h2>
+                    </div>
+                    <div style="position:relative;height:320px;">
+                        <canvas id="overviewChart"></canvas>
+                    </div>
+                    <div class="status-stats" id="statusStats">
+                        <div class="stat-box stat-success"><span class="stat-num" id="statCompleted">0</span> Completed</div>
+                        <div class="stat-box stat-info"><span class="stat-num" id="statRunning">0</span> Running</div>
+                        <div class="stat-box stat-error"><span class="stat-num" id="statFailed">0</span> Failed</div>
                     </div>
                 </div>
 
@@ -877,20 +1064,14 @@
                         <h2>Recent Activity</h2>
                         <span style="font-size:12px;color:var(--text-secondary);">Last 10 jobs</span>
                     </div>
-                    <div class="activity-list" id="recentActivity">
+                    <div id="recentActivity">
                         <div class="empty-state"><div class="empty-icon">&#128196;</div><div>Loading...</div></div>
+                    </div>
+                    <div style="text-align:center;padding-top:12px;border-top:1px solid var(--border);margin-top:8px;">
+                        <a onclick="switchTab('users')" style="font-size:13px;color:var(--accent);cursor:pointer;font-weight:600;">View all users &amp; jobs &#8594;</a>
                     </div>
                 </div>
 
-                <div style="margin-top:20px;">
-                    <div class="section-title">System Health</div>
-                    <div class="health-strip" id="healthStrip">
-                        <div class="health-item"><span class="status-dot" id="healthDB"></span> Database</div>
-                        <div class="health-item"><span class="status-dot" id="healthOpenRouter"></span> OpenRouter</div>
-                        <div class="health-item"><span class="status-dot" id="healthR2"></span> R2 Storage</div>
-                        <div class="health-item"><span class="status-dot" id="healthRedis"></span> Redis</div>
-                    </div>
-                </div>
             </div>
 
             <!-- TAB: USERS -->
@@ -1686,49 +1867,192 @@
     }
 
     /* ───────────────────────────────────────────────────
+       SPARKLINE RENDERER (Canvas 2D)
+       ─────────────────────────────────────────────────── */
+    function drawSparkline(canvasId, dataArray, color) {
+        var canvas = document.getElementById(canvasId);
+        if (!canvas || !dataArray || dataArray.length < 2) return;
+        var ctx = canvas.getContext('2d');
+        var w = canvas.width, h = canvas.height;
+        var dpr = window.devicePixelRatio || 1;
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+        ctx.scale(dpr, dpr);
+        ctx.clearRect(0, 0, w, h);
+
+        var max = Math.max.apply(null, dataArray);
+        var min = Math.min.apply(null, dataArray);
+        var range = max - min || 1;
+        var pad = 2;
+
+        var points = dataArray.map(function(v, i) {
+            return {
+                x: pad + (i / (dataArray.length - 1)) * (w - pad * 2),
+                y: pad + (1 - (v - min) / range) * (h - pad * 2)
+            };
+        });
+
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (var i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+
+        var grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, color.replace(')', ',0.25)').replace('rgb', 'rgba'));
+        grad.addColorStop(1, color.replace(')', ',0)').replace('rgb', 'rgba'));
+        ctx.lineTo(points[points.length - 1].x, h);
+        ctx.lineTo(points[0].x, h);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+    }
+
+    function setTrend(elId, current, previous) {
+        var el = document.getElementById(elId);
+        if (!el) return;
+        if (previous == null || previous === 0 || current == null) { el.textContent = ''; el.className = 'kpi-trend neutral'; return; }
+        var pct = Math.round(((current - previous) / Math.abs(previous)) * 100);
+        if (pct === 0) { el.textContent = '0%'; el.className = 'kpi-trend neutral'; return; }
+        el.textContent = (pct > 0 ? '\u2191' : '\u2193') + Math.abs(pct) + '%';
+        el.className = 'kpi-trend ' + (pct > 0 ? 'up' : 'down');
+    }
+
+    /* ───────────────────────────────────────────────────
+       HERO BAR
+       ─────────────────────────────────────────────────── */
+    function updateGreeting() {
+        var h = new Date().getHours();
+        var greeting = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+        var el = document.getElementById('heroGreeting');
+        if (el) el.textContent = greeting;
+        var dateEl = document.getElementById('heroDate');
+        if (dateEl) dateEl.textContent = new Date().toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'short', day:'numeric'});
+    }
+
+    function updateHeroSummary(jobsToday, successRate, cost) {
+        var el = document.getElementById('heroSummary');
+        if (!el) return;
+        el.innerHTML = '<b>' + (jobsToday ?? 0) + '</b> jobs today &middot; <b>' + (successRate ?? 0).toFixed(1) + '%</b> success &middot; <b>$' + (cost ?? 0).toFixed(2) + '</b> spent';
+    }
+
+    /* ───────────────────────────────────────────────────
        OVERVIEW TAB
        ─────────────────────────────────────────────────── */
+    var overviewUsageData = null;
+    var overviewRelData = null;
+    var overviewCostData = null;
+
     async function loadOverviewData() {
+        updateGreeting();
         try {
-            var [statsRes, analyticsRes, liveRes, usageRes] = await Promise.all([
+            var [statsRes, analyticsRes, liveRes, usageRes, relRes, costRes] = await Promise.all([
                 fetch('/admin/api/stats'),
                 fetch('/admin/api/analytics'),
                 fetch('/admin/api/live-stats'),
-                fetch('/admin/api/observability/product-usage').catch(function() { return {ok:false}; })
+                fetch('/admin/api/observability/product-usage').catch(function() { return {ok:false}; }),
+                fetch('/admin/api/observability/reliability').catch(function() { return {ok:false}; }),
+                fetch('/admin/api/observability/cost').catch(function() { return {ok:false}; })
             ]);
+
+            var jobsToday = 0, successRate = 0, costUsd = 0;
 
             if (statsRes.ok) {
                 var stats = await statsRes.json();
                 animateValue(document.getElementById('dashUsers'), stats.total_users ?? 0);
-                animateValue(document.getElementById('dashJobsToday'), stats.jobs_today ?? 0);
-                var sr = stats.success_rate ?? 0;
-                animateValue(document.getElementById('dashSuccessRate'), sr, {suffix:'%', decimals:1});
+                jobsToday = stats.jobs_today ?? 0;
+                animateValue(document.getElementById('dashJobsToday'), jobsToday);
+                successRate = stats.success_rate ?? 0;
+                animateValue(document.getElementById('dashSuccessRate'), successRate, {suffix:'%', decimals:1});
                 var srEl = document.getElementById('dashSuccessRate');
-                if (srEl) srEl.className = 'kpi-value ' + (sr >= 90 ? 'success' : sr >= 70 ? '' : 'warning');
+                if (srEl) srEl.className = 'kpi-value ' + (successRate >= 90 ? 'success' : successRate >= 70 ? '' : 'warning');
                 var imp = stats.avg_match_improvement ?? 0;
                 animateValue(document.getElementById('dashMatchImprovement'), imp, {prefix: imp >= 0 ? '+' : '', suffix:'%', decimals:1});
                 var impEl = document.getElementById('dashMatchImprovement');
                 if (impEl) impEl.className = 'kpi-value ' + (imp > 0 ? 'success' : '');
             }
 
+            var usageData = null;
+            if (usageRes && usageRes.ok) {
+                usageData = await usageRes.json();
+                overviewUsageData = usageData;
+                animateValue(document.getElementById('dashDAU'), usageData.dau ?? 0);
+
+                if (usageData.users_per_day && usageData.users_per_day.length >= 2) {
+                    var upd = usageData.users_per_day;
+                    var dauArr = upd.slice(-7).map(function(u) { return u.count || 0; });
+                    drawSparkline('sparkDAU', dauArr, 'rgb(6,182,212)');
+                    setTrend('trendDAU', upd[upd.length-1].count, upd.length > 7 ? upd[upd.length-8].count : upd[upd.length-2].count);
+                }
+                if (usageData.jobs_per_day && usageData.jobs_per_day.length >= 2) {
+                    var jpd = usageData.jobs_per_day;
+                    var jobArr = jpd.slice(-7).map(function(d) { return d.total || 0; });
+                    drawSparkline('sparkJobsToday', jobArr, 'rgb(5,150,105)');
+                    setTrend('trendJobsToday', jpd[jpd.length-1].total, jpd.length > 7 ? jpd[jpd.length-8].total : jpd[jpd.length-2].total);
+                }
+            }
+
             if (analyticsRes.ok) {
                 var analytics = await analyticsRes.json();
-                animateValue(document.getElementById('dashCost'), analytics.total_cost_usd || 0, {prefix:'$', decimals:2});
-                renderOverviewChart(analytics.jobs_over_time || [], usageRes && usageRes.ok ? (await usageRes.json()) : null);
-                renderStatusChart(analytics.jobs_by_status || {});
+                costUsd = analytics.total_cost_usd || 0;
+                animateValue(document.getElementById('dashCost'), costUsd, {prefix:'$', decimals:2});
+                renderOverviewChart(analytics.jobs_over_time || [], usageData);
+                populateStatusStats(analytics.jobs_by_status || {});
             }
 
             if (liveRes.ok) {
                 var live = await liveRes.json();
-                animateValue(document.getElementById('dashPipelines'), live.active_pipelines ?? 0);
-                animateValue(document.getElementById('dashQueueDepth'), live.queue_depth ?? 0);
-                var usage = live.usage_stats || {};
-                animateValue(document.getElementById('dashActiveSessions'), usage.active_sessions ?? 0);
+                var pipeEl = document.getElementById('healthPipeDetail');
+                if (pipeEl) pipeEl.textContent = (live.active_pipelines ?? 0) + '/' + (live.max_concurrent ?? 5) + ' active \u00B7 ' + (live.queue_depth ?? 0) + ' queued';
+                var pipeDot = document.getElementById('healthPipeline');
+                if (pipeDot) {
+                    if (live.active_pipelines > 0) pipeDot.className = 'status-dot healthy pulse';
+                    else pipeDot.className = 'status-dot healthy';
+                }
             }
+
+            if (relRes && relRes.ok) {
+                var relData = await relRes.json();
+                overviewRelData = relData;
+                if (relData.failures_per_day && relData.failures_per_day.length >= 2) {
+                    var fpd = relData.failures_per_day;
+                    var srArr = fpd.slice(-7).map(function(d) { return d.total > 0 ? Math.round((1 - d.errors / d.total) * 100) : 100; });
+                    drawSparkline('sparkSuccessRate', srArr, 'rgb(5,150,105)');
+                    setTrend('trendSuccessRate', srArr[srArr.length-1], srArr.length > 1 ? srArr[0] : null);
+                }
+            }
+
+            if (costRes && costRes.ok) {
+                var cData = await costRes.json();
+                overviewCostData = cData;
+                if (cData.jobs_per_day && cData.jobs_per_day.length >= 2) {
+                    var cpd = cData.jobs_per_day;
+                    var costArr = cpd.slice(-7).map(function(d) { return d.count || 0; });
+                    drawSparkline('sparkCost', costArr, 'rgb(217,119,6)');
+                }
+            }
+
+            updateHeroSummary(jobsToday, successRate, costUsd);
         } catch(e) { console.error('Overview load error:', e); }
     }
 
-    var overviewUsageData = null;
+    function populateStatusStats(jobsByStatus) {
+        var completed = 0, running = 0, failed = 0;
+        for (var k in jobsByStatus) {
+            var v = jobsByStatus[k];
+            if (k === 'completed' || k === 'complete') completed += v;
+            else if (k === 'error' || k === 'failed') failed += v;
+            else running += v;
+        }
+        var el;
+        el = document.getElementById('statCompleted'); if (el) el.textContent = completed;
+        el = document.getElementById('statRunning'); if (el) el.textContent = running;
+        el = document.getElementById('statFailed'); if (el) el.textContent = failed;
+    }
 
     function renderOverviewChart(jobsOverTime, usageData) {
         if (usageData) overviewUsageData = usageData;
@@ -1746,6 +2070,7 @@
 
         var labels = last30.map(function(d) { return d.slice(5); });
         var jobData = last30.map(function(d) { return byDate[d] || 0; });
+        var todayIdx = 29;
 
         var datasets = [{
             label: 'Jobs',
@@ -1766,20 +2091,50 @@
                 label: 'Active Users',
                 data: userData,
                 borderColor: '#8b5cf6',
-                backgroundColor: 'rgba(139,92,246,0.1)',
+                backgroundColor: function(context) {
+                    var chart = context.chart;
+                    var ctx = chart.ctx, area = chart.chartArea;
+                    if (!area) return 'rgba(139,92,246,0.1)';
+                    var gradient = ctx.createLinearGradient(0, area.top, 0, area.bottom);
+                    gradient.addColorStop(0, 'rgba(139,92,246,0.25)');
+                    gradient.addColorStop(1, 'rgba(139,92,246,0.02)');
+                    return gradient;
+                },
                 fill: true,
                 tension: 0.3,
                 type: 'line',
                 yAxisID: 'y1',
                 pointRadius: 2,
+                pointHoverRadius: 5,
                 order: 1
             });
         }
 
         var theme = chartTheme();
+        var todayLinePlugin = {
+            id: 'todayLine',
+            afterDraw: function(chart) {
+                var meta = chart.getDatasetMeta(0);
+                if (!meta || !meta.data || !meta.data[todayIdx]) return;
+                var x = meta.data[todayIdx].x;
+                var yAxis = chart.scales.y;
+                var ctx = chart.ctx;
+                ctx.save();
+                ctx.beginPath();
+                ctx.setLineDash([4, 4]);
+                ctx.strokeStyle = theme.isDark ? 'rgba(148,163,184,0.3)' : 'rgba(100,116,139,0.25)';
+                ctx.lineWidth = 1;
+                ctx.moveTo(x, yAxis.top);
+                ctx.lineTo(x, yAxis.bottom);
+                ctx.stroke();
+                ctx.restore();
+            }
+        };
+
         chartInstances['overview'] = new Chart(canvas, {
             type: 'bar',
             data: { labels: labels, datasets: datasets },
+            plugins: [todayLinePlugin],
             options: {
                 responsive: true, maintainAspectRatio: false,
                 interaction: { intersect: false, mode: 'index' },
@@ -1787,36 +2142,15 @@
                     legend: { position: 'top', labels: { color: theme.text, boxWidth: 12, font: {size:11} } },
                     tooltip: {
                         backgroundColor: 'rgba(15,23,42,0.9)', titleColor: '#fff', bodyColor: '#e2e8f0',
-                        borderColor: 'rgba(99,102,241,0.3)', borderWidth: 1, cornerRadius: 8, padding: 10,
-                        bodyFont: {family: 'DM Sans'}, titleFont: {family: 'DM Sans', weight: '600'}
+                        borderColor: 'rgba(99,102,241,0.3)', borderWidth: 1, cornerRadius: 8, padding: 12,
+                        bodyFont: {family: 'DM Sans'}, titleFont: {family: 'DM Sans', weight: '600'},
+                        mode: 'index', intersect: false
                     }
                 },
                 scales: {
-                    x: { grid: {color: theme.grid}, ticks: {color: theme.text, maxRotation: 45, font:{size:10}} },
+                    x: { grid: {color: theme.grid}, ticks: {color: theme.text, maxRotation: 0, autoSkipPadding: 8, font:{size:10}} },
                     y: { beginAtZero: true, grid: {color: theme.grid}, ticks: {color: theme.text}, position: 'left', title: {display: true, text: 'Jobs', color: theme.text, font:{size:11}} },
                     y1: { beginAtZero: true, grid: {drawOnChartArea: false}, ticks: {color: '#8b5cf6'}, position: 'right', title: {display: true, text: 'Users', color: '#8b5cf6', font:{size:11}} }
-                }
-            }
-        });
-    }
-
-    function renderStatusChart(jobsByStatus) {
-        var canvas = document.getElementById('statusChart');
-        if (!canvas || typeof Chart === 'undefined') return;
-        destroyChart('status');
-        var labels = [], data = [], colors = ['#059669','#6366f1','#d97706','#dc2626','#64748b'];
-        for (var k in jobsByStatus || {}) { labels.push(k); data.push(jobsByStatus[k]); }
-        if (!labels.length) { labels = ['No data']; data = [1]; colors = ['#64748b']; }
-        var theme = chartTheme();
-        chartInstances['status'] = new Chart(canvas, {
-            type: 'doughnut',
-            data: { labels: labels, datasets: [{ data: data, backgroundColor: colors.slice(0, labels.length), borderWidth: 0 }] },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                cutout: '60%',
-                plugins: {
-                    legend: { position: 'bottom', labels: { color: theme.text, padding: 12, boxWidth: 10, font:{size:11} } },
-                    tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', titleColor: '#fff', bodyColor: '#e2e8f0', cornerRadius: 8, padding: 10 }
                 }
             }
         });
@@ -1834,14 +2168,15 @@
                     return '<div class="alert-banner ' + (a.severity === 'high' ? 'high' : 'medium') + '">' +
                         (a.severity === 'high' ? '&#9888; ' : '&#9432; ') + escapeHtml(a.message) + '</div>';
                 }).join('');
-                if (d.alerts.some(function(a){return a.severity==='high';})) {
-                    dot.className = 'status-dot down pulse'; label.textContent = 'Alerts active';
+                var hasHigh = d.alerts.some(function(a){return a.severity==='high';});
+                if (hasHigh) {
+                    dot.className = 'status-dot down pulse'; label.textContent = d.alerts.length + ' alert(s) active';
                 } else {
-                    dot.className = 'status-dot degraded pulse'; label.textContent = 'Warnings active';
+                    dot.className = 'status-dot degraded pulse'; label.textContent = d.alerts.length + ' warning(s)';
                 }
             } else {
                 banner.innerHTML = '';
-                dot.className = 'status-dot healthy pulse'; label.textContent = 'Service healthy';
+                dot.className = 'status-dot healthy pulse'; label.textContent = 'All systems operational';
             }
         } catch(e) { console.debug('Alert check failed:', e); }
     }
@@ -1858,19 +2193,22 @@
                 return;
             }
             el.innerHTML = d.jobs.slice(0, 10).map(function(j) {
-                var statusClass = j.status === 'completed' ? 'pill-success' : j.status === 'error' ? 'pill-error' : 'pill-neutral';
-                var score = j.match_score != null ? Math.round(j.match_score) + '%' : '--';
-                var scoreColor = j.match_score >= 80 ? 'var(--success)' : j.match_score >= 50 ? '#F59E0B' : 'var(--text-secondary)';
-                return '<div class="activity-item">' +
-                    '<div class="activity-avatar">' + (j.job_title || '?').substring(0,1).toUpperCase() + '</div>' +
+                var statusCls = j.status === 'completed' ? 'completed' : j.status === 'error' ? 'error' : 'running';
+                var icon = j.status === 'completed' ? '&#10003;' : j.status === 'error' ? '&#10007;' : '&#9201;';
+                var score = j.match_score != null ? Math.round(j.match_score) : null;
+                var scoreBar = '';
+                if (score != null) {
+                    var barColor = score >= 80 ? 'var(--success)' : score >= 50 ? '#F59E0B' : 'var(--error)';
+                    scoreBar = '<span style="font-size:12px;font-weight:700;color:' + barColor + ';">' + score + '%</span>' +
+                        '<span class="score-bar"><span class="score-bar-fill" style="width:' + score + '%;background:' + barColor + ';"></span></span>';
+                }
+                return '<div class="activity-item-v2 status-' + statusCls + '">' +
+                    '<div class="activity-status-icon ' + statusCls + '">' + icon + '</div>' +
                     '<div style="flex:1;min-width:0;">' +
-                        '<div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(j.job_title || 'Untitled') + (j.company ? ' at ' + escapeHtml(j.company) : '') + '</div>' +
-                        '<div style="font-size:12px;color:var(--text-secondary);">' + escapeHtml(j.user_name || j.user_email || 'Anonymous') + ' &middot; ' + relativeTime(j.created_at) + '</div>' +
+                        '<div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(j.job_title || 'Untitled') + (j.company ? ' <span style="font-weight:400;color:var(--text-secondary);">at ' + escapeHtml(j.company) + '</span>' : '') + '</div>' +
+                        '<div style="font-size:11px;color:var(--text-secondary);">' + escapeHtml(j.user_name || j.user_email || 'Anonymous') + ' &middot; ' + relativeTime(j.created_at) + '</div>' +
                     '</div>' +
-                    '<div style="text-align:right;display:flex;align-items:center;gap:8px;">' +
-                        '<span style="font-size:14px;font-weight:700;color:' + scoreColor + ';">' + score + '</span>' +
-                        '<span class="pill ' + statusClass + '">' + escapeHtml(j.status) + '</span>' +
-                    '</div>' +
+                    '<div style="display:flex;align-items:center;gap:6px;">' + scoreBar + '</div>' +
                 '</div>';
             }).join('');
         } catch(e) {}
@@ -1878,16 +2216,41 @@
 
     async function loadHealthStrip() {
         try {
-            var r = await fetch('/admin/api/diagnostics');
-            if (!r.ok) return;
-            var d = await r.json();
+            var [diagRes, liveRes] = await Promise.all([
+                fetch('/admin/api/diagnostics'),
+                fetch('/admin/api/live-stats').catch(function() { return {ok:false}; })
+            ]);
+            if (!diagRes.ok) return;
+            var d = await diagRes.json();
             var checks = d.checks || {};
-            var map = {database:'healthDB', openrouter:'healthOpenRouter', r2_storage:'healthR2', redis:'healthRedis'};
+            var map = {
+                database: {dot:'healthDB', detail:'healthDBDetail'},
+                openrouter: {dot:'healthOpenRouter', detail:'healthOpenRouterDetail'},
+                r2_storage: {dot:'healthR2', detail:'healthR2Detail'},
+                redis: {dot:'healthRedis', detail:'healthRedisDetail'}
+            };
+            var worstStatus = 'healthy';
             for (var key in map) {
-                var el = document.getElementById(map[key]);
-                if (!el) continue;
-                var status = (checks[key] || {}).status || 'unknown';
-                el.className = 'status-dot pulse ' + (status === 'healthy' ? 'healthy' : status === 'degraded' ? 'degraded' : 'down');
+                var dotEl = document.getElementById(map[key].dot);
+                var detailEl = document.getElementById(map[key].detail);
+                var check = checks[key] || {};
+                var status = check.status || 'unknown';
+                if (dotEl) dotEl.className = 'status-dot pulse ' + (status === 'healthy' ? 'healthy' : status === 'degraded' ? 'degraded' : 'down');
+                if (detailEl) detailEl.textContent = check.message || status;
+                if (status === 'degraded' && worstStatus === 'healthy') worstStatus = 'degraded';
+                if (status !== 'healthy' && status !== 'degraded') worstStatus = 'error';
+            }
+            var card = document.getElementById('healthCard');
+            if (card) {
+                card.classList.remove('warn-border', 'error-border');
+                if (worstStatus === 'degraded') card.classList.add('warn-border');
+                else if (worstStatus === 'error') card.classList.add('error-border');
+            }
+
+            if (liveRes && liveRes.ok) {
+                var live = await liveRes.json();
+                var pipeEl = document.getElementById('healthPipeDetail');
+                if (pipeEl) pipeEl.textContent = (live.active_pipelines ?? 0) + '/' + (live.max_concurrent ?? 5) + ' active \u00B7 ' + (live.queue_depth ?? 0) + ' queued';
             }
         } catch(e) {}
     }
