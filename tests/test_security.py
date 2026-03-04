@@ -158,11 +158,35 @@ class TestIDORResult:
     """IDOR: Anonymous users must not access authenticated users' job results."""
 
     def test_anonymous_cannot_access_user_job_result(self, client, user_job):
-        """Anonymous user must not get another user's job result (IDOR)."""
+        """Anonymous user must not get another user's persisted job result (IDOR)."""
         resp = client.get(f"/api/result/{user_job.id}")
         assert resp.status_code == 404
         data = resp.get_json()
         assert "ats_resume_md" not in (data or {}).get("result", {})
+
+    def test_anonymous_cannot_access_user_job_result_in_memory(self, client, user_job, flask_app):
+        """Anonymous user must not get another user's in-memory running/completed job result."""
+        with flask_app.app_context():
+            from app.services.pipeline import jobs, jobs_lock
+
+            with jobs_lock:
+                jobs[user_job.id] = {
+                    "status": "complete",
+                    "user_id": user_job.user_id,
+                    "result": {"ats_resume_md": "# Secret"},
+                    "error": None,
+                    "queue": None,
+                    "output_dir": "/tmp",
+                }
+        try:
+            resp = client.get(f"/api/result/{user_job.id}")
+            assert resp.status_code == 404
+        finally:
+            with flask_app.app_context():
+                from app.services.pipeline import jobs, jobs_lock
+
+                with jobs_lock:
+                    jobs.pop(user_job.id, None)
 
     def test_anonymous_can_access_anonymous_job_result(self, client, anonymous_job):
         """Anonymous user can access their own anonymous job result."""

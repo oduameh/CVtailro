@@ -210,9 +210,13 @@ def progress_stream(job_id: str):
 def get_result(job_id: str):
     with jobs_lock:
         job = jobs.get(job_id)
-        if job is not None and current_user.is_authenticated:
-            if job.get("user_id") and job["user_id"] != current_user.id:
-                return jsonify({"error": "Job not found"}), 404
+        if job is not None:
+            job_user_id = job.get("user_id")
+            if job_user_id is not None:
+                if not current_user.is_authenticated:
+                    return jsonify({"error": "Job not found"}), 404
+                if job_user_id != current_user.id:
+                    return jsonify({"error": "Job not found"}), 404
 
     if job is not None:
         if job["status"] == "running":
