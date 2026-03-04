@@ -17,7 +17,7 @@ from sqlalchemy import case, func, text
 from analytics import pipeline_analytics
 from app.extensions import csrf, db, limiter
 from app.models import AnalyticsEvent, SavedResume, TailoringJob, User
-from app.models.job import JobApplication
+from app.models.job import JobApplication, JobFile
 from app.services.admin_config import AdminConfigManager
 from app.services.pipeline import (
     MAX_CONCURRENT_PIPELINES,
@@ -312,14 +312,67 @@ def admin_user_jobs(user_id: str):
                     "original_resume_text": j.original_resume_text,
                     "ats_resume_md": j.ats_resume_md,
                     "talking_points_md": j.talking_points_md,
+                    "cover_letter_md": j.cover_letter_md,
                     "created_at": j.created_at.isoformat() if j.created_at else None,
                     "duration_seconds": j.duration_seconds,
                     "error_message": j.error_message,
+                    "files": [f.filename for f in j.files],
                 }
                 for j in jobs_list
             ],
         }
     )
+
+
+@admin_bp.route("/admin/api/download/<job_id>/<filename>")
+@_admin_required
+@csrf.exempt
+def admin_download_file(job_id: str, filename: str):
+    """Admin file download — bypasses user ownership checks."""
+    from pathlib import Path
+
+    from app.services.file_service import _serve_from_db
+    from app.services.pipeline import jobs, jobs_lock
+    from storage import r2_storage
+
+    safe_name = Path(filename).name
+    ALLOWED_SUFFIXES = {".pdf", ".docx", ".md", ".json"}
+    if Path(safe_name).suffix.lower() not in ALLOWED_SUFFIXES:
+        return jsonify({"error": "File type not allowed"}), 403
+
+    BLOCKED_PREFIXES = ("input_", "pipeline")
+    if safe_name.lower().startswith(BLOCKED_PREFIXES):
+        return jsonify({"error": "File not available for download"}), 403
+
+    # 1. In-memory jobs (files still on disk)
+    with jobs_lock:
+        job_data = jobs.get(job_id)
+    if job_data:
+        from flask import send_from_directory
+        file_path = Path(job_data["output_dir"]) / safe_name
+        if file_path.exists():
+            track("admin.download", category="admin", job_id=job_id, metadata={"filename": safe_name, "source": "local"})
+            return send_from_directory(job_data["output_dir"], safe_name, as_attachment=True)
+
+    # 2. R2 cloud storage
+    if r2_storage.is_configured:
+        job_file = JobFile.query.filter_by(job_id=job_id, filename=safe_name).first()
+        if job_file and job_file.r2_key:
+            try:
+                from flask import redirect
+                url = r2_storage.generate_presigned_url(job_file.r2_key)
+                track("admin.download", category="admin", job_id=job_id, metadata={"filename": safe_name, "source": "r2"})
+                return redirect(url)
+            except Exception as e:
+                logger.error(f"R2 presigned URL failed for admin download: {e}")
+
+    # 3. Database fallback (regenerate from stored markdown)
+    db_job = db.session.get(TailoringJob, job_id)
+    if db_job is None:
+        return jsonify({"error": "Job not found"}), 404
+
+    track("admin.download", category="admin", job_id=job_id, metadata={"filename": safe_name, "source": "db_regen"})
+    return _serve_from_db(db_job, safe_name)
 
 
 @admin_bp.route("/admin/api/live-stats")

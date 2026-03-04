@@ -2516,6 +2516,30 @@
                     var date = j.created_at ? new Date(j.created_at).toLocaleDateString() + ' ' + new Date(j.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
                     var duration = j.duration_seconds ? Math.round(j.duration_seconds) + 's' : '';
                     var hasResume = j.ats_resume_md ? true : false;
+                    var files = j.files || [];
+                    var downloadBtns = '';
+                    if (files.length > 0) {
+                        var pdfFiles = files.filter(function(f){return f.endsWith('.pdf');});
+                        var docxFiles = files.filter(function(f){return f.endsWith('.docx');});
+                        var mdFiles = files.filter(function(f){return f.endsWith('.md') && f.indexOf('input_') !== 0;});
+                        downloadBtns = '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;">';
+                        pdfFiles.forEach(function(f) {
+                            var label = f.replace(/_/g,' ').replace(/\.\w+$/,'');
+                            if (label.length > 30) label = label.substring(0,27) + '...';
+                            downloadBtns += '<a href="/admin/api/download/' + j.id + '/' + encodeURIComponent(f) + '" class="btn btn-sm" style="font-size:10px;padding:3px 8px;background:var(--accent);color:#fff;text-decoration:none;border-radius:6px;" title="' + escapeHtml(f) + '">&#128196; ' + escapeHtml(label) + '</a>';
+                        });
+                        docxFiles.forEach(function(f) {
+                            var label = f.replace(/_/g,' ').replace(/\.\w+$/,'');
+                            if (label.length > 30) label = label.substring(0,27) + '...';
+                            downloadBtns += '<a href="/admin/api/download/' + j.id + '/' + encodeURIComponent(f) + '" class="btn btn-sm" style="font-size:10px;padding:3px 8px;background:#059669;color:#fff;text-decoration:none;border-radius:6px;" title="' + escapeHtml(f) + '">&#128462; ' + escapeHtml(label) + '</a>';
+                        });
+                        mdFiles.forEach(function(f) {
+                            var label = f.replace(/_/g,' ').replace(/\.\w+$/,'');
+                            if (label.length > 30) label = label.substring(0,27) + '...';
+                            downloadBtns += '<a href="/admin/api/download/' + j.id + '/' + encodeURIComponent(f) + '" class="btn btn-sm" style="font-size:10px;padding:3px 8px;background:var(--text-secondary);color:#fff;text-decoration:none;border-radius:6px;" title="' + escapeHtml(f) + '">&#128221; ' + escapeHtml(label) + '</a>';
+                        });
+                        downloadBtns += '</div>';
+                    }
                     return '<div style="padding:14px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;transition:all 0.15s;' + (j.status === 'error' ? 'border-left:3px solid var(--error);' : hasResume ? 'border-left:3px solid var(--success);' : '') + '">' +
                         '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px;">' +
                             '<div style="flex:1;min-width:0;">' +
@@ -2523,6 +2547,7 @@
                                 '<div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">' + date + (duration ? ' &middot; ' + duration : '') + ' &middot; ' + (j.model_used || 'unknown model') + ' &middot; ' + (j.rewrite_mode || '') + '</div>' +
                                 (j.job_description_snippet ? '<div style="font-size:12px;color:var(--text-secondary);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:500px;">' + j.job_description_snippet + '</div>' : '') +
                                 (j.error_message ? '<div style="font-size:12px;color:var(--error);margin-top:6px;">' + j.error_message + '</div>' : '') +
+                                downloadBtns +
                             '</div>' +
                             '<div style="text-align:right;flex-shrink:0;">' +
                                 '<div style="font-size:20px;font-weight:800;color:' + scoreColor + ';">' + score + '</div>' +
