@@ -44,3 +44,21 @@ def test_admin_page(client):
     resp = client.get("/admin")
     assert resp.status_code == 200
     assert b"CVtailro Admin" in resp.data
+
+
+@pytest.mark.integration
+def test_robots_txt(client):
+    resp = client.get("/robots.txt")
+    assert resp.status_code == 200
+    text = resp.get_data(as_text=True)
+    assert "User-agent:" in text
+    assert "Sitemap:" in text
+
+
+@pytest.mark.integration
+def test_sitemap_xml(client):
+    resp = client.get("/sitemap.xml")
+    assert resp.status_code == 200
+    text = resp.get_data(as_text=True)
+    assert "<urlset" in text
+    assert "<loc>" in text
