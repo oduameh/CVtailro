@@ -49,6 +49,7 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edit .env with GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, OPENROUTER_API_KEY, etc.
 
+export FLASK_ENV=development
 python app.py   # or: python wsgi.py
 # Open http://localhost:5050
 ```
