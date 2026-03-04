@@ -99,6 +99,8 @@ def _save_to_db(config: AdminConfig) -> bool:
             "rate_limit_per_hour": str(config.rate_limit_per_hour),
             "admin_password_hash": config.admin_password_hash,
             "updated_at": config.updated_at,
+            "nim_api_key": config.nim_api_key,
+            "active_provider": config.active_provider,
         }
         from datetime import datetime, timezone
 

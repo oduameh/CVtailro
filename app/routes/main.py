@@ -6,7 +6,7 @@ from sqlalchemy import text
 from app.extensions import db
 from app.services.admin_config import AdminConfigManager
 from app.services.blog_content import list_posts
-from config import DEFAULT_MODEL, RECOMMENDED_MODELS
+from config import DEFAULT_MODEL, DEFAULT_NIM_MODEL, NIM_MODELS, RECOMMENDED_MODELS
 
 main_bp = Blueprint("main", __name__)
 
@@ -69,14 +69,15 @@ def api_status():
 @main_bp.route("/api/models")
 def list_models():
     config = AdminConfigManager.load()
-    default = config.default_model if config.default_model else DEFAULT_MODEL
+    is_nim = config.active_provider == "nim"
+    models = NIM_MODELS if is_nim else RECOMMENDED_MODELS
+    default_model = DEFAULT_NIM_MODEL if is_nim else DEFAULT_MODEL
+    default = config.default_model if config.default_model else default_model
     return jsonify(
         {
-            "models": [
-                {"id": model_id, "name": display_name}
-                for display_name, model_id in RECOMMENDED_MODELS.items()
-            ],
+            "models": [{"id": model_id, "name": display_name} for display_name, model_id in models.items()],
             "default": default,
+            "provider": config.active_provider or "openrouter",
             "user_selectable": config.allow_user_model_selection,
         }
     )

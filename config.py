@@ -39,7 +39,20 @@ RECOMMENDED_MODELS: dict[str, str] = {
     "Grok 3": "x-ai/grok-3",
 }
 
+# NVIDIA NIM models (used when active_provider == "nim")
+NIM_MODELS: dict[str, str] = {
+    "Kimi K2.5": "moonshotai/kimi-k2.5",
+    "Kimi K2 Thinking": "moonshotai/kimi-k2-thinking",
+    "Llama 3.3 70B": "meta/llama-3.3-70b-instruct",
+    "Llama 3.1 405B": "meta/llama-3.1-405b-instruct",
+    "Mistral Large 2": "mistralai/mistral-large-2-instruct",
+    "DeepSeek R1": "deepseek-ai/deepseek-r1",
+    "Gemma 2 27B": "google/gemma-2-27b-it",
+    "Qwen 2.5 72B": "qwen/qwen2.5-72b-instruct",
+}
+
 DEFAULT_MODEL = "openai/gpt-4o-mini"
+DEFAULT_NIM_MODEL = "meta/llama-3.3-70b-instruct"
 
 
 @dataclass(frozen=True)
