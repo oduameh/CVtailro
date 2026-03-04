@@ -166,6 +166,11 @@ class BaseAgent(ABC, Generic[T]):
                 raise AgentError(f"Invalid {provider_name} API key. Check your key and try again.")
             if response.status_code == 402:
                 raise AgentError(f"Insufficient {provider_name} credits.")
+            if response.status_code == 410:
+                raise AgentError(
+                    f"The model '{self.config.model}' has been deprecated by {provider_name} and is no longer available. "
+                    f"Please select a different model."
+                )
             if response.status_code == 429:
                 # Wait for rate limit to clear, then retry
                 retry_after = int(response.headers.get("Retry-After", "10"))
@@ -278,8 +283,9 @@ class BaseAgent(ABC, Generic[T]):
                 logger.warning(f"[{self.AGENT_NAME}] Attempt {attempt}/{self.MAX_RETRIES} API error: {e}")
                 if self.config.job_id:
                     pipeline_analytics.record_retry(self.config.job_id)
-                # Do NOT retry on auth errors — they won't self-resolve
-                if "Invalid OpenRouter API key" in str(e) or "Insufficient" in str(e):
+                # Do NOT retry on permanent errors — they won't self-resolve
+                err_str = str(e)
+                if any(s in err_str for s in ("Invalid", "Insufficient", "deprecated", "no longer available")):
                     break
                 if attempt < self.MAX_RETRIES:
                     delay = self.RETRY_DELAY_BASE**attempt
