@@ -15,8 +15,7 @@
     <script>
     (function() {
         var saved = localStorage.getItem('cvtailro-theme');
-        var prefersDark = window.matchMedia('(prefers-reduced-motion: no-preference)').matches
-                        && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (saved === 'dark' || (!saved && prefersDark)) {
             document.documentElement.classList.add('dark');
         }
