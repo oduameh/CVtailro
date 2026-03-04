@@ -196,14 +196,24 @@ def admin_save_config():
 def admin_test_key():
     data = request.get_json(force=True)
     api_key = data.get("api_key", "").strip()
+    provider = data.get("provider", "openrouter")
     if not api_key:
         return jsonify({"valid": False, "error": "No key provided"})
     try:
-        r = http_requests.get(
-            "https://openrouter.ai/api/v1/models",
-            headers={"Authorization": f"Bearer {api_key}"},
-            timeout=10,
-        )
+        if provider == "nim":
+            # Test NVIDIA NIM key
+            r = http_requests.get(
+                "https://integrate.api.nvidia.com/v1/models",
+                headers={"Authorization": f"Bearer {api_key}"},
+                timeout=10,
+            )
+        else:
+            # Test OpenRouter key
+            r = http_requests.get(
+                "https://openrouter.ai/api/v1/models",
+                headers={"Authorization": f"Bearer {api_key}"},
+                timeout=10,
+            )
         return jsonify(
             {"valid": r.status_code == 200}
             | ({"error": f"HTTP {r.status_code}"} if r.status_code != 200 else {})

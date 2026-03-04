@@ -51,7 +51,7 @@ def health():
             "status": "healthy" if db_status == "healthy" else "degraded",
             "database": db_status,
             "configured": AdminConfigManager.is_configured(),
-            "backend": "openrouter",
+            "backend": AdminConfigManager.load().active_provider or "openrouter",
         }
     )
 

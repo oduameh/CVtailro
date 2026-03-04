@@ -2401,18 +2401,22 @@
     }
 
     async function testApiKey() {
-        var key = document.getElementById('apiKeyInput').value.trim();
+        var activeProvider = document.querySelector('input[name="activeProvider"]:checked');
+        var provider = activeProvider ? activeProvider.value : 'openrouter';
+        var key = provider === 'nim'
+            ? document.getElementById('nimKeyInput').value.trim()
+            : document.getElementById('apiKeyInput').value.trim();
         var result = document.getElementById('testResult');
         if (!key) {
-            result.style.color = 'var(--error)'; result.textContent = 'Enter a key first.';
+            result.style.color = 'var(--error)'; result.textContent = 'Enter the ' + (provider === 'nim' ? 'NIM' : 'OpenRouter') + ' key first.';
             return;
         }
-        result.style.color = 'var(--text-secondary)'; result.textContent = 'Testing...';
+        result.style.color = 'var(--text-secondary)'; result.textContent = 'Testing ' + (provider === 'nim' ? 'NVIDIA NIM' : 'OpenRouter') + '...';
         try {
             var r = await fetch('/admin/api/test-key', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({api_key: key})
+                body: JSON.stringify({api_key: key, provider: provider})
             });
             var d = await r.json();
             if (d.valid) {
