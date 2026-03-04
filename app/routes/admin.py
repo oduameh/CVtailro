@@ -198,27 +198,50 @@ def admin_test_key():
     data = request.get_json(force=True)
     api_key = data.get("api_key", "").strip()
     provider = data.get("provider", "openrouter")
+
+    # If no key provided, test the active saved/env-var key
     if not api_key:
-        return jsonify({"valid": False, "error": "No key provided"})
+        config = AdminConfigManager.load()
+        api_key = config.nim_api_key.strip() if provider == "nim" else config.api_key.strip()
+    if not api_key:
+        return jsonify({"valid": False, "error": "No key configured for this provider"})
+
     try:
         if provider == "nim":
-            # Test NVIDIA NIM key
-            r = http_requests.get(
-                "https://integrate.api.nvidia.com/v1/models",
-                headers={"Authorization": f"Bearer {api_key}"},
-                timeout=10,
+            # Test NIM with an actual chat completion (models endpoint alone isn't sufficient)
+            from config import DEFAULT_NIM_MODEL
+
+            r = http_requests.post(
+                "https://integrate.api.nvidia.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                json={
+                    "model": DEFAULT_NIM_MODEL,
+                    "messages": [{"role": "user", "content": "Say OK"}],
+                    "max_tokens": 16,
+                    "temperature": 0,
+                },
+                timeout=15,
             )
+            if r.status_code == 200:
+                return jsonify({"valid": True, "model": DEFAULT_NIM_MODEL})
+            # Parse NIM error format
+            detail = ""
+            try:
+                body = r.json()
+                detail = body.get("detail") or body.get("title") or body.get("error", {}).get("message", "")
+            except Exception:
+                detail = r.text[:300]
+            return jsonify({"valid": False, "error": f"HTTP {r.status_code}: {detail}"})
         else:
-            # Test OpenRouter key
             r = http_requests.get(
                 "https://openrouter.ai/api/v1/models",
                 headers={"Authorization": f"Bearer {api_key}"},
                 timeout=10,
             )
-        return jsonify(
-            {"valid": r.status_code == 200}
-            | ({"error": f"HTTP {r.status_code}"} if r.status_code != 200 else {})
-        )
+            return jsonify(
+                {"valid": r.status_code == 200}
+                | ({"error": f"HTTP {r.status_code}"} if r.status_code != 200 else {})
+            )
     except Exception as e:
         return jsonify({"valid": False, "error": str(e)})
 
