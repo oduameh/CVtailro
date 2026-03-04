@@ -151,12 +151,14 @@ class AdminConfigManager:
                     except Exception as e:
                         logger.error(f"Failed to load admin config from file: {e}")
 
-            # Env var fallbacks
+            # Env vars always take precedence (Railway deployment model).
+            # This ensures rotated keys on Railway are picked up immediately
+            # instead of being shadowed by stale DB-persisted copies.
             env_key = os.environ.get("OPENROUTER_API_KEY", "")
-            if env_key and not config.api_key:
+            if env_key:
                 config.api_key = env_key
             env_nim = os.environ.get("NVIDIA_NIM_API_KEY", "")
-            if env_nim and not config.nim_api_key:
+            if env_nim:
                 config.nim_api_key = env_nim
             env_pw = os.environ.get("ADMIN_PASSWORD", "")
             if env_pw and not config.admin_password_hash:

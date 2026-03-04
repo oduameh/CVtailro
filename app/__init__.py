@@ -13,7 +13,7 @@ import os
 from flask import Flask, request
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from app.extensions import csrf, db, limiter, login_manager, migrate, oauth
+from app.extensions import csrf, db, limiter, login_manager, migrate, oauth, sess
 from app.routes import register_blueprints
 from app.settings import settings_map
 from storage import r2_storage
@@ -62,16 +62,27 @@ def create_app(config_name: str | None = None) -> Flask:
 
 def _init_extensions(flask_app: Flask) -> None:
     db.init_app(flask_app)
+    flask_app.config["SESSION_SQLALCHEMY"] = db
     migrate.init_app(flask_app, db)
     login_manager.init_app(flask_app)
     csrf.init_app(flask_app)
     limiter.init_app(flask_app)
+    sess.init_app(flask_app)
 
     @login_manager.user_loader
     def load_user(user_id: str):
+        from flask import session as flask_session
+
         from app.models import User
 
-        return db.session.get(User, user_id)
+        user = db.session.get(User, user_id)
+        if user is None:
+            return None
+        stored_ver = flask_session.get("_session_version")
+        if stored_ver is not None and stored_ver != user.session_version:
+            flask_session.clear()
+            return None
+        return user
 
     @login_manager.unauthorized_handler
     def unauthorized():
@@ -268,6 +279,9 @@ def _apply_column_migrations() -> None:
             ("email_verified", "BOOLEAN DEFAULT FALSE"),
             ("email_verified_at", "TIMESTAMP WITH TIME ZONE"),
             ("auth_provider", "VARCHAR(20) DEFAULT 'google'"),
+            ("session_version", "INTEGER DEFAULT 0 NOT NULL"),
+            ("failed_login_attempts", "INTEGER DEFAULT 0 NOT NULL"),
+            ("locked_until", "TIMESTAMP WITH TIME ZONE"),
         ]
         for col_name, col_type in user_new_columns:
             if col_name not in user_columns:

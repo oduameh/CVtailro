@@ -30,6 +30,12 @@ class BaseSettings:
     MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # 10 MB upload limit
     PREFERRED_URL_SCHEME = "https"
 
+    # Server-side sessions (Flask-Session backed by SQLAlchemy)
+    SESSION_TYPE = "sqlalchemy"
+    SESSION_PERMANENT = True
+    SESSION_USE_SIGNER = True
+    SESSION_SQLALCHEMY_TABLE = "flask_sessions"
+
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_HTTPONLY = True
     PERMANENT_SESSION_LIFETIME = 86400  # 24 hours

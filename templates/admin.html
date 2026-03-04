@@ -1180,10 +1180,10 @@
                         <label style="font-weight:600;margin-bottom:8px;display:block;">Active Provider</label>
                         <div style="display:flex;gap:8px;">
                             <label style="display:flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">
-                                <input type="radio" name="activeProvider" value="openrouter" id="providerOpenRouter" checked> OpenRouter
+                                <input type="radio" name="activeProvider" value="openrouter" id="providerOpenRouter" checked onchange="loadModels(null, this.value)"> OpenRouter
                             </label>
                             <label style="display:flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">
-                                <input type="radio" name="activeProvider" value="nim" id="providerNIM"> NVIDIA NIM
+                                <input type="radio" name="activeProvider" value="nim" id="providerNIM" onchange="loadModels(null, this.value)"> NVIDIA NIM
                             </label>
                         </div>
                     </div>
@@ -2013,23 +2013,31 @@
         switchTab('dashboard');
     }
 
-    async function loadModels(selectedModel) {
+    async function loadModels(selectedModel, providerOverride) {
         try {
-            var r = await fetch('/api/models');
+            var url = '/api/models';
+            if (providerOverride) url += '?provider=' + encodeURIComponent(providerOverride);
+            var r = await fetch(url);
             var d = await r.json();
             var select = document.getElementById('defaultModel');
             var free = d.models.filter(function(m) { return m.name.includes('(Free)') || m.name.includes('(Auto)'); });
             var paid = d.models.filter(function(m) { return !m.name.includes('(Free)') && !m.name.includes('(Auto)'); });
             var chosen = selectedModel || d.default;
-            var html = '<optgroup label="Free (no credits needed)">';
-            free.forEach(function(m) {
-                html += '<option value="' + m.id + '"' + (m.id === chosen ? ' selected' : '') + '>' + m.name + '</option>';
-            });
-            html += '</optgroup><optgroup label="Paid (requires credits)">';
-            paid.forEach(function(m) {
-                html += '<option value="' + m.id + '"' + (m.id === chosen ? ' selected' : '') + '>' + m.name + '</option>';
-            });
-            html += '</optgroup>';
+            var html = '';
+            if (free.length > 0) {
+                html += '<optgroup label="Free (no credits needed)">';
+                free.forEach(function(m) {
+                    html += '<option value="' + m.id + '"' + (m.id === chosen ? ' selected' : '') + '>' + m.name + '</option>';
+                });
+                html += '</optgroup>';
+            }
+            if (paid.length > 0) {
+                html += '<optgroup label="Paid (requires credits)">';
+                paid.forEach(function(m) {
+                    html += '<option value="' + m.id + '"' + (m.id === chosen ? ' selected' : '') + '>' + m.name + '</option>';
+                });
+                html += '</optgroup>';
+            }
             select.innerHTML = html;
         } catch(e) {
             console.error('Failed to load models:', e);
@@ -2457,6 +2465,8 @@
                     dashApi.className = 'metric-value ' + (hasKey ? 'status-good' : 'status-bad');
                 }
                 document.getElementById('lastUpdated').textContent = d.updated_at || 'Just now';
+                // Refresh model dropdown to reflect the (possibly changed) provider
+                loadModels();
             } else {
                 alert.className = 'alert error'; alert.textContent = d.error || 'Save failed.';
             }

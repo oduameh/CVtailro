@@ -7,8 +7,9 @@ import os
 import re
 from datetime import datetime, timezone
 
-from flask import Blueprint, jsonify, redirect, request, url_for
+from flask import Blueprint, jsonify, redirect, request, session, url_for
 from flask_login import current_user, login_required, login_user, logout_user
+from flask_wtf.csrf import generate_csrf
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.extensions import csrf, db, limiter, oauth
@@ -32,6 +33,7 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 _EMAIL_RE = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
 _MIN_PASSWORD_LEN = 8
+_PW_HASH_METHOD = "pbkdf2:sha256:600000"
 
 
 def _get_admin_emails() -> list[str]:
@@ -56,6 +58,13 @@ def _validate_password(password: str) -> str | None:
 
 def _client_ip() -> str:
     return request.remote_addr or "unknown"
+
+
+def _login_and_bind_session(user: User, remember: bool = False) -> None:
+    """Log in the user and store session_version for revocation checks."""
+    login_user(user, remember=remember)
+    session["_session_version"] = user.session_version
+    generate_csrf()
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -122,10 +131,9 @@ def google_callback():
     # Admin: env list takes precedence; otherwise respect DB (allows admin panel promotion)
     user.is_admin = email in _get_admin_emails() or user.is_admin
     user.last_login_at = datetime.now(timezone.utc)
+    user.reset_failed_logins()
     db.session.commit()
-    login_user(user, remember=True)
-    from flask import session
-
+    _login_and_bind_session(user, remember=True)
     session["last_oauth_login_at"] = datetime.now(timezone.utc).isoformat()
     logger.info(f"User logged in via Google: {email} (admin={user.is_admin})")
     track("auth.login.succeeded", category="auth", user_id=user.id, metadata={"provider": "google", "is_admin": user.is_admin})
@@ -161,7 +169,7 @@ def register():
     user = User(
         email=email,
         name=name,
-        password_hash=generate_password_hash(password),
+        password_hash=generate_password_hash(password, method=_PW_HASH_METHOD),
         auth_provider="email",
         email_verified=False,
     )
@@ -189,6 +197,7 @@ def login():
     data = request.get_json(silent=True) or {}
     email = _validate_email(data.get("email", ""))
     password = data.get("password", "")
+    remember = bool(data.get("remember_me", False))
 
     if not email or not password:
         return jsonify({"error": "Email and password are required."}), 400
@@ -200,8 +209,14 @@ def login():
         track("auth.login.failed", category="auth", metadata={"provider": "email", "reason": "invalid_credentials"})
         return jsonify({"error": "Invalid email or password."}), 401
 
+    if user.is_locked:
+        track("auth.login.failed", category="auth", user_id=user.id, metadata={"provider": "email", "reason": "account_locked"})
+        return jsonify({"error": "Account temporarily locked due to too many failed attempts. Try again later."}), 429
+
     if not check_password_hash(user.password_hash, password):
         login_rate_limiter.record_failure(ip)
+        user.record_failed_login()
+        db.session.commit()
         track("auth.login.failed", category="auth", metadata={"provider": "email", "reason": "wrong_password"})
         return jsonify({"error": "Invalid email or password."}), 401
 
@@ -215,9 +230,13 @@ def login():
         ), 403
 
     login_rate_limiter.reset(ip)
+    user.reset_failed_logins()
     user.last_login_at = datetime.now(timezone.utc)
+    # Transparent hash upgrade: re-hash with stronger algorithm on successful login
+    if not user.password_hash.startswith("pbkdf2:sha256:600000"):
+        user.password_hash = generate_password_hash(password, method=_PW_HASH_METHOD)
     db.session.commit()
-    login_user(user, remember=True)
+    _login_and_bind_session(user, remember=remember)
     logger.info(f"User logged in via email: {email}")
     track("auth.login.succeeded", category="auth", user_id=user.id, metadata={"provider": "email"})
     return jsonify({"ok": True})
@@ -245,7 +264,7 @@ def verify_email(token: str):
         user.last_login_at = datetime.now(timezone.utc)
         db.session.commit()
 
-    login_user(user, remember=True)
+    _login_and_bind_session(user, remember=False)
     logger.info(f"Email verified: {email}")
     return redirect("/?verified=true")
 
@@ -319,7 +338,9 @@ def reset_password():
     if user is None:
         return jsonify({"error": "Invalid or expired reset link."}), 400
 
-    user.password_hash = generate_password_hash(password)
+    user.password_hash = generate_password_hash(password, method=_PW_HASH_METHOD)
+    user.session_version = (user.session_version or 0) + 1
+    user.reset_failed_logins()
     if not user.email_verified:
         user.email_verified = True
         user.email_verified_at = datetime.now(timezone.utc)
@@ -365,8 +386,6 @@ def change_password():
         if not check_password_hash(current_user.password_hash, current_pw):
             return jsonify({"error": "Current password is incorrect."}), 401
     else:
-        from flask import session
-
         last_oauth = session.get("last_oauth_login_at")
         if not last_oauth:
             return jsonify({"error": "Please sign in with Google again before setting a password."}), 403
@@ -374,8 +393,10 @@ def change_password():
         if elapsed > 300:
             return jsonify({"error": "Session expired. Please sign in with Google again before setting a password."}), 403
 
-    current_user.password_hash = generate_password_hash(new_pw)
+    current_user.password_hash = generate_password_hash(new_pw, method=_PW_HASH_METHOD)
+    current_user.session_version = (current_user.session_version or 0) + 1
     db.session.commit()
+    session["_session_version"] = current_user.session_version
     logger.info(f"Password changed for: {current_user.email}")
     return jsonify({"ok": True, "message": "Password updated successfully."})
 
@@ -389,8 +410,14 @@ def change_password():
 def logout():
     uid = current_user.id if current_user.is_authenticated else None
     logout_user()
+    session.clear()
     track("auth.logout", category="auth", user_id=uid)
-    return jsonify({"ok": True})
+    resp = jsonify({"ok": True})
+    resp.delete_cookie("remember_token")
+    resp.delete_cookie("session")
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    return resp
 
 
 @auth_bp.route("/me")
@@ -437,5 +464,5 @@ def dev_login():
 
     user.last_login_at = datetime.now(timezone.utc)
     db.session.commit()
-    login_user(user, remember=True)
+    _login_and_bind_session(user, remember=True)
     return redirect("/")

@@ -1,6 +1,6 @@
 """Main routes — index page, health check, status, and model listing."""
 
-from flask import Blueprint, jsonify, render_template
+from flask import Blueprint, jsonify, render_template, request
 from sqlalchemy import text
 
 from app.extensions import db
@@ -69,7 +69,8 @@ def api_status():
 @main_bp.route("/api/models")
 def list_models():
     config = AdminConfigManager.load()
-    is_nim = config.active_provider == "nim"
+    provider = request.args.get("provider") or config.active_provider or "openrouter"
+    is_nim = provider == "nim"
     models = NIM_MODELS if is_nim else RECOMMENDED_MODELS
     default_model = DEFAULT_NIM_MODEL if is_nim else DEFAULT_MODEL
     default = config.default_model if config.default_model else default_model
@@ -77,7 +78,7 @@ def list_models():
         {
             "models": [{"id": model_id, "name": display_name} for display_name, model_id in models.items()],
             "default": default,
-            "provider": config.active_provider or "openrouter",
+            "provider": provider,
             "user_selectable": config.allow_user_model_selection,
         }
     )
