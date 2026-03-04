@@ -2307,6 +2307,26 @@
             flex-shrink: 0;
         }
 
+        .history-dl-btn {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .history-dl-btn:hover {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
         .history-loading {
             text-align: center;
             padding: 40px 24px;
@@ -2339,11 +2359,29 @@
             margin-top: 4px;
         }
         .profile-section-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text);
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
             margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
+
+        .profile-quick-stats {
+            display: flex;
+            gap: 8px;
+        }
+        .profile-quick-stat {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            background: rgba(255,255,255,0.05);
+            border: 0.5px solid var(--border);
+            border-radius: 8px;
+        }
+        :root .profile-quick-stat { background: rgba(0,0,0,0.03); }
+        .pqs-num { display: block; font-size: 20px; font-weight: 700; color: var(--primary); }
+        .pqs-label { display: block; font-size: 10px; color: var(--text-secondary); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
         .profile-empty {
             text-align: center;
             padding: 24px 16px;
@@ -3542,7 +3580,16 @@
                     <button class="profile-save-btn" id="btnProfilePwSave" onclick="saveProfilePassword()">Update Password</button>
                 </div>
 
-                <h3 class="profile-section-title" style="margin-top:20px;">Recent Tailoring Jobs</h3>
+                <!-- Quick stats (filled by JS) -->
+                <div id="profileQuickStats" style="margin-bottom:16px;"></div>
+
+                <!-- Action buttons -->
+                <div style="display:flex;gap:8px;margin-bottom:20px;">
+                    <button onclick="closeProfile();showHistory();" style="flex:1;padding:10px;background:rgba(255,255,255,0.05);border:0.5px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;transition:all 0.2s;">View Full History</button>
+                    <button onclick="closeProfile();signOut();" style="flex:1;padding:10px;background:rgba(220,38,38,0.08);border:0.5px solid rgba(220,38,38,0.2);border-radius:8px;font-size:12px;font-weight:600;color:var(--score-low);cursor:pointer;font-family:inherit;transition:all 0.2s;">Sign Out</button>
+                </div>
+
+                <h3 class="profile-section-title">Recent Jobs</h3>
                 <div id="profileJobs" style="max-height:300px;overflow-y:auto;"></div>
             </div>
         </div>
@@ -3973,8 +4020,13 @@
             '<button class="dl-extra-btn" onclick="downloadFormat(\'modern\',\'md\')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Markdown</button>' +
             '<button class="dl-extra-btn" onclick="downloadFormat(\'modern\',\'json\')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Match Report</button>';
     }
+    function openHistoryDownload(jobId) {
+        currentJobId = jobId;
+        openDownloadPopup();
+    }
     window.openDownloadPopup = openDownloadPopup;
     window.closeDownloadPopup = closeDownloadPopup;
+    window.openHistoryDownload = openHistoryDownload;
 
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && document.getElementById('dlPopupOverlay').classList.contains('active')) {
@@ -4649,7 +4701,8 @@
                 var rwMode = job.rewrite_mode || '';
                 var rwLabel = rwMode ? rwMode.charAt(0).toUpperCase() + rwMode.slice(1) : '';
                 var rwClass = rwMode === 'aggressive' ? 'mode-aggressive' : 'mode-conservative';
-                html += '<div class="history-card" onclick="viewJobDetail(\'' + escapeAttr(job.id || job.job_id) + '\')">' +
+                var jobIdAttr = escapeAttr(job.id || job.job_id);
+                html += '<div class="history-card" onclick="viewJobDetail(\'' + jobIdAttr + '\')">' +
                     '<div class="history-card-score ' + scoreClass + '">' + Math.round(score) + '%</div>' +
                     '<div class="history-card-info">' +
                         '<div class="history-card-title">' + escapeHtml(title) + escapeHtml(company) + '</div>' +
@@ -4663,7 +4716,9 @@
                             (rwLabel ? '<span class="history-badge ' + rwClass + '">' + escapeHtml(rwLabel) + '</span>' : '') +
                         '</div>' +
                     '</div>' +
-                    '<svg class="history-card-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
+                    '<button class="history-dl-btn" onclick="event.stopPropagation();openHistoryDownload(\'' + jobIdAttr + '\')" title="Download resume">' +
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+                    '</button>' +
                 '</div>';
             });
             body.innerHTML = html;
@@ -6032,22 +6087,13 @@
 
                 showDetailTab('tailored');
 
-                // Download buttons — smart filenames from job title + company
+                // Download button — opens the download popup for this job
                 var dlHtml = '';
                 if (data.ats_resume_md) {
-                    var safeTitle = (data.job_title || 'Resume').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_').substring(0, 30);
-                    var safeCo = (data.company || '').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_').substring(0, 20);
-                    var prefix = safeTitle + (safeCo ? '_' + safeCo : '');
-                    dlHtml += '<div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Download</div>';
-                    dlHtml += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
-                    var btnStyle = 'padding:8px 14px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;color:var(--text);text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:4px;';
-                    ['Modern', 'Executive', 'Minimal', 'Creative', 'Compact', 'Professional', 'Tech', 'Elegant'].forEach(function(tpl) {
-                        var fname = prefix + '_' + tpl + '.pdf';
-                        dlHtml += '<a href="/api/download/' + jobId + '/' + fname + '" style="' + btnStyle + '" onmouseover="this.style.borderColor=\'var(--primary)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' + tpl + ' PDF</a>';
-                    });
-                    var docxName = prefix + '_Resume.docx';
-                    dlHtml += '<a href="/api/download/' + jobId + '/' + docxName + '" style="' + btnStyle + '" onmouseover="this.style.borderColor=\'var(--primary)\'" onmouseout="this.style.borderColor=\'var(--border)\'">DOCX</a>';
-                    dlHtml += '</div>';
+                    dlHtml = '<button onclick="openHistoryDownload(\'' + jobId + '\')" style="width:100%;padding:12px 20px;background:var(--primary);color:#fff;border:none;border-radius:100px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s;box-shadow:0 0 16px rgba(37,99,235,0.3);">' +
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+                        'Download Resume (8 templates)' +
+                    '</button>';
                 }
                 document.getElementById('detailDownloads').innerHTML = dlHtml;
             })
@@ -6146,35 +6192,41 @@
                     }
                 }
 
-                // Recent jobs with download buttons
+                // Jobs this week / month
+                var now = new Date();
+                var weekAgo = new Date(now - 7 * 86400000);
+                var monthAgo = new Date(now - 30 * 86400000);
+                var jobsThisWeek = jobs.filter(function(j) { return j.created_at && new Date(j.created_at) >= weekAgo; }).length;
+                var jobsThisMonth = jobs.filter(function(j) { return j.created_at && new Date(j.created_at) >= monthAgo; }).length;
+
+                // Render quick stats below the main stats
+                var quickStatsHtml = '<div class="profile-quick-stats">' +
+                    '<div class="profile-quick-stat"><span class="pqs-num">' + jobsThisWeek + '</span><span class="pqs-label">This Week</span></div>' +
+                    '<div class="profile-quick-stat"><span class="pqs-num">' + jobsThisMonth + '</span><span class="pqs-label">This Month</span></div>' +
+                '</div>';
+                document.getElementById('profileQuickStats').innerHTML = quickStatsHtml;
+
+                // Recent jobs with download popup button
                 var html = '';
                 jobs.slice(0, 10).forEach(function(j) {
                     var score = j.match_score ? Math.round(j.match_score) + '%' : '--';
                     var scoreColor = j.match_score >= 80 ? 'var(--score-high)' : j.match_score >= 50 ? 'var(--score-mid)' : 'var(--score-low)';
                     var date = j.created_at ? new Date(j.created_at).toLocaleDateString() : '';
+                    var jobId = j.id || j.job_id || '';
 
                     html += '<div class="profile-job-card">';
-                    html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+                    html += '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">';
                     html += '<div style="flex:1;min-width:0;">';
                     html += '<div class="profile-job-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (j.job_title || 'Untitled') + '</div>';
                     html += '<div class="profile-job-meta">' + (j.company || '') + (j.company && date ? ' \u00b7 ' : '') + date + '</div>';
                     html += '</div>';
-                    html += '<div style="font-size:18px;font-weight:800;color:' + scoreColor + ';margin-left:12px;">' + score + '</div>';
-                    html += '</div>';
-
-                    // Download buttons with smart filenames
+                    html += '<div style="font-size:16px;font-weight:700;color:' + scoreColor + ';">' + score + '</div>';
                     if (j.has_resume || (j.files && j.files.length > 0)) {
-                        var pTitle = (j.job_title || 'Resume').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_').substring(0, 30);
-                        var pCo = (j.company || '').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_').substring(0, 20);
-                        var pPrefix = pTitle + (pCo ? '_' + pCo : '');
-                        var dlBtnStyle = 'padding:4px 10px;background:var(--primary-bg);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;color:var(--primary);text-decoration:none;transition:all 0.2s;display:inline-block;';
-                        html += '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">';
-                        ['Modern', 'Executive', 'Minimal', 'Creative', 'Compact', 'Professional', 'Tech', 'Elegant'].forEach(function(tpl) {
-                            html += '<a href="/api/download/' + j.id + '/' + pPrefix + '_' + tpl + '.pdf" style="' + dlBtnStyle + '">' + tpl + '</a>';
-                        });
-                        html += '<a href="/api/download/' + j.id + '/' + pPrefix + '_Resume.docx" style="' + dlBtnStyle + '">DOCX</a>';
-                        html += '</div>';
+                        html += '<button class="history-dl-btn" onclick="event.stopPropagation();closeProfile();openHistoryDownload(\'' + jobId + '\')" title="Download resume">' +
+                            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+                        '</button>';
                     }
+                    html += '</div>';
                     html += '</div>';
                 });
 
