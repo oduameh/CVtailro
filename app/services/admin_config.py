@@ -141,9 +141,9 @@ class AdminConfigManager:
                     except Exception as e:
                         logger.error(f"Failed to load admin config from file: {e}")
 
-            # Env var fallbacks
+            # Env var always takes precedence (Railway deployment model)
             env_key = os.environ.get("OPENROUTER_API_KEY", "")
-            if env_key and not config.api_key:
+            if env_key:
                 config.api_key = env_key
             env_pw = os.environ.get("ADMIN_PASSWORD", "")
             if env_pw and not config.admin_password_hash:
