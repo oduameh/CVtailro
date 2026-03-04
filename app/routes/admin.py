@@ -208,30 +208,55 @@ def admin_test_key():
 
     try:
         if provider == "nim":
-            # Test NIM with an actual chat completion (models endpoint alone isn't sufficient)
-            from config import DEFAULT_NIM_MODEL
+            # Fetch available NIM models for this account
+            r = http_requests.get(
+                "https://integrate.api.nvidia.com/v1/models",
+                headers={"Authorization": f"Bearer {api_key}"},
+                timeout=10,
+            )
+            if r.status_code != 200:
+                return jsonify({"valid": False, "error": f"HTTP {r.status_code}: Could not list models"})
 
-            r = http_requests.post(
+            nim_models = []
+            try:
+                body = r.json()
+                for m in body.get("data", []):
+                    mid = m.get("id", "")
+                    # Only include chat/completion models (skip embedding, vision, etc.)
+                    if mid and any(kw in mid for kw in ("instruct", "chat", "deepseek", "kimi", "nemotron")):
+                        nim_models.append(mid)
+            except Exception:
+                pass
+
+            if not nim_models:
+                return jsonify({"valid": True, "error": "Key valid but no chat models found", "nim_models": []})
+
+            # Test an actual completion with the first available model
+            test_model = nim_models[0]
+            r2 = http_requests.post(
                 "https://integrate.api.nvidia.com/v1/chat/completions",
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
                 json={
-                    "model": DEFAULT_NIM_MODEL,
+                    "model": test_model,
                     "messages": [{"role": "user", "content": "Say OK"}],
                     "max_tokens": 16,
                     "temperature": 0,
                 },
                 timeout=15,
             )
-            if r.status_code == 200:
-                return jsonify({"valid": True, "model": DEFAULT_NIM_MODEL})
-            # Parse NIM error format
+            if r2.status_code == 200:
+                return jsonify({"valid": True, "model": test_model, "nim_models": nim_models})
             detail = ""
             try:
-                body = r.json()
-                detail = body.get("detail") or body.get("title") or body.get("error", {}).get("message", "")
+                body2 = r2.json()
+                detail = body2.get("detail") or body2.get("title") or ""
             except Exception:
-                detail = r.text[:300]
-            return jsonify({"valid": False, "error": f"HTTP {r.status_code}: {detail}"})
+                detail = r2.text[:300]
+            return jsonify({
+                "valid": False,
+                "error": f"Key valid but chat test failed (HTTP {r2.status_code}): {detail}",
+                "nim_models": nim_models,
+            })
         else:
             r = http_requests.get(
                 "https://openrouter.ai/api/v1/models",

@@ -69,7 +69,7 @@ def start_tailoring():
 
     cleanup_old_jobs()
 
-    from config import DEFAULT_NIM_MODEL, NIM_MODELS, RECOMMENDED_MODELS
+    from config import DEFAULT_NIM_MODEL, RECOMMENDED_MODELS
 
     admin_config = AdminConfigManager.load()
     provider = admin_config.active_provider or "openrouter"
@@ -80,9 +80,16 @@ def start_tailoring():
         track("tailor.request.rejected", category="tailor", user_id=uid, metadata={"reason": "no_api_key"})
         return jsonify({"error": "Service not configured. An admin must set the API key at /admin."}), 400
 
-    # Use provider-appropriate default model
-    provider_default = DEFAULT_NIM_MODEL if provider == "nim" else DEFAULT_MODEL
-    valid_models = set(NIM_MODELS.values()) if provider == "nim" else set(RECOMMENDED_MODELS.values())
+    # Use provider-appropriate default and model list
+    if provider == "nim":
+        from app.routes.main import _get_nim_models
+
+        nim_models = _get_nim_models(api_key)
+        valid_models = set(nim_models.values())
+        provider_default = next(iter(nim_models.values())) if nim_models else DEFAULT_NIM_MODEL
+    else:
+        valid_models = set(RECOMMENDED_MODELS.values())
+        provider_default = DEFAULT_MODEL
 
     if admin_config.allow_user_model_selection:
         model = request.form.get("model", provider_default).strip()
