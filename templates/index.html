@@ -1196,6 +1196,51 @@
             .dl-popup { margin: 8px; max-height: 90vh; }
         }
 
+        /* --- Sticky Download Bar --- */
+        .sticky-dl-bar {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 200;
+            padding: 12px 24px;
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
+            background: rgba(248, 250, 252, 0.9);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-top: 0.5px solid var(--border);
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+        }
+        html.dark .sticky-dl-bar {
+            background: rgba(10, 10, 15, 0.9);
+        }
+        .sticky-dl-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 100px;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 0 16px rgba(37, 99, 235, 0.3);
+        }
+        .sticky-dl-btn:hover { transform: scale(1.02); }
+        .sticky-dl-btn:active { transform: scale(0.98); }
+        .sticky-dl-bar .sticky-dl-hint {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
         /* --- Additional Files (collapsible) --- */
         .additional-toggle {
             display: flex;
@@ -3363,6 +3408,15 @@
     </div>
     {% endif %}
 
+    <!-- Sticky Download Bar (visible when results are shown) -->
+    <div class="sticky-dl-bar" id="stickyDlBar">
+        <button class="sticky-dl-btn" onclick="openDownloadPopup()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download Resume
+        </button>
+        <span class="sticky-dl-hint">8 templates available</span>
+    </div>
+
     <!-- Footer -->
     <footer class="site-footer">
         <div class="footer-inner" style="max-width:640px;margin:0 auto;text-align:center;">
@@ -4899,7 +4953,9 @@
             loadRelatedArticles(s.job_title || '');
 
             document.getElementById("resultsSection").classList.add("active");
-            document.getElementById("resultsSection").scrollIntoView({behavior: "smooth"});
+            document.getElementById("stickyDlBar").style.display = "flex";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setTimeout(function() { openDownloadPopup(); }, 1500);
         } catch(renderErr) {
             console.error("Failed to render history results:", renderErr);
             showError("Results loaded but failed to display.");
@@ -5256,8 +5312,10 @@
         var btn = document.getElementById("btnRun");
         btn.disabled = true;
         btn.textContent = "Processing...";
+        document.getElementById("formSection").style.display = "none";
         document.getElementById("progressSection").classList.add("active");
         document.getElementById("resultsSection").classList.remove("active");
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         document.getElementById("progressStageText").textContent = "Analyzing your resume...";
         renderStages();
         document.getElementById("progressFill").style.width = "0%";
@@ -5723,7 +5781,9 @@
         setPreviewMode('preview');
 
         document.getElementById("resultsSection").classList.add("active");
-        document.getElementById("resultsSection").scrollIntoView({behavior: "smooth"});
+        document.getElementById("stickyDlBar").style.display = "flex";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setTimeout(function() { openDownloadPopup(); }, 1500);
         } catch(renderErr) {
             console.error("Failed to render results:", renderErr);
             showError("Results loaded but failed to display. Try downloading the files directly.");
@@ -5885,6 +5945,7 @@
         document.getElementById("formSection").style.display = "";
         document.getElementById("scoreImprovementBanner").style.display = "none";
         document.getElementById("whatChangedCard").style.display = "none";
+        document.getElementById("stickyDlBar").style.display = "none";
         document.getElementById("charCount").textContent = "0";
         document.getElementById("wordCount").textContent = "0";
         jdTA.classList.remove('input-error');
