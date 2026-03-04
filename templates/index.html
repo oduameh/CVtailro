@@ -3211,22 +3211,6 @@
                 <div class="template-grid" id="templateGrid" style="display:none;"></div>
             </div>
 
-            <!-- Download Popup Modal -->
-            <div class="dl-popup-overlay" id="dlPopupOverlay" onclick="if(event.target===this)closeDownloadPopup()">
-                <div class="dl-popup">
-                    <div class="dl-popup-header">
-                        <h3>Download Your Resume</h3>
-                        <button class="dl-popup-close" onclick="closeDownloadPopup()">&times;</button>
-                    </div>
-                    <div class="dl-popup-body">
-                        <div class="dl-popup-section-label">Choose Template &amp; Format</div>
-                        <div class="dl-popup-grid" id="dlPopupGrid"></div>
-                        <div class="dl-popup-section-label" style="margin-top:16px;">Other Formats</div>
-                        <div class="dl-popup-extras" id="dlPopupExtras"></div>
-                    </div>
-                </div>
-            </div>
-
             <!-- What Changed -->
             <div class="card what-changed-card" id="whatChangedCard" style="display:none">
                 <h2 class="what-changed-heading">What Changed</h2>
@@ -3445,6 +3429,22 @@
         <div class="blog-view-all"><a href="/blog/">View all articles →</a></div>
     </div>
     {% endif %}
+
+    <!-- Download Popup Modal (top-level so it works from results, history, and profile) -->
+    <div class="dl-popup-overlay" id="dlPopupOverlay" onclick="if(event.target===this)closeDownloadPopup()">
+        <div class="dl-popup">
+            <div class="dl-popup-header">
+                <h3>Download Your Resume</h3>
+                <button class="dl-popup-close" onclick="closeDownloadPopup()">&times;</button>
+            </div>
+            <div class="dl-popup-body">
+                <div class="dl-popup-section-label">Choose Template &amp; Format</div>
+                <div class="dl-popup-grid" id="dlPopupGrid"></div>
+                <div class="dl-popup-section-label" style="margin-top:16px;">Other Formats</div>
+                <div class="dl-popup-extras" id="dlPopupExtras"></div>
+            </div>
+        </div>
+    </div>
 
     <!-- Sticky Download Bar (visible when results are shown) -->
     <div class="sticky-dl-bar" id="stickyDlBar">
