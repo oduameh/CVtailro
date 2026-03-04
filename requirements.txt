@@ -21,7 +21,7 @@ user-agents>=2.2.0,<3.0.0
 # Storage & PDF
 boto3>=1.34.0,<2.0.0
 pdfplumber>=0.10.0,<1.0.0
-weasyprint>=60.0,<64.0
+weasyprint>=68.0,<69.0
 python-docx>=1.1.0,<2.0.0
 
 # Production & optional

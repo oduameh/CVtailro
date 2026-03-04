@@ -1,7 +1,33 @@
 # CVtailro Security Audit Report
 
 **Date:** 2026-03-03
-**Last reviewed:** 2026-03-03 (tech debt cleanup pass -- status values unified, dead code removed, test coverage expanded to 179 tests including security suite)
+**Last reviewed:** 2026-03-04 (live exploit-validation pass + remediation branch)
+
+## 2026-03-04 Exploit Validation Addendum
+
+### Scope of active testing
+- Dependency vulnerability scan: `pip-audit -r requirements.txt`
+- Static checks: `bandit -r app`
+- Runtime exploit attempt (CSRF): forged cross-site `POST /auth/profile/update` without CSRF token
+
+### Verified findings (reproducible)
+
+1. **CSRF attack path on state-changing endpoints**
+   - **Exploit attempt:** Sent authenticated state-changing request without CSRF token and with attacker origin.
+   - **Impact (before fix):** Browser-driven cross-site request could modify authenticated user state.
+   - **Fix applied:** Removed blueprint-level CSRF exemptions from API/Admin routes so Flask-WTF CSRF checks are enforced on unsafe methods.
+   - **Validation after fix:** Added regression test that confirms forged request is blocked (`400`) and token-backed request succeeds.
+
+2. **Known vulnerable package in dependency tree**
+   - **Tool evidence:** `pip-audit` reported `weasyprint 63.1` vulnerable (`CVE-2025-68616`), fixed in `68.0+`.
+   - **Fix applied:** Updated dependency constraint to `weasyprint>=68.0,<69.0`.
+   - **Validation after fix:** Security + file-service tests pass against upgraded WeasyPrint.
+
+### Commands + outcomes
+- `python -m pytest -q tests/test_security.py` → pass
+- `python -m pytest -q tests/test_security.py tests/unit/test_file_service.py` (after WeasyPrint upgrade) → pass
+- `pip-audit -r requirements.txt` (before fix) → flagged WeasyPrint CVE
+
 **Scope:** Application code, auth/sessions, API endpoints, file handling, config/deployment, dependencies
 **Depth:** Deep (code review + abuse cases + test guidance)
 

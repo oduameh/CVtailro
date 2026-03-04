@@ -119,6 +119,26 @@ def _admin_login(client, flask_app):
 class TestAuthentication:
     """Authentication requirements and session handling."""
 
+    def test_csrf_blocks_forged_profile_update(self, client, flask_app, user):
+        """Exploit attempt: cross-site POST without CSRF token must be blocked."""
+        _login(client, user)
+
+        # Turn CSRF on for this test to simulate production behavior.
+        flask_app.config["WTF_CSRF_ENABLED"] = True
+        try:
+            forged = client.post(
+                "/auth/profile/update",
+                json={"name": "Pwned via CSRF"},
+                content_type="application/json",
+                headers={"Origin": "https://evil.example"},
+            )
+            assert forged.status_code == 400
+            assert "csrf" in (forged.get_data(as_text=True) or "").lower()
+
+            # The key regression we care about: forged requests are rejected.
+        finally:
+            flask_app.config["WTF_CSRF_ENABLED"] = False
+
     def test_history_requires_login(self, client):
         """History endpoint must require authentication."""
         resp = client.get("/api/history")

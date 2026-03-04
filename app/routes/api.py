@@ -14,7 +14,7 @@ import pdfplumber
 from flask import Blueprint, Response, jsonify, request
 from flask_login import current_user, login_required
 
-from app.extensions import csrf, db, limiter
+from app.extensions import db, limiter
 from app.models import TailoringJob
 from app.services.admin_config import AdminConfigManager
 from app.services.file_service import serve_download
@@ -35,7 +35,6 @@ from utils import create_output_dir
 logger = logging.getLogger("cvtailro.api")
 
 api_bp = Blueprint("api", __name__)
-csrf.exempt(api_bp)
 
 
 def _validate_resume_file(resume_file) -> tuple[str | None, str]:
@@ -165,7 +164,6 @@ def start_tailoring():
 
 
 @api_bp.route("/api/progress/<job_id>")
-@csrf.exempt
 def progress_stream(job_id: str):
     with jobs_lock:
         job_data = jobs.get(job_id)
@@ -497,7 +495,6 @@ def start_batch_tailoring():
 
 
 @api_bp.route("/api/download/<job_id>/<filename>")
-@csrf.exempt
 @limiter.limit("30 per minute")
 def download_file(job_id: str, filename: str):
     uid = current_user.id if current_user.is_authenticated else None

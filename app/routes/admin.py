@@ -15,7 +15,7 @@ from flask_login import current_user
 from sqlalchemy import case, func, text
 
 from analytics import pipeline_analytics
-from app.extensions import csrf, db, limiter
+from app.extensions import db, limiter
 from app.models import AnalyticsEvent, SavedResume, TailoringJob, User
 from app.models.job import JobApplication, JobFile
 from app.services.admin_config import AdminConfigManager
@@ -34,7 +34,6 @@ from app.services.usage import login_rate_limiter, usage_tracker
 logger = logging.getLogger("cvtailro.admin")
 
 admin_bp = Blueprint("admin", __name__)
-csrf.exempt(admin_bp)
 
 
 # ── Shared query helpers ─────────────────────────────────────────────────────
@@ -331,7 +330,6 @@ def admin_user_jobs(user_id: str):
 
 @admin_bp.route("/admin/api/download/<job_id>/<filename>")
 @_admin_required
-@csrf.exempt
 def admin_download_file(job_id: str, filename: str):
     """Admin file download — bypasses user ownership checks."""
     from pathlib import Path
