@@ -139,9 +139,6 @@ class BaseAgent(ABC, Generic[T]):
         # Route to correct provider
         is_nim = getattr(self.config, "provider", "openrouter") == "nim"
         api_url = NVIDIA_NIM_URL if is_nim else OPENROUTER_URL
-        auth_header = {
-            "Authorization": f"Bearer {self.config.api_key}",
-        }
 
         # NIM models cap max_tokens at 4096; OpenRouter supports higher values
         max_tokens = min(self.AGENT_MAX_TOKENS, 4096) if is_nim else self.AGENT_MAX_TOKENS
@@ -155,11 +152,28 @@ class BaseAgent(ABC, Generic[T]):
             "max_tokens": max_tokens,
             "temperature": 0.3,
         }
+        if is_nim:
+            payload["top_p"] = 0.7
+
+        # NIM requires clean headers (no OpenRouter-specific HTTP-Referer/X-Title)
+        if is_nim:
+            request_headers = {
+                "Authorization": f"Bearer {self.config.api_key}",
+                "Content-Type": "application/json",
+            }
+        else:
+            request_headers = {
+                "Authorization": f"Bearer {self.config.api_key}",
+            }
 
         try:
-            response = _http_session.post(
-                api_url,
-                headers=auth_header,
+            if is_nim:
+                response = requests.post(
+                    api_url, headers=request_headers, json=payload, timeout=self.API_TIMEOUT
+                )
+            else:
+                response = _http_session.post(
+                    api_url, headers=request_headers,
                 json=payload,
                 timeout=self.API_TIMEOUT,
             )
