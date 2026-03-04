@@ -2415,11 +2415,9 @@
             ? document.getElementById('nimKeyInput').value.trim()
             : document.getElementById('apiKeyInput').value.trim();
         var result = document.getElementById('testResult');
-        if (!key) {
-            result.style.color = 'var(--error)'; result.textContent = 'Enter the ' + (provider === 'nim' ? 'NIM' : 'OpenRouter') + ' key first.';
-            return;
-        }
-        result.style.color = 'var(--text-secondary)'; result.textContent = 'Testing ' + (provider === 'nim' ? 'NVIDIA NIM' : 'OpenRouter') + '...';
+        var label = provider === 'nim' ? 'NVIDIA NIM' : 'OpenRouter';
+        result.style.color = 'var(--text-secondary)';
+        result.textContent = 'Testing ' + label + (key ? '...' : ' (saved key)...');
         try {
             var r = await fetch('/admin/api/test-key', {
                 method: 'POST',
