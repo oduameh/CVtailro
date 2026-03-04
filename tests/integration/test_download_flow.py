@@ -19,9 +19,9 @@ def user(db):
 
 
 def _login(client, user):
-    with client.session_transaction() as sess:
-        sess["_user_id"] = user.id
-        sess["_fresh"] = True
+    from tests.conftest import login_user_with_session
+
+    login_user_with_session(client, user)
 
 
 @pytest.mark.integration

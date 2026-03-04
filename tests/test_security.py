@@ -94,10 +94,10 @@ def anonymous_job(db):
 
 
 def _login(client, user):
-    """Log in as user via Flask-Login (session)."""
-    with client.session_transaction() as sess:
-        sess["_user_id"] = user.id
-        sess["_fresh"] = True
+    """Log in as user via Flask-Login with a valid server-side session."""
+    from tests.conftest import login_user_with_session
+
+    login_user_with_session(client, user)
 
 
 def _admin_login(client, flask_app):

@@ -204,6 +204,46 @@ class AdminConfigManager:
             return True
         return bool(cls.load().admin_password_hash)
 
+    @classmethod
+    def get(cls, key: str) -> str | None:
+        """Read a single setting value by key from the DB. Returns None if not found."""
+        try:
+            from app.models.admin_config import AdminSetting
+
+            row = AdminSetting.query.filter_by(key=key).first()
+            return row.value if row else None
+        except Exception:
+            return None
+
+    @classmethod
+    def set(cls, key: str, value: str) -> None:
+        """Write a single setting value by key to the DB."""
+        try:
+            from datetime import datetime, timezone
+
+            from app.extensions import db
+            from app.models.admin_config import AdminSetting
+
+            now = datetime.now(timezone.utc)
+            row = AdminSetting.query.filter_by(key=key).first()
+            if row:
+                row.value = value
+                row.updated_at = now
+            else:
+                row = AdminSetting(key=key, value=value, updated_at=now)
+                db.session.add(row)
+            db.session.commit()
+            cls._cache = None
+            cls._cache_time = 0
+        except Exception as e:
+            logger.error(f"Failed to set admin config key {key}: {e}")
+            try:
+                from app.extensions import db
+
+                db.session.rollback()
+            except Exception:
+                pass
+
     @staticmethod
     def _hash_password(password: str) -> str:
         return generate_password_hash(password, method="pbkdf2:sha256", salt_length=16)

@@ -1007,6 +1007,14 @@
                     <span class="nav-icon">&#128176;</span>
                     <span class="nav-text">Cost &amp; Models</span>
                 </a>
+                <a class="nav-item" data-tab="sessions" onclick="switchTab('sessions')">
+                    <span class="nav-icon">&#128273;</span>
+                    <span class="nav-text">Sessions</span>
+                </a>
+                <a class="nav-item" data-tab="login-history" onclick="switchTab('login-history')">
+                    <span class="nav-icon">&#128221;</span>
+                    <span class="nav-text">Login History</span>
+                </a>
                 <a class="nav-item" data-tab="audit" onclick="switchTab('audit')">
                     <span class="nav-icon">&#128274;</span>
                     <span class="nav-text">Audit Trail</span>
@@ -1619,6 +1627,82 @@
                         <button class="btn btn-sm btn-secondary" id="eventPrevBtn" onclick="loadEventFeed(eventCurrentPage-1)" disabled>Prev</button>
                         <span id="eventPageInfo" style="font-size:13px;color:var(--text-secondary);line-height:32px;"></span>
                         <button class="btn btn-sm btn-secondary" id="eventNextBtn" onclick="loadEventFeed(eventCurrentPage+1)">Next</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ TAB: SESSIONS ═══ -->
+            <div class="tab-content" id="tab-sessions">
+                <div class="tab-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+                    <div>
+                        <h1>Active Sessions</h1>
+                        <p>All currently active user sessions across devices</p>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn btn-sm btn-primary" onclick="loadAdminSessions()">Refresh</button>
+                        <button class="btn btn-sm btn-secondary" onclick="showSessionConfig()">Session Policy</button>
+                    </div>
+                </div>
+                <div id="sessionConfigPanel" style="display:none;margin-bottom:16px;" class="card">
+                    <h3 style="margin-bottom:12px;">Session Policy Settings</h3>
+                    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:end;">
+                        <div style="flex:1;min-width:160px;">
+                            <label style="display:block;font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;">Max Concurrent Sessions</label>
+                            <input type="number" id="cfgMaxSessions" min="1" max="20" value="3" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:14px;">
+                        </div>
+                        <div style="flex:1;min-width:160px;">
+                            <label style="display:block;font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;">Idle Timeout (minutes)</label>
+                            <input type="number" id="cfgIdleTimeout" min="5" max="1440" value="60" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:14px;">
+                        </div>
+                        <div style="flex:1;min-width:160px;">
+                            <label style="display:block;font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;">Max Session Age (hours)</label>
+                            <input type="number" id="cfgMaxAge" min="1" max="720" value="168" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:14px;">
+                        </div>
+                        <button class="btn btn-sm btn-primary" onclick="saveSessionConfig()">Save Policy</button>
+                    </div>
+                    <div id="sessionConfigMsg" style="font-size:13px;color:var(--success);margin-top:8px;"></div>
+                </div>
+                <div class="card">
+                    <div id="adminSessionsCount" style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;"></div>
+                    <div style="overflow-x:auto;max-height:600px;overflow-y:auto;">
+                        <table class="data-table" id="adminSessionsTable">
+                            <thead><tr><th>User</th><th>IP</th><th>Device</th><th>Location</th><th>Last Active</th><th>Session Start</th><th>Actions</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ TAB: LOGIN HISTORY ═══ -->
+            <div class="tab-content" id="tab-login-history">
+                <div class="tab-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+                    <div>
+                        <h1>Login History</h1>
+                        <p>Chronological record of all authentication events</p>
+                    </div>
+                    <button class="btn btn-sm btn-primary" onclick="loadLoginHistory(0)">Refresh</button>
+                </div>
+                <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
+                    <select id="loginHistoryEventFilter" onchange="loadLoginHistory(0)" style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;">
+                        <option value="">All events</option>
+                        <option value="login">Login</option>
+                        <option value="logout">Logout</option>
+                        <option value="session_expired">Session Expired</option>
+                        <option value="session_revoked">Session Revoked</option>
+                    </select>
+                    <span id="loginHistoryCount" style="font-size:13px;color:var(--text-secondary);"></span>
+                </div>
+                <div class="card">
+                    <div style="overflow-x:auto;max-height:600px;overflow-y:auto;">
+                        <table class="data-table" id="loginHistoryTable">
+                            <thead><tr><th>Time</th><th>Event</th><th>User</th><th>IP</th><th>Device</th><th>Location</th><th>Status</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:center;padding:12px;">
+                        <button class="btn btn-sm btn-secondary" id="lhPrevBtn" onclick="loadLoginHistory(lhCurrentOffset - 100)" disabled>Prev</button>
+                        <span id="lhPageInfo" style="font-size:13px;color:var(--text-secondary);line-height:32px;"></span>
+                        <button class="btn btn-sm btn-secondary" id="lhNextBtn" onclick="loadLoginHistory(lhCurrentOffset + 100)">Next</button>
                     </div>
                 </div>
             </div>
@@ -2990,6 +3074,135 @@
 
     // ── Tab switch integration ──
 
+    // ── Sessions Management ──
+
+    async function loadAdminSessions() {
+        try {
+            var resp = await fetch('/admin/api/sessions');
+            if (!resp.ok) return;
+            var data = await resp.json();
+            var sessions = data.sessions || [];
+            document.getElementById('adminSessionsCount').textContent = sessions.length + ' active session(s)';
+
+            var tbody = document.querySelector('#adminSessionsTable tbody');
+            tbody.innerHTML = '';
+            sessions.forEach(function(s) {
+                var location = [s.city, s.country].filter(Boolean).join(', ') || '—';
+                var lastActive = s.last_activity_at ? new Date(s.last_activity_at).toLocaleString() : '—';
+                var created = s.created_at ? new Date(s.created_at).toLocaleString() : '—';
+                var device = (s.browser_name || '?') + ' / ' + (s.os_name || '?') + ' (' + (s.device_type || '?') + ')';
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td title="' + (s.user_id || '') + '">' + esc(s.user_email || '—') + '<br><small style="color:var(--text-secondary);">' + esc(s.user_name || '') + '</small></td>'
+                    + '<td>' + esc(s.ip_address || '—') + '</td>'
+                    + '<td>' + esc(device) + '</td>'
+                    + '<td>' + esc(location) + '</td>'
+                    + '<td>' + lastActive + '</td>'
+                    + '<td>' + created + '</td>'
+                    + '<td><button class="btn btn-sm btn-secondary" style="font-size:11px;" onclick="adminRevokeSession(\'' + s.id + '\')">Revoke</button>'
+                    + ' <button class="btn btn-sm btn-secondary" style="font-size:11px;" onclick="adminForceLogout(\'' + s.user_id + '\')">Logout All</button></td>';
+                tbody.appendChild(tr);
+            });
+        } catch(e) { console.error('Failed to load sessions', e); }
+    }
+
+    async function adminRevokeSession(sessionId) {
+        if (!confirm('Revoke this session?')) return;
+        await fetch('/admin/api/sessions/' + sessionId, { method: 'DELETE' });
+        loadAdminSessions();
+    }
+
+    async function adminForceLogout(userId) {
+        if (!confirm('Force logout this user from ALL devices?')) return;
+        await fetch('/admin/api/sessions/user/' + userId, { method: 'DELETE' });
+        loadAdminSessions();
+    }
+
+    function showSessionConfig() {
+        var panel = document.getElementById('sessionConfigPanel');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        if (panel.style.display === 'block') loadSessionConfig();
+    }
+
+    async function loadSessionConfig() {
+        try {
+            var resp = await fetch('/admin/api/session-config');
+            var data = await resp.json();
+            document.getElementById('cfgMaxSessions').value = data.max_concurrent_sessions || 3;
+            document.getElementById('cfgIdleTimeout').value = data.idle_timeout_minutes || 60;
+            document.getElementById('cfgMaxAge').value = data.session_max_age_hours || 168;
+        } catch(e) {}
+    }
+
+    async function saveSessionConfig() {
+        var data = {
+            max_concurrent_sessions: parseInt(document.getElementById('cfgMaxSessions').value) || 3,
+            idle_timeout_minutes: parseInt(document.getElementById('cfgIdleTimeout').value) || 60,
+            session_max_age_hours: parseInt(document.getElementById('cfgMaxAge').value) || 168,
+        };
+        try {
+            await fetch('/admin/api/session-config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            document.getElementById('sessionConfigMsg').textContent = 'Session policy saved!';
+            setTimeout(function() { document.getElementById('sessionConfigMsg').textContent = ''; }, 3000);
+        } catch(e) {
+            document.getElementById('sessionConfigMsg').textContent = 'Save failed.';
+            document.getElementById('sessionConfigMsg').style.color = 'var(--error)';
+        }
+    }
+
+    // ── Login History ──
+
+    var lhCurrentOffset = 0;
+
+    async function loadLoginHistory(offset) {
+        if (offset < 0) offset = 0;
+        lhCurrentOffset = offset;
+        var eventType = document.getElementById('loginHistoryEventFilter').value;
+        var url = '/admin/api/login-history?limit=100&offset=' + offset;
+        if (eventType) url += '&event_type=' + eventType;
+
+        try {
+            var resp = await fetch(url);
+            var data = await resp.json();
+            var events = data.events || [];
+            var total = data.total || 0;
+            document.getElementById('loginHistoryCount').textContent = total + ' total event(s)';
+            document.getElementById('lhPageInfo').textContent = 'Showing ' + (offset + 1) + '-' + Math.min(offset + 100, total) + ' of ' + total;
+            document.getElementById('lhPrevBtn').disabled = offset === 0;
+            document.getElementById('lhNextBtn').disabled = offset + 100 >= total;
+
+            var tbody = document.querySelector('#loginHistoryTable tbody');
+            tbody.innerHTML = '';
+            events.forEach(function(e) {
+                var location = [e.city, e.country].filter(Boolean).join(', ') || '—';
+                var time = e.created_at ? new Date(e.created_at).toLocaleString() : '—';
+                var device = (e.browser_name || '?') + ' / ' + (e.os_name || '?');
+                var statusBadge = e.success
+                    ? '<span style="color:var(--success);font-weight:600;">OK</span>'
+                    : '<span style="color:var(--error);font-weight:600;">FAIL</span>';
+                if (e.failure_reason) statusBadge += '<br><small>' + esc(e.failure_reason) + '</small>';
+                var eventLabel = e.event_type || '—';
+                var eventColors = {login:'var(--success)',logout:'var(--text-secondary)',session_expired:'var(--warning)',session_revoked:'var(--error)'};
+                var eventColor = eventColors[e.event_type] || 'var(--text)';
+
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>' + time + '</td>'
+                    + '<td><span style="color:' + eventColor + ';font-weight:600;">' + esc(eventLabel) + '</span></td>'
+                    + '<td>' + esc(e.user_email || '—') + '</td>'
+                    + '<td>' + esc(e.ip_address || '—') + '</td>'
+                    + '<td>' + esc(device) + '</td>'
+                    + '<td>' + esc(location) + '</td>'
+                    + '<td>' + statusBadge + '</td>';
+                tbody.appendChild(tr);
+            });
+        } catch(e) { console.error('Failed to load login history', e); }
+    }
+
+    function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
     var origSwitchTab = switchTab;
     switchTab = function(tabName) {
         origSwitchTab(tabName);
@@ -2998,6 +3211,8 @@
         else if (tabName === 'cost') loadCostData();
         else if (tabName === 'audit') loadAuditData();
         else if (tabName === 'events') loadEventFeed(1);
+        else if (tabName === 'sessions') loadAdminSessions();
+        else if (tabName === 'login-history') loadLoginHistory(0);
     };
 
     // ─── Init ───

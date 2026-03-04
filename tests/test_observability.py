@@ -216,9 +216,11 @@ def _make_admin_user(db):
 
 def _login_admin(client, flask_app, db):
     user = _make_admin_user(db)
+    from tests.conftest import login_user_with_session
+
+    login_user_with_session(client, user)
     with client.session_transaction() as sess:
         sess["admin_authenticated"] = True
-        sess["_user_id"] = user.id
     return user
 
 

@@ -54,6 +54,7 @@ def create_app(config_name: str | None = None) -> Flask:
     register_blueprints(flask_app)
     _register_security_headers(flask_app)
     _register_error_handlers(flask_app)
+    _register_session_validation(flask_app)
     init_request_id(flask_app)
     _run_migrations(flask_app)
 
@@ -179,6 +180,48 @@ def _register_security_headers(flask_app: Flask) -> None:
         return response
 
 
+def _register_session_validation(flask_app: Flask) -> None:
+    """Validate server-side session on every authenticated request."""
+
+    _SKIP_PREFIXES = ("/static/", "/auth/google/", "/auth/dev-login", "/favicon.ico")
+
+    @flask_app.before_request
+    def validate_session():
+        from flask import session as flask_session
+        from flask_login import current_user
+
+        if not current_user.is_authenticated:
+            return
+
+        if any(request.path.startswith(p) for p in _SKIP_PREFIXES):
+            return
+
+        token = flask_session.get("session_token")
+        if not token:
+            # Legacy session without server-side tracking — force re-login
+            from flask_login import logout_user
+
+            logout_user()
+            return
+
+        from app.services.session_manager import update_activity
+        from app.services.session_manager import validate_session as _validate
+
+        is_valid = _validate(token)
+        if not is_valid:
+            from flask_login import logout_user
+
+            flask_session.clear()
+            logout_user()
+            if request.path.startswith("/api/") or request.path.startswith("/admin/api/"):
+                from flask import jsonify
+
+                return jsonify({"error": "Session expired. Please sign in again."}), 401
+            return
+
+        update_activity(token)
+
+
 def _run_migrations(flask_app: Flask) -> None:
     """Create tables and run any pending schema migrations."""
     with flask_app.app_context():
@@ -295,3 +338,34 @@ def _apply_column_migrations() -> None:
             db.session.commit()
         except Exception:
             db.session.rollback()  # Already nullable or SQLite (no ALTER support)
+
+    # --- Session tracking tables ---
+    for tbl_name in ("user_sessions", "login_events"):
+        if not insp.has_table(tbl_name):
+            try:
+                db.create_all()
+                logger.info(f"Created table {tbl_name}")
+            except Exception as e:
+                logger.warning(f"Failed to create {tbl_name}: {e}")
+
+    if insp.has_table("user_sessions"):
+        try:
+            us_indexes = {idx["name"] for idx in insp.get_indexes("user_sessions")}
+            if "idx_user_sessions_user_active" not in us_indexes:
+                db.session.execute(
+                    text("CREATE INDEX idx_user_sessions_user_active ON user_sessions(user_id, is_active)")
+                )
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+    if insp.has_table("login_events"):
+        try:
+            le_indexes = {idx["name"] for idx in insp.get_indexes("login_events")}
+            if "idx_login_events_user_created" not in le_indexes:
+                db.session.execute(
+                    text("CREATE INDEX idx_login_events_user_created ON login_events(user_id, created_at DESC)")
+                )
+                db.session.commit()
+        except Exception:
+            db.session.rollback()

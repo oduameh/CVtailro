@@ -16,6 +16,7 @@ Flask-Login>=0.6.3,<1.0.0
 Authlib>=1.3.0,<2.0.0
 flask-wtf>=1.2.0,<2.0.0
 flask-limiter>=3.5.0,<4.0.0
+user-agents>=2.2.0,<3.0.0
 
 # Storage & PDF
 boto3>=1.34.0,<2.0.0

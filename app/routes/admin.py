@@ -1183,3 +1183,133 @@ def admin_run_retention():
     db.session.commit()
     track("admin.retention.executed", category="admin", metadata={"days": days, "deleted_count": deleted})
     return jsonify({"ok": True, "deleted": deleted, "cutoff": cutoff.isoformat()})
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Session Management (Admin)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@admin_bp.route("/admin/api/session-config", methods=["GET"])
+@_admin_required
+def admin_get_session_config():
+    """Get current session policy settings."""
+    return jsonify({
+        "max_concurrent_sessions": int(AdminConfigManager.get("max_concurrent_sessions") or 3),
+        "idle_timeout_minutes": int(AdminConfigManager.get("idle_timeout_minutes") or 60),
+        "session_max_age_hours": int(AdminConfigManager.get("session_max_age_hours") or 168),
+    })
+
+
+@admin_bp.route("/admin/api/session-config", methods=["POST"])
+@_admin_required
+def admin_save_session_config():
+    """Update session policy settings."""
+    data = request.get_json(force=True)
+    changed = []
+    for key in ("max_concurrent_sessions", "idle_timeout_minutes", "session_max_age_hours"):
+        if key in data:
+            AdminConfigManager.set(key, str(int(data[key])))
+            changed.append(key)
+    track("admin.session_config.updated", category="admin", metadata={"changed_keys": changed})
+    return jsonify({"ok": True})
+
+
+@admin_bp.route("/admin/api/sessions")
+@_admin_required
+def admin_list_sessions():
+    """List all active sessions across all users."""
+    from app.services.session_manager import get_all_active_sessions
+
+    sessions = get_all_active_sessions(limit=200)
+    user_ids = list({s.user_id for s in sessions})
+    users_map = {u.id: u for u in User.query.filter(User.id.in_(user_ids)).all()} if user_ids else {}
+
+    return jsonify({
+        "total": len(sessions),
+        "sessions": [
+            {
+                "id": s.id,
+                "user_id": s.user_id,
+                "user_email": users_map[s.user_id].email if s.user_id in users_map else "—",
+                "user_name": users_map[s.user_id].name if s.user_id in users_map else "—",
+                "ip_address": s.ip_address,
+                "device_type": s.device_type,
+                "browser_name": s.browser_name,
+                "os_name": s.os_name,
+                "country": s.country,
+                "city": s.city,
+                "created_at": s.created_at.isoformat() if s.created_at else None,
+                "last_activity_at": s.last_activity_at.isoformat() if s.last_activity_at else None,
+                "expires_at": s.expires_at.isoformat() if s.expires_at else None,
+            }
+            for s in sessions
+        ],
+    })
+
+
+@admin_bp.route("/admin/api/sessions/<session_id>", methods=["DELETE"])
+@_admin_required
+def admin_revoke_session(session_id: str):
+    """Force-revoke a specific session."""
+    from app.services.session_manager import revoke_session
+
+    ok = revoke_session(session_id, reason="admin")
+    if not ok:
+        return jsonify({"error": "Session not found or already revoked"}), 404
+    track("admin.session.revoked", category="admin", metadata={"session_id": session_id})
+    return jsonify({"ok": True})
+
+
+@admin_bp.route("/admin/api/sessions/user/<user_id>", methods=["DELETE"])
+@_admin_required
+def admin_revoke_user_sessions(user_id: str):
+    """Force-logout a user from all devices."""
+    from app.services.session_manager import revoke_all_user_sessions
+
+    count = revoke_all_user_sessions(user_id)
+    track("admin.user.force_logout", category="admin", metadata={"user_id": user_id, "sessions_revoked": count})
+    return jsonify({"ok": True, "revoked_count": count})
+
+
+@admin_bp.route("/admin/api/login-history")
+@_admin_required
+def admin_login_history():
+    """Login event history with optional filters."""
+    from app.services.session_manager import get_login_history, get_login_history_count
+
+    user_id = request.args.get("user_id")
+    event_type = request.args.get("event_type")
+    limit = min(int(request.args.get("limit", 100)), 500)
+    offset = int(request.args.get("offset", 0))
+
+    events = get_login_history(user_id=user_id, event_type=event_type, limit=limit, offset=offset)
+    total = get_login_history_count(user_id=user_id, event_type=event_type)
+
+    user_ids = list({e.user_id for e in events if e.user_id})
+    users_map = {u.id: u for u in User.query.filter(User.id.in_(user_ids)).all()} if user_ids else {}
+
+    return jsonify({
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "events": [
+            {
+                "id": e.id,
+                "user_id": e.user_id,
+                "user_email": users_map[e.user_id].email if e.user_id in users_map else e.email or "—",
+                "user_name": users_map[e.user_id].name if e.user_id in users_map else "—",
+                "event_type": e.event_type,
+                "ip_address": e.ip_address,
+                "device_type": e.device_type,
+                "browser_name": e.browser_name,
+                "os_name": e.os_name,
+                "country": e.country,
+                "city": e.city,
+                "success": e.success,
+                "failure_reason": e.failure_reason,
+                "created_at": e.created_at.isoformat() if e.created_at else None,
+            }
+            for e in events
+        ],
+    })
