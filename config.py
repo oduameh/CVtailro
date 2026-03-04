@@ -46,7 +46,7 @@ DEFAULT_MODEL = "openai/gpt-4o-mini"
 class AppConfig:
     """Immutable application configuration.
 
-    Uses the OpenRouter API as the LLM backend.
+    Supports OpenRouter and NVIDIA NIM as LLM backends.
     API key is provided per-request from the frontend.
     """
 
@@ -57,6 +57,7 @@ class AppConfig:
     api_key: str = ""
     model: str = DEFAULT_MODEL
     job_id: str = ""  # Set by app.py so agents can report analytics
+    provider: str = "openrouter"  # "openrouter" or "nim"
 
     def validate_api_config(self) -> None:
         """Verify the API key and model are set.

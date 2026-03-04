@@ -1174,7 +1174,18 @@
                 <!-- API Key -->
                 <div class="card">
                     <div class="card-header">
-                        <h2>API Key</h2>
+                        <h2>LLM Provider</h2>
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight:600;margin-bottom:8px;display:block;">Active Provider</label>
+                        <div style="display:flex;gap:8px;">
+                            <label style="display:flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">
+                                <input type="radio" name="activeProvider" value="openrouter" id="providerOpenRouter" checked> OpenRouter
+                            </label>
+                            <label style="display:flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">
+                                <input type="radio" name="activeProvider" value="nim" id="providerNIM"> NVIDIA NIM
+                            </label>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="apiKeyInput">OpenRouter API Key</label>
@@ -1188,8 +1199,20 @@
                             style="color:var(--accent);text-decoration:none;font-weight:600;">openrouter.ai/keys</a>
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label for="nimKeyInput">NVIDIA NIM API Key</label>
+                        <div class="input-with-btn">
+                            <input type="password" id="nimKeyInput" placeholder="nvapi-..."
+                                   style="font-family: 'Inter', monospace;">
+                            <button class="btn btn-sm btn-secondary" onclick="var i=document.getElementById('nimKeyInput');i.type=i.type==='password'?'text':'password';">Show</button>
+                        </div>
+                        <div class="hint">
+                            Get your key at <a href="https://build.nvidia.com" target="_blank" rel="noopener noreferrer"
+                            style="color:var(--accent);text-decoration:none;font-weight:600;">build.nvidia.com</a> (free developer program)
+                        </div>
+                    </div>
                     <div style="display:flex;align-items:center;gap:12px;">
-                        <button class="btn btn-sm btn-secondary" onclick="testApiKey()">Test Key</button>
+                        <button class="btn btn-sm btn-secondary" onclick="testApiKey()">Test Active Key</button>
                         <span id="testResult" style="font-size:13px;font-weight:600;"></span>
                     </div>
                 </div>
@@ -1953,6 +1976,19 @@
         } else {
             apiInput.value = config.api_key || '';
         }
+        // NIM key
+        var nimInput = document.getElementById('nimKeyInput');
+        if (config.nim_api_key && config.nim_api_key.includes('...')) {
+            nimInput.value = '';
+            nimInput.placeholder = config.nim_api_key + ' (saved — enter new key to change)';
+        } else {
+            nimInput.value = config.nim_api_key || '';
+        }
+        // Active provider
+        var providerVal = config.active_provider || 'openrouter';
+        var providerRadio = document.getElementById(providerVal === 'nim' ? 'providerNIM' : 'providerOpenRouter');
+        if (providerRadio) providerRadio.checked = true;
+
         document.getElementById('allowUserModel').checked = config.allow_user_model_selection !== false;
         document.getElementById('rateLimit').value = config.rate_limit_per_hour || 0;
         document.getElementById('lastUpdated').textContent = config.updated_at || 'Never';
@@ -2391,8 +2427,11 @@
 
     async function saveConfig() {
         var alert = document.getElementById('saveAlert');
+        var activeProvider = document.querySelector('input[name="activeProvider"]:checked');
         var payload = {
             api_key: document.getElementById('apiKeyInput').value.trim(),
+            nim_api_key: document.getElementById('nimKeyInput').value.trim(),
+            active_provider: activeProvider ? activeProvider.value : 'openrouter',
             default_model: document.getElementById('defaultModel').value,
             allow_user_model_selection: document.getElementById('allowUserModel').checked,
             rate_limit_per_hour: parseInt(document.getElementById('rateLimit').value) || 0

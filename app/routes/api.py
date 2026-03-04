@@ -70,7 +70,8 @@ def start_tailoring():
     cleanup_old_jobs()
 
     admin_config = AdminConfigManager.load()
-    api_key = admin_config.api_key.strip()
+    provider = admin_config.active_provider or "openrouter"
+    api_key = admin_config.nim_api_key.strip() if provider == "nim" else admin_config.api_key.strip()
     uid = current_user.id if current_user.is_authenticated else None
 
     if not api_key:
@@ -84,7 +85,9 @@ def start_tailoring():
 
     with pipeline_queue_lock:
         if pipeline_queue_depth >= MAX_QUEUE_DEPTH:
-            track("tailor.request.rejected", category="tailor", user_id=uid, metadata={"reason": "queue_full"})
+            track(
+                "tailor.request.rejected", category="tailor", user_id=uid, metadata={"reason": "queue_full"}
+            )
             return jsonify({"error": "Server is at capacity. Please try again in a few minutes."}), 503
 
     client_ip = request.remote_addr or "unknown"
@@ -153,13 +156,19 @@ def start_tailoring():
             api_key,
             model,
             user_id,
+            provider,
         ),
         daemon=True,
     )
     thread.start()
 
-    track("tailor.job.created", category="tailor", user_id=uid, job_id=job_id,
-          metadata={"model": model, "mode": mode, "template": template, "resume_ext": resume_ext})
+    track(
+        "tailor.job.created",
+        category="tailor",
+        user_id=uid,
+        job_id=job_id,
+        metadata={"model": model, "mode": mode, "template": template, "resume_ext": resume_ext},
+    )
     return jsonify({"job_id": job_id})
 
 
@@ -497,8 +506,13 @@ def start_batch_tailoring():
 def download_file(job_id: str, filename: str):
     uid = current_user.id if current_user.is_authenticated else None
     ext = Path(filename).suffix.lower()
-    track("download.requested", category="download", user_id=uid, job_id=job_id,
-          metadata={"filename_ext": ext, "filename": filename})
+    track(
+        "download.requested",
+        category="download",
+        user_id=uid,
+        job_id=job_id,
+        metadata={"filename_ext": ext, "filename": filename},
+    )
     return serve_download(job_id, filename)
 
 

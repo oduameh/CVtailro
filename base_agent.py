@@ -29,6 +29,7 @@ T = TypeVar("T", bound=BaseModel)
 logger = logging.getLogger(__name__)
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+NVIDIA_NIM_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
 
 # ── Module-level HTTP session for connection pooling ──────────────────────────
 # Reusing a single Session across all agent calls avoids the overhead of
@@ -135,8 +136,9 @@ class BaseAgent(ABC, Generic[T]):
         Raises:
             AgentError: On HTTP errors, timeouts, or empty responses.
         """
-        # Only the Authorization header varies per call; the rest are
-        # already set on the shared session.
+        # Route to correct provider
+        is_nim = getattr(self.config, "provider", "openrouter") == "nim"
+        api_url = NVIDIA_NIM_URL if is_nim else OPENROUTER_URL
         auth_header = {
             "Authorization": f"Bearer {self.config.api_key}",
         }
@@ -153,7 +155,7 @@ class BaseAgent(ABC, Generic[T]):
 
         try:
             response = _http_session.post(
-                OPENROUTER_URL,
+                api_url,
                 headers=auth_header,
                 json=payload,
                 timeout=self.API_TIMEOUT,
