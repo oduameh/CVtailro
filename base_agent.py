@@ -143,13 +143,16 @@ class BaseAgent(ABC, Generic[T]):
             "Authorization": f"Bearer {self.config.api_key}",
         }
 
+        # NIM models cap max_tokens at 4096; OpenRouter supports higher values
+        max_tokens = min(self.AGENT_MAX_TOKENS, 4096) if is_nim else self.AGENT_MAX_TOKENS
+
         payload = {
             "model": self.config.model,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message},
             ],
-            "max_tokens": self.AGENT_MAX_TOKENS,
+            "max_tokens": max_tokens,
             "temperature": 0.3,
         }
 
