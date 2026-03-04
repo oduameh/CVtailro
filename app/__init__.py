@@ -13,7 +13,7 @@ import os
 from flask import Flask, request
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from app.extensions import csrf, db, limiter, login_manager, migrate, oauth, sess
+from app.extensions import csrf, db, limiter, login_manager, migrate, oauth
 from app.routes import register_blueprints
 from app.settings import settings_map
 from storage import r2_storage
@@ -62,12 +62,10 @@ def create_app(config_name: str | None = None) -> Flask:
 
 def _init_extensions(flask_app: Flask) -> None:
     db.init_app(flask_app)
-    flask_app.config["SESSION_SQLALCHEMY"] = db
     migrate.init_app(flask_app, db)
     login_manager.init_app(flask_app)
     csrf.init_app(flask_app)
     limiter.init_app(flask_app)
-    sess.init_app(flask_app)
 
     @login_manager.user_loader
     def load_user(user_id: str):

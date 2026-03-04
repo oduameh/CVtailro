@@ -72,8 +72,9 @@ def list_models():
     provider = request.args.get("provider") or config.active_provider or "openrouter"
     is_nim = provider == "nim"
     models = NIM_MODELS if is_nim else RECOMMENDED_MODELS
-    default_model = DEFAULT_NIM_MODEL if is_nim else DEFAULT_MODEL
-    default = config.default_model if config.default_model else default_model
+    provider_default = DEFAULT_NIM_MODEL if is_nim else DEFAULT_MODEL
+    valid_ids = set(models.values())
+    default = config.default_model if (config.default_model and config.default_model in valid_ids) else provider_default
     return jsonify(
         {
             "models": [{"id": model_id, "name": display_name} for display_name, model_id in models.items()],
