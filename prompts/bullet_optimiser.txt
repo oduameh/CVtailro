@@ -42,7 +42,11 @@ WHAT IS FABRICATION (NEVER do this):
 - Inventing specific metrics ("increased revenue by 40%") not in the original
 - Adding tools/technologies the candidate never used
 - Creating responsibilities that did not exist
-- Changing job titles
+- Changing job title seniority (e.g., "Junior" → "Senior") or function (e.g., "QA" → "Developer")
+
+NOTE: Aligning a job title to an industry-standard equivalent at the same level IS allowed
+(e.g., "Application Developer" → "Software Engineer"). This is handled by the Resume Optimiser,
+not by this agent — do NOT change job titles here.
 
 WHAT IS LEGITIMATE REFRAMING (DO this):
 - Using the target role's terminology to describe existing work

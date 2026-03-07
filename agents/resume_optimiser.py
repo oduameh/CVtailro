@@ -73,6 +73,12 @@ class ResumeOptimiserAgent(BaseAgent["ATSResume"]):
                 }
             )
 
+        # Build title alignment context so the LLM can decide which titles to align
+        title_context = [
+            {"role_index": idx, "current_title": role.title, "company": role.company}
+            for idx, role in enumerate(resume.roles)
+        ]
+
         return (
             "CANDIDATE INFORMATION:\n"
             f"Name: {resume.name}\n"
@@ -96,6 +102,12 @@ class ResumeOptimiserAgent(BaseAgent["ATSResume"]):
             f"Preferred Skills: {json.dumps(job.preferred_skills)}\n"
             f"Tools & Technologies: {json.dumps(job.tools)}\n"
             f"Domain Keywords: {json.dumps(job.domain_keywords)}\n\n"
+            "TITLE ALIGNMENT CONTEXT:\n"
+            f"Target Role Title: {job.job_title}\n"
+            f"Candidate's Current Role Titles: {json.dumps(title_context, indent=2)}\n"
+            "For each role, decide whether the title should be aligned to a closer "
+            "industry-standard equivalent (same level, same function). Include ALL roles "
+            "in title_alignments output — even unchanged ones.\n\n"
             "GAP ANALYSIS — CRITICAL FOR KEYWORD INTEGRATION:\n"
             f"Match Score: {gap.match_score}%\n"
             f"Seniority Calibration: {gap.seniority_calibration}\n"

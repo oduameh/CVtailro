@@ -289,7 +289,7 @@ pre{background:#13151e;border:1px solid var(--card-border);border-radius:8px;pad
   <tr><td><code>ResumeData</code></td><td>Stage 2</td><td>name, contact_info, summary, roles[], education[], certifications[], global_skills, total_years_estimate</td></tr>
   <tr><td><code>GapReport</code></td><td>Stage 3</td><td>match_score (0-100), cosine_similarity, missing_keywords[], keyword_frequency[], section_scores{}</td></tr>
   <tr><td><code>OptimisedBullets</code></td><td>Stage 4</td><td>bullets[] (original, optimised, keywords_injected, fabrication_flag, quality_score), summary_rewrite</td></tr>
-  <tr><td><code>ATSResume</code></td><td>Stage 5</td><td>markdown_content, ats_checks[], keyword_density{}</td></tr>
+  <tr><td><code>ATSResume</code></td><td>Stage 5</td><td>markdown_content, ats_checks[], keyword_density{}, title_alignments[]</td></tr>
   <tr><td><code>FinalOutput</code></td><td>Stage 6</td><td>ats_resume_md, match_report (MatchReport), talking_points[] (TalkingPoint)</td></tr>
   <tr><td><code>MatchReport</code></td><td>Final</td><td>overall_match_score, cosine_similarity, missing_keywords, ats_checks, rewrite_mode</td></tr>
 </table>

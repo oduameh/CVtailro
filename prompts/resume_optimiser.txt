@@ -90,10 +90,32 @@ SKILLS SECTION — YOUR KEYWORD SAFETY NET:
 - If the JD lists a skill (even soft skills like "collaboration" or "communication"), include it if the candidate has any evidence.
 - THINK: What keywords from the MISSING KEYWORDS list can be added here? Add ALL of them that the candidate could reasonably claim.
 
-JOB TITLE STRATEGY:
-- Keep original job titles — NEVER change them.
-- Bridge the gap in the professional summary using the target role's language.
-- Set job_title_aligned to true/false based on semantic similarity.
+JOB TITLE ALIGNMENT STRATEGY:
+You MAY align job titles to better match the target role, but ONLY under strict guardrails:
+
+ALLOWED title changes (equivalent alignment):
+- Swapping to an industry-standard synonym at the SAME level and SAME function:
+  "Application Developer" → "Software Engineer", "Content Strategist" → "Content Marketing Manager",
+  "IT Support Specialist" → "Technical Support Engineer", "People Operations Lead" → "HR Manager"
+- Replacing company-specific or non-standard titles with widely recognised equivalents:
+  "Ninja Developer" → "Software Engineer", "Growth Hacker" → "Growth Marketing Manager"
+- Keeping the SAME seniority: Junior stays Junior, Senior stays Senior, Lead stays Lead.
+
+FORBIDDEN title changes (fabrication):
+- Changing seniority level: "Junior Developer" → "Senior Engineer" is a LIE.
+- Changing function: "QA Engineer" → "Software Engineer" is a DIFFERENT JOB.
+- Inventing a title the candidate never held at a comparable level.
+- Changing "Intern" or "Trainee" to a full role title.
+
+HOW TO DECIDE:
+Ask: "Could a reasonable person describe this same work with either title?" If yes → align. If no → keep original.
+
+OUTPUT REQUIREMENTS:
+- In the markdown_content, use the ALIGNED title (if changed) in the role header.
+- In "title_alignments", list EVERY role with its original_title and aligned_title.
+  If no change was made, set aligned_title equal to original_title.
+- Set job_title_aligned to true if the candidate's most recent title is semantically close to the target role.
+- Set suggested_title to a recommended professional headline for the target role.
 
 VISUAL HIERARCHY:
 - Most impressive/relevant content in the top half of page 1.
@@ -102,7 +124,8 @@ VISUAL HIERARCHY:
 
 ANTI-FABRICATION RULES:
 - NEVER add work experiences or specific metrics not in the original resume.
-- NEVER change actual job titles on role entries.
+- You MAY align job titles to equivalent industry-standard titles (see JOB TITLE ALIGNMENT STRATEGY above). This is NOT fabrication — it is alignment.
+- You MUST NOT change the seniority level or functional area of any job title.
 - You MAY add skills the candidate demonstrably possesses based on their experience.
 - You MAY use the target role's terminology to describe existing work.
 - You may bridge to the target role in the summary without claiming the target title.
@@ -124,6 +147,10 @@ IMPORTANT: Respond with ONLY a JSON object. The JSON must have these exact keys:
   "keyword_density": {{"keyword1": 3, "keyword2": 2}},
   "job_title_aligned": true,
   "suggested_title": "...",
+  "title_alignments": [
+    {{"role_index": 0, "original_title": "Application Developer", "aligned_title": "Software Engineer", "rationale": "Industry-standard equivalent at same seniority level"}},
+    {{"role_index": 1, "original_title": "Junior Analyst", "aligned_title": "Junior Analyst", "rationale": "No equivalent alignment needed"}}
+  ],
   "narrative_improvements": ["improvement 1", "improvement 2"],
   "impact_enhancements": ["enhancement 1", "enhancement 2"]
 }}

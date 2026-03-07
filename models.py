@@ -233,6 +233,15 @@ class ATSCheck(BaseModel):
     detail: str = ""
 
 
+class TitleAlignment(BaseModel):
+    """Tracks how a role's job title was aligned to match the target role."""
+
+    role_index: int = Field(description="Index into ResumeData.roles")
+    original_title: str
+    aligned_title: str
+    rationale: str = ""
+
+
 class ATSResume(BaseModel):
     """Structured output from the ATS Optimisation Agent."""
 
@@ -244,6 +253,10 @@ class ATSResume(BaseModel):
     )
     job_title_aligned: bool = False
     suggested_title: str = ""
+    title_alignments: list[TitleAlignment] = Field(
+        default_factory=list,
+        description="Per-role title alignment: original vs aligned title",
+    )
 
 
 # ─── Agent 6: Recruiter Optimiser ────────────────────────────────────────────────

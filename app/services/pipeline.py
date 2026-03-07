@@ -279,13 +279,13 @@ def run_pipeline_job(
                 )
                 save_json(ats_resume.model_dump(), output_dir / "05_ats_resume.json")
                 checks_passed = sum(1 for c in ats_resume.ats_checks if c.passed)
-                emit(
-                    5,
-                    6,
-                    "Resume Optimiser",
-                    "done",
-                    f"ATS checks: {checks_passed}/{len(ats_resume.ats_checks)} passed",
+                aligned_count = sum(
+                    1 for ta in ats_resume.title_alignments if ta.original_title != ta.aligned_title
                 )
+                detail = f"ATS checks: {checks_passed}/{len(ats_resume.ats_checks)} passed"
+                if aligned_count:
+                    detail += f" | {aligned_count} title(s) aligned"
+                emit(5, 6, "Resume Optimiser", "done", detail)
             except Exception as e:
                 stage_errors.append(e)
                 emit(5, 6, "Resume Optimiser", "error", str(e))
