@@ -164,20 +164,18 @@ def _register_security_headers(flask_app: Flask) -> None:
             response.headers["Expires"] = "0"
 
         # Double-submit CSRF cookie for SPA requests.
-        # Regenerate when cookie is missing OR when the session lost its
-        # CSRF token (e.g. after session backend changes or cookie expiry).
-        from flask import session as _sess
+        # Always regenerate so the cookie stays in sync with the session token
+        # and never goes stale on long-lived tabs.
         from flask_wtf.csrf import generate_csrf
 
-        if "csrf_token" not in request.cookies or "csrf_token" not in _sess:
-            token = generate_csrf()
-            response.set_cookie(
-                "csrf_token",
-                token,
-                httponly=False,
-                samesite="Lax",
-                secure=request.is_secure,
-            )
+        token = generate_csrf()
+        response.set_cookie(
+            "csrf_token",
+            token,
+            httponly=False,
+            samesite="Lax",
+            secure=request.is_secure,
+        )
         return response
 
 

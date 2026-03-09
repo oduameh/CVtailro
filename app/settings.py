@@ -38,7 +38,7 @@ class BaseSettings:
     SQLALCHEMY_ENGINE_OPTIONS = _engine_options()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     WTF_CSRF_ENABLED = True
-    WTF_CSRF_TIME_LIMIT = 3600  # 1 hour
+    WTF_CSRF_TIME_LIMIT = None  # Match session lifetime (no separate expiry)
     WTF_CSRF_HEADERS = ["X-CSRFToken"]
     WTF_CSRF_CHECK_DEFAULT = True
 
