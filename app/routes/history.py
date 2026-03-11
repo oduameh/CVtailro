@@ -63,7 +63,7 @@ def get_history_job(job_id: str):
             "job_description_full": job.job_description_full,
             "original_resume_text": job.original_resume_text,
             "ats_resume_md": job.ats_resume_md,
-            "recruiter_resume_md": job.ats_resume_md,  # deprecated: same as ats_resume_md
+            "recruiter_resume_md": job.recruiter_resume_md or job.ats_resume_md,
             "talking_points_md": job.talking_points_md,
             "created_at": job.created_at.isoformat() if job.created_at else None,
             "duration_seconds": job.duration_seconds,

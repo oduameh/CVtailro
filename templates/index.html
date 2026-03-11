@@ -3438,8 +3438,10 @@
                 <button class="dl-popup-close" onclick="closeDownloadPopup()">&times;</button>
             </div>
             <div class="dl-popup-body">
-                <div class="dl-popup-section-label">Choose Template &amp; Format</div>
+                <div class="dl-popup-section-label">Full Resume (with contact info)</div>
                 <div class="dl-popup-grid" id="dlPopupGrid"></div>
+                <div class="dl-popup-section-label" style="margin-top:20px;">Recruiter Version <span style="font-weight:400;color:var(--text-secondary);font-size:12px;">(no phone, email, or LinkedIn)</span></div>
+                <div class="dl-popup-grid" id="dlPopupRecruiterGrid"></div>
                 <div class="dl-popup-section-label" style="margin-top:16px;">Other Formats</div>
                 <div class="dl-popup-extras" id="dlPopupExtras"></div>
             </div>
@@ -3897,6 +3899,23 @@
         overlay.classList.remove('active', 'dark');
         document.body.style.overflow = '';
     }
+    function downloadRecruiterFormat(tpl, format) {
+        if (!currentFileList || !currentJobId) { showError('No resume ready yet. Run a tailoring job first.'); return; }
+        var target = null;
+        for (var i = 0; i < currentFileList.length; i++) {
+            var f = typeof currentFileList[i] === 'string' ? currentFileList[i] : currentFileList[i].filename;
+            var fl = f.toLowerCase();
+            if (format === 'pdf' && fl.indexOf('recruiter') !== -1 && fl.indexOf(tpl) !== -1 && fl.endsWith('.pdf')) { target = f; break; }
+            if (format === 'docx' && fl.indexOf('recruiter') !== -1 && fl.endsWith('.docx')) { target = f; break; }
+        }
+        if (target) {
+            safeDownload('/api/download/' + currentJobId + '/' + target, target);
+        } else {
+            var fallbackName = 'Recruiter_' + tpl.charAt(0).toUpperCase() + tpl.slice(1) + '.' + format;
+            safeDownload('/api/download/' + currentJobId + '/' + fallbackName, fallbackName);
+        }
+    }
+
     function populateDownloadPopup() {
         var templates = [
             { id: 'modern', label: 'Modern', desc: 'Clean sans-serif', color: '#1a3a5c' },
@@ -3921,9 +3940,28 @@
                 '</div>' +
             '</div>';
         }).join('');
+
+        // Recruiter versions (no contact info)
+        var recGrid = document.getElementById('dlPopupRecruiterGrid');
+        if (recGrid) {
+            recGrid.innerHTML = templates.map(function(t) {
+                return '<div class="dl-popup-item" onclick="downloadRecruiterFormat(\'' + t.id + '\',\'pdf\');closeDownloadPopup();" style="opacity:0.92;">' +
+                    '<div class="dl-popup-accent" style="background:' + t.color + ';opacity:0.6;"></div>' +
+                    '<div class="dl-popup-item-info">' +
+                        '<div class="dl-popup-item-name">' + t.label + '</div>' +
+                        '<div class="dl-popup-item-desc">' + t.desc + '</div>' +
+                    '</div>' +
+                    '<div class="dl-popup-item-formats">' +
+                        '<button class="dl-fmt-btn" onclick="event.stopPropagation();downloadRecruiterFormat(\'' + t.id + '\',\'pdf\');">PDF</button>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        }
+
         var extras = document.getElementById('dlPopupExtras');
         extras.innerHTML =
             '<button class="dl-extra-btn" onclick="downloadFormat(\'modern\',\'docx\')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> DOCX</button>' +
+            '<button class="dl-extra-btn" onclick="downloadRecruiterFormat(\'modern\',\'docx\')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> DOCX (Recruiter)</button>' +
             '<button class="dl-extra-btn" onclick="downloadFormat(\'modern\',\'md\')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Markdown</button>' +
             '<button class="dl-extra-btn" onclick="downloadFormat(\'modern\',\'json\')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Match Report</button>';
     }

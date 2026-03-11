@@ -115,6 +115,17 @@ def _resolve_job_ownership(job_id: str, user_id: str | None, is_authed: bool) ->
     return db_job
 
 
+def _is_recruiter_file(name: str) -> bool:
+    return "recruiter" in name.lower()
+
+
+def _pick_source_md(db_job: TailoringJob, filename: str) -> str | None:
+    """Return the right markdown source: recruiter (stripped) or full ATS."""
+    if _is_recruiter_file(filename) and db_job.recruiter_resume_md:
+        return db_job.recruiter_resume_md
+    return db_job.ats_resume_md
+
+
 def _serve_from_db(db_job: TailoringJob, safe_name: str):
     """Serve a file by regenerating it from data stored in the database."""
 
@@ -128,7 +139,7 @@ def _serve_from_db(db_job: TailoringJob, safe_name: str):
             or ("resume" in lower_name and "talking" not in lower_name)
         )
         if is_resume:
-            md_content = db_job.ats_resume_md
+            md_content = _pick_source_md(db_job, safe_name)
         elif "talking" in lower_name:
             md_content = db_job.talking_points_md
 
@@ -160,20 +171,22 @@ def _serve_from_db(db_job: TailoringJob, safe_name: str):
             "elegant",
         )
         is_resume_pdf = any(k in lower_safe for k in ("ats", "recruiter", "resume") + all_templates)
-        if is_resume_pdf and db_job.ats_resume_md:
+        source_md = _pick_source_md(db_job, safe_name)
+        if is_resume_pdf and source_md:
             template = db_job.template or "modern"
             for tpl in all_templates:
                 if tpl in lower_safe:
                     template = tpl
                     break
-            return _regenerate_pdf(db_job.ats_resume_md, safe_name, template)
+            return _regenerate_pdf(source_md, safe_name, template)
 
         return jsonify({"error": "Resume content not saved. Try re-running the pipeline."}), 404
 
     # DOCX files
     if safe_name.endswith(".docx"):
-        if db_job.ats_resume_md:
-            return _regenerate_docx(db_job.ats_resume_md, safe_name)
+        source_md = _pick_source_md(db_job, safe_name)
+        if source_md:
+            return _regenerate_docx(source_md, safe_name)
         return jsonify({"error": "Resume content not saved. Try re-running the pipeline."}), 404
 
     # Match report JSON (case-insensitive: Match_Report.json, match_report.json, etc.)

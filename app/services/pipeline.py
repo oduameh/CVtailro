@@ -80,6 +80,54 @@ def format_talking_points(talking_points: list) -> str:
     return "\n".join(lines)
 
 
+def strip_contact_info(markdown: str) -> str:
+    """Remove phone numbers, emails, and LinkedIn URLs from resume markdown.
+
+    Keeps the candidate name (H1) and location. The contact line typically
+    looks like: ``Location | Phone | Email | LinkedIn``
+    """
+    lines = markdown.split("\n")
+    result = []
+    for line in lines:
+        stripped = line.strip()
+        # Skip empty lines early
+        if not stripped:
+            result.append(line)
+            continue
+
+        # The contact line is usually the first non-heading, non-empty line
+        # containing pipe-separated items with phone/email/linkedin patterns.
+        if "|" in stripped and not stripped.startswith("#"):
+            parts = [p.strip() for p in stripped.split("|")]
+            cleaned = []
+            for part in parts:
+                # Drop parts that look like phone, email, or LinkedIn
+                digits_and_symbols = re.sub(r"[\s]", "", part)
+                if re.search(r"[\d\(\)\+\-\.]{7,}", digits_and_symbols):
+                    continue
+                if re.search(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", part):
+                    continue
+                if re.search(r"linkedin\.com|linkedin", part, re.IGNORECASE):
+                    continue
+                if part:
+                    cleaned.append(part)
+            if cleaned:
+                result.append(" | ".join(cleaned))
+            # If all parts were contact info, skip the line entirely
+            continue
+
+        # Also strip standalone lines that are just an email or phone
+        if re.match(r"^\s*[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\s*$", stripped):
+            continue
+        if re.match(r"^\s*[\+\d\(\)\s\-\.]{7,}\s*$", stripped) and sum(c.isdigit() for c in stripped) >= 7:
+            continue
+        if re.match(r"^\s*(https?://)?(www\.)?linkedin\.com/\S+\s*$", stripped, re.IGNORECASE):
+            continue
+
+        result.append(line)
+    return "\n".join(result)
+
+
 def safe_filename(job_title: str | None, company: str | None, suffix: str) -> str:
     title = re.sub(r"[^\w\s-]", "", job_title or "Resume")[:30].strip()
     comp = re.sub(r"[^\w\s-]", "", company or "")[:20].strip()
@@ -427,6 +475,16 @@ def run_pipeline_job(
         save_json(match_report.model_dump(), output_dir / report_name)
         save_markdown(format_talking_points(talking_points), output_dir / tp_name)
 
+        # ── Recruiter version (contact info stripped) ─────────────────────
+        recruiter_md = strip_contact_info(ats_resume.markdown_content)
+        recruiter_pdf_names = []
+        recruiter_docx_name = safe_filename(job_analysis.job_title, job_analysis.company, "Recruiter.docx")
+        for tpl_name in ALL_TEMPLATE_NAMES:
+            rec_pdf_name = safe_filename(job_analysis.job_title, job_analysis.company, f"Recruiter_{tpl_name.title()}.pdf")
+            generate_resume_pdf(recruiter_md, output_dir / rec_pdf_name, template=tpl_name)
+            recruiter_pdf_names.append(rec_pdf_name)
+        generate_resume_docx(recruiter_md, output_dir / recruiter_docx_name, template=template)
+
         emit(6, 6, "Final Assembly", "done", f"{len(talking_points)} talking points generated")
 
         # ── Post-pipeline enrichment ─────────────────────────────────────────
@@ -562,7 +620,7 @@ def run_pipeline_job(
         })
 
         # ── Persist to DB and upload to R2 ───────────────────────────────────
-        files_list = template_pdf_names + [resume_docx_name, resume_md_name, report_name, tp_name]
+        files_list = template_pdf_names + recruiter_pdf_names + [resume_docx_name, recruiter_docx_name, resume_md_name, report_name, tp_name]
         if cl_pdf_name:
             files_list.append(cl_pdf_name)
         if cl_docx_name:
@@ -579,6 +637,7 @@ def run_pipeline_job(
                 db_job.job_title = job_analysis.job_title
                 db_job.company = job_analysis.company
                 db_job.ats_resume_md = ats_resume.markdown_content
+                db_job.recruiter_resume_md = recruiter_md
                 db_job.talking_points_md = format_talking_points(talking_points)
                 db_job.cover_letter_md = cover_letter_md or None
                 db_job.section_scores = (
@@ -633,6 +692,7 @@ def run_pipeline_job(
                 "company": job_analysis.company,
                 "bullets_rewritten": len(optimised_bullets.bullets),
                 "ats_resume_md": ats_resume.markdown_content,
+                "recruiter_resume_md": recruiter_md,
                 "original_resume_text": resume_text,
                 "talking_points_md": format_talking_points(talking_points),
                 "cover_letter_md": cover_letter_md,
