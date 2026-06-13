@@ -146,6 +146,7 @@ def admin_get_config():
             "default_model": config.default_model,
             "allow_user_model_selection": config.allow_user_model_selection,
             "rate_limit_per_hour": config.rate_limit_per_hour,
+            "daily_job_limit": config.daily_job_limit,
             "updated_at": config.updated_at,
         }
     )
@@ -168,6 +169,11 @@ def admin_save_config():
         config.allow_user_model_selection = bool(data["allow_user_model_selection"])
     if "rate_limit_per_hour" in data:
         config.rate_limit_per_hour = int(data["rate_limit_per_hour"])
+    if "daily_job_limit" in data:
+        try:
+            config.daily_job_limit = max(0, int(data["daily_job_limit"]))
+        except (ValueError, TypeError):
+            return jsonify({"error": "daily_job_limit must be a whole number"}), 400
 
     try:
         AdminConfigManager.save(config)
@@ -176,7 +182,13 @@ def admin_save_config():
         return jsonify({"error": f"Save failed: {e}"}), 500
     changed_keys = [
         k
-        for k in ("api_key", "default_model", "allow_user_model_selection", "rate_limit_per_hour")
+        for k in (
+            "api_key",
+            "default_model",
+            "allow_user_model_selection",
+            "rate_limit_per_hour",
+            "daily_job_limit",
+        )
         if k in data
     ]
     track("admin.config.updated", category="admin", metadata={"changed_keys": changed_keys})

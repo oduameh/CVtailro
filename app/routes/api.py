@@ -26,7 +26,7 @@ from app.services.pipeline import (
     run_pipeline_job,
 )
 from app.services.telemetry import track
-from app.services.usage import usage_tracker
+from app.services.usage import daily_jobs_used, usage_tracker
 from config import DEFAULT_MODEL
 from utils import create_output_dir
 
@@ -58,6 +58,44 @@ def _validate_resume_file(resume_file) -> tuple[str | None, str]:
     elif ext not in (".md", ".txt"):
         return "Unsupported file type. Use PDF, MD, or TXT.", ext
     return None, ext
+
+
+def _daily_budget_response(admin_config, rate_key: str, needed: int = 1):
+    """Return a 429 JSON response if over the per-user daily job cap, else None.
+
+    Admins are exempt. Authenticated users are counted durably from the
+    TailoringJob table; anonymous users via an IP-keyed rolling 24h counter.
+    The cap (``daily_job_limit``, 0 = unlimited) is admin-configurable.
+    """
+    if current_user.is_authenticated and getattr(current_user, "is_admin", False):
+        return None
+    try:
+        limit = int(getattr(admin_config, "daily_job_limit", 0) or 0)
+    except (TypeError, ValueError):
+        limit = 0  # defensive: unparseable/mocked config → treat as unlimited
+    if limit <= 0:
+        return None
+
+    if current_user.is_authenticated:
+        used = daily_jobs_used(current_user.id)
+    else:
+        used = usage_tracker.daily_count(rate_key)
+
+    if used + needed > limit:
+        uid = current_user.id if current_user.is_authenticated else None
+        track(
+            "tailor.request.rejected",
+            category="tailor",
+            user_id=uid,
+            metadata={"reason": "daily_budget", "used_today": used, "daily_limit": limit},
+        )
+        noun = "resume" if limit == 1 else "resumes"
+        msg = (
+            f"You've reached your daily limit of {limit} tailored {noun}. "
+            "The limit resets at midnight UTC — come back tomorrow!"
+        )
+        return jsonify({"error": msg, "daily_limit": limit, "used_today": used}), 429
+    return None
 
 
 @api_bp.route("/api/tailor", methods=["POST"])
@@ -117,8 +155,14 @@ def start_tailoring():
     if error:
         return jsonify({"error": error}), 400
 
+    budget_resp = _daily_budget_response(admin_config, rate_key, needed=1)
+    if budget_resp:
+        return budget_resp
+
     job_id = uuid.uuid4().hex[:16]
     output_dir = create_output_dir(job_id=job_id)
+    if not current_user.is_authenticated:
+        usage_tracker.record_daily(rate_key)
 
     resume_path = output_dir / f"input_resume{resume_ext}"
     resume_file.save(str(resume_path))
@@ -472,10 +516,16 @@ def start_batch_tailoring():
     if error:
         return jsonify({"error": error}), 400
 
+    budget_resp = _daily_budget_response(admin_config, rate_key, needed=len(job_descriptions))
+    if budget_resp:
+        return budget_resp
+
     job_ids = []
     for i, jd in enumerate(job_descriptions):
         job_id = uuid.uuid4().hex[:16]
         output_dir = create_output_dir(job_id=job_id)
+        if not current_user.is_authenticated:
+            usage_tracker.record_daily(rate_key)
 
         resume_file.stream.seek(0)
         resume_path = output_dir / f"input_resume{resume_ext}"

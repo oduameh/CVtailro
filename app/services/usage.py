@@ -16,13 +16,53 @@ from app.services.cache import (
 )
 
 
+def daily_jobs_used(user_id: str) -> int:
+    """Count an authenticated user's tailoring jobs since UTC midnight.
+
+    Counts all statuses — an errored job still consumed API spend. Durable
+    across restarts (reads the TailoringJob table, served by the
+    idx_tailoring_jobs_user_created index), so no Redis dependency.
+    """
+    from datetime import datetime, timezone
+
+    from app.models import TailoringJob
+
+    midnight = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    return TailoringJob.query.filter(
+        TailoringJob.user_id == user_id,
+        TailoringJob.created_at >= midnight,
+    ).count()
+
+
 class UsageTracker:
     """Track API usage per key (user or IP) with hourly rate limiting."""
 
     def __init__(self):
         self._lock = threading.Lock()
         self._requests: dict[str, list[float]] = {}
+        self._daily: dict[str, list[float]] = {}
         self._total = 0
+
+    def daily_count(self, key: str) -> int:
+        """Jobs recorded for *key* in the rolling 24h window (anonymous/IP path)."""
+        if redis_available():
+            return rate_limit_count("daily_usage", key, 86400)
+        with self._lock:
+            now = time.time()
+            times = [t for t in self._daily.get(key, []) if t > now - 86400]
+            self._daily[key] = times
+            return len(times)
+
+    def record_daily(self, key: str) -> None:
+        """Record one job for *key* in the rolling 24h window (anonymous/IP path)."""
+        if redis_available():
+            rate_limit_incr("daily_usage", key, 86400)
+            return
+        with self._lock:
+            now = time.time()
+            times = [t for t in self._daily.get(key, []) if t > now - 86400]
+            times.append(now)
+            self._daily[key] = times
 
     def check_and_record(self, key: str, limit: int) -> bool:
         """Return True if the request is allowed, False if rate-limited."""

@@ -414,6 +414,7 @@ class TestInputValidation:
             m.return_value.allow_user_model_selection = False
             m.return_value.default_model = "gpt-4o-mini"
             m.return_value.rate_limit_per_hour = 100
+            m.return_value.daily_job_limit = 0
             data = {
                 "resume": (io.BytesIO(b"x" * 500), "resume.txt"),
                 "job_description": "<script>alert(1)</script>" + "x" * 50,
@@ -429,6 +430,7 @@ class TestInputValidation:
             m.return_value.allow_user_model_selection = False
             m.return_value.default_model = "gpt-4o-mini"
             m.return_value.rate_limit_per_hour = 100
+            m.return_value.daily_job_limit = 0
             data = {
                 "resume": (io.BytesIO(b"x" * 500), "resume.txt"),
                 "job_description": "x" * 50001,
@@ -444,6 +446,7 @@ class TestInputValidation:
             m.return_value.allow_user_model_selection = False
             m.return_value.default_model = "gpt-4o-mini"
             m.return_value.rate_limit_per_hour = 100
+            m.return_value.daily_job_limit = 0
             data = {
                 "resume": (io.BytesIO(b"x" * 500), "resume.txt"),
                 "job_description": "x" * 100,
@@ -459,6 +462,7 @@ class TestInputValidation:
             m.return_value.allow_user_model_selection = False
             m.return_value.default_model = "gpt-4o-mini"
             m.return_value.rate_limit_per_hour = 100
+            m.return_value.daily_job_limit = 0
             data = {
                 "resume": (io.BytesIO(b"x" * 500), "resume.txt"),
                 "job_description": "x" * 100,
@@ -554,6 +558,7 @@ class TestFileUpload:
             m.return_value.allow_user_model_selection = False
             m.return_value.default_model = "gpt-4o-mini"
             m.return_value.rate_limit_per_hour = 100
+            m.return_value.daily_job_limit = 0
             fake_pdf = io.BytesIO(b"NOT A PDF FILE CONTENT HERE" + b"x" * 500)
             data = {
                 "resume": (fake_pdf, "resume.pdf"),
@@ -570,6 +575,7 @@ class TestFileUpload:
             m.return_value.allow_user_model_selection = False
             m.return_value.default_model = "gpt-4o-mini"
             m.return_value.rate_limit_per_hour = 100
+            m.return_value.daily_job_limit = 0
             data = {
                 "resume": (io.BytesIO(b"x" * 500), "resume.exe"),
                 "job_description": "x" * 100,
