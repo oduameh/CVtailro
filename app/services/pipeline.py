@@ -7,6 +7,7 @@ emits progress events through a queue, and persists results to the DB.
 from __future__ import annotations
 
 import gc
+import hashlib
 import logging
 import mimetypes
 import re
@@ -27,16 +28,26 @@ from agents.resume_parser import ResumeParserAgent
 from analytics import pipeline_analytics
 from app.extensions import db
 from app.models import JobFile, TailoringJob
+from app.services.cache import cache_get, cache_set
 from app.services.telemetry import track_with_app
 from config import AppConfig
 from docx_generator import generate_resume_docx
-from models import MatchReport, RewriteMode
+from models import JobAnalysis, MatchReport, RewriteMode
 from pdf_generator import ALL_TEMPLATE_NAMES, generate_resume_pdf
 from similarity import resume_job_similarity
 from storage import r2_storage
 from utils import load_resume, save_json, save_markdown, setup_logging
 
 logger = logging.getLogger("cvtailro.pipeline")
+
+# Job-intelligence (Stage 1) cache — repeated tailoring against the same JD
+# (very common when users iterate) reuses the LLM analysis instead of re-paying.
+JD_INTEL_CACHE_TTL = 7 * 24 * 3600  # 7 days
+
+
+def _jd_cache_key(job_text: str, model: str) -> str:
+    return "jdintel:" + hashlib.sha256(f"{model}\n{job_text}".encode()).hexdigest()
+
 
 # ── Thread-safe job storage ──────────────────────────────────────────────────
 jobs: dict[str, dict] = {}
@@ -241,17 +252,33 @@ def run_pipeline_job(
         def run_stage1():
             nonlocal job_analysis
             try:
-                agent1 = JobIntelligenceAgent(pipeline_config)
-                job_analysis = agent1.run(job_text)
+                cache_key = _jd_cache_key(job_text, model)
+                from_cache = False
+                cached = cache_get(cache_key)
+                if cached:
+                    try:
+                        job_analysis = JobAnalysis.model_validate_json(cached)
+                        from_cache = True
+                    except Exception as ce:
+                        logger.warning(f"JD intel cache hit failed to parse, re-running: {ce}")
+
+                if job_analysis is None:
+                    agent1 = JobIntelligenceAgent(pipeline_config)
+                    job_analysis = agent1.run(job_text)
+                    try:
+                        cache_set(cache_key, job_analysis.model_dump_json(), ttl=JD_INTEL_CACHE_TTL)
+                    except Exception as se:
+                        logger.warning(f"JD intel cache store failed: {se}")
+
                 save_json(job_analysis.model_dump(), output_dir / "01_job_analysis.json")
-                emit(
-                    1,
-                    6,
-                    "Job Intelligence",
-                    "done",
+                detail = (
                     f"{len(job_analysis.required_skills)} required skills, "
-                    f"{len(job_analysis.tools)} tools detected",
+                    f"{len(job_analysis.tools)} tools detected"
                 )
+                if from_cache:
+                    detail += " (cached)"
+                    _te("tailor.stage1.cache_hit", metadata={"model": model})
+                emit(1, 6, "Job Intelligence", "done", detail)
             except Exception as e:
                 stage_errors.append(e)
                 emit(1, 6, "Job Intelligence", "error", str(e))
