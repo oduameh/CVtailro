@@ -15,13 +15,16 @@ tracker_bp = Blueprint("tracker", __name__)
 
 
 def _parse_date(value: str | None):
-    """Parse ISO date string, returning None on invalid input."""
+    """Parse ISO date string. Returns None for empty input, raises ValueError if invalid."""
     if not value:
         return None
     try:
         return datetime.fromisoformat(value)
     except (ValueError, TypeError):
-        return None
+        raise ValueError(f"Invalid date: {value!r}") from None
+
+
+_DATE_ERROR = {"error": "Invalid date format — use ISO 8601 (YYYY-MM-DD)"}
 
 
 @tracker_bp.route("/api/tracker", methods=["GET"])
@@ -64,6 +67,11 @@ def create_application():
     if not company or not job_title:
         return jsonify({"error": "Company and job title are required"}), 400
 
+    try:
+        applied_date = _parse_date(data.get("applied_date"))
+    except ValueError:
+        return jsonify(_DATE_ERROR), 400
+
     app = JobApplication(
         user_id=current_user.id,
         company=company,
@@ -72,12 +80,16 @@ def create_application():
         url=data.get("url"),
         notes=data.get("notes"),
         tailoring_job_id=data.get("tailoring_job_id"),
-        applied_date=_parse_date(data.get("applied_date")),
+        applied_date=applied_date,
     )
     db.session.add(app)
     db.session.commit()
-    track("tracker.application.created", category="feature", user_id=current_user.id,
-          metadata={"status": app.status, "has_tailoring_job": bool(app.tailoring_job_id)})
+    track(
+        "tracker.application.created",
+        category="feature",
+        user_id=current_user.id,
+        metadata={"status": app.status, "has_tailoring_job": bool(app.tailoring_job_id)},
+    )
     return jsonify({"id": app.id, "status": "created"}), 201
 
 
@@ -95,15 +107,23 @@ def update_application(app_id):
     for field in ("company", "job_title", "status", "url", "notes"):
         if field in data:
             setattr(app, field, data[field])
-    if "applied_date" in data:
-        app.applied_date = _parse_date(data.get("applied_date"))
-    if "interview_date" in data:
-        app.interview_date = _parse_date(data.get("interview_date"))
+    try:
+        if "applied_date" in data:
+            app.applied_date = _parse_date(data.get("applied_date"))
+        if "interview_date" in data:
+            app.interview_date = _parse_date(data.get("interview_date"))
+    except ValueError:
+        db.session.rollback()
+        return jsonify(_DATE_ERROR), 400
 
     app.updated_at = datetime.now(timezone.utc)
     db.session.commit()
-    track("tracker.application.updated", category="feature", user_id=current_user.id,
-          metadata={"new_status": app.status})
+    track(
+        "tracker.application.updated",
+        category="feature",
+        user_id=current_user.id,
+        metadata={"new_status": app.status},
+    )
     return jsonify({"id": app.id, "status": "updated"})
 
 

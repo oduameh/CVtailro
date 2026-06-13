@@ -57,6 +57,22 @@ pipeline_queue_depth = 0
 pipeline_queue_lock = threading.Lock()
 
 
+def current_queue_depth() -> int:
+    """Live pipeline queue depth.
+
+    Callers must use this rather than importing ``pipeline_queue_depth``
+    directly — ``from ... import`` binds the int by value, so the imported
+    copy never reflects updates made here.
+    """
+    with pipeline_queue_lock:
+        return pipeline_queue_depth
+
+
+def queue_is_full() -> bool:
+    """True when the pipeline queue has no capacity for another job."""
+    return current_queue_depth() >= MAX_QUEUE_DEPTH
+
+
 def cleanup_old_jobs(ttl: int = JOB_TTL_SECONDS) -> None:
     """Remove completed jobs older than *ttl* seconds from in-memory storage."""
     cutoff = time.time() - ttl
@@ -480,7 +496,9 @@ def run_pipeline_job(
         recruiter_pdf_names = []
         recruiter_docx_name = safe_filename(job_analysis.job_title, job_analysis.company, "Recruiter.docx")
         for tpl_name in ALL_TEMPLATE_NAMES:
-            rec_pdf_name = safe_filename(job_analysis.job_title, job_analysis.company, f"Recruiter_{tpl_name.title()}.pdf")
+            rec_pdf_name = safe_filename(
+                job_analysis.job_title, job_analysis.company, f"Recruiter_{tpl_name.title()}.pdf"
+            )
             generate_resume_pdf(recruiter_md, output_dir / rec_pdf_name, template=tpl_name)
             recruiter_pdf_names.append(rec_pdf_name)
         generate_resume_docx(recruiter_md, output_dir / recruiter_docx_name, template=template)
@@ -607,20 +625,27 @@ def run_pipeline_job(
                 f"${job_stats.get('estimated_cost_usd', 0):.4f} est. cost"
             )
 
-        _te("tailor.job.completed", metadata={
-            "duration_s": round(total_elapsed, 1),
-            "model": model,
-            "total_tokens": job_stats.get("total_tokens", 0) if job_stats else 0,
-            "api_calls": job_stats.get("api_calls", 0) if job_stats else 0,
-            "retries": job_stats.get("retries", 0) if job_stats else 0,
-            "estimated_cost_usd": job_stats.get("estimated_cost_usd", 0) if job_stats else 0,
-            "tailored_match_score": tailored_match_score,
-            "original_match_score": gap_report.match_score,
-            "queue_wait_ms": queue_wait_ms,
-        })
+        _te(
+            "tailor.job.completed",
+            metadata={
+                "duration_s": round(total_elapsed, 1),
+                "model": model,
+                "total_tokens": job_stats.get("total_tokens", 0) if job_stats else 0,
+                "api_calls": job_stats.get("api_calls", 0) if job_stats else 0,
+                "retries": job_stats.get("retries", 0) if job_stats else 0,
+                "estimated_cost_usd": job_stats.get("estimated_cost_usd", 0) if job_stats else 0,
+                "tailored_match_score": tailored_match_score,
+                "original_match_score": gap_report.match_score,
+                "queue_wait_ms": queue_wait_ms,
+            },
+        )
 
         # ── Persist to DB and upload to R2 ───────────────────────────────────
-        files_list = template_pdf_names + recruiter_pdf_names + [resume_docx_name, recruiter_docx_name, resume_md_name, report_name, tp_name]
+        files_list = (
+            template_pdf_names
+            + recruiter_pdf_names
+            + [resume_docx_name, recruiter_docx_name, resume_md_name, report_name, tp_name]
+        )
         if cl_pdf_name:
             files_list.append(cl_pdf_name)
         if cl_docx_name:
@@ -718,7 +743,10 @@ def run_pipeline_job(
         logging.getLogger("cvtailro.pipeline").exception("Pipeline failed")
         error_msg = str(e)
         pipeline_analytics.complete_job(job_id)
-        _te("tailor.job.failed", metadata={"model": model, "error": error_msg[:500], "queue_wait_ms": queue_wait_ms})
+        _te(
+            "tailor.job.failed",
+            metadata={"model": model, "error": error_msg[:500], "queue_wait_ms": queue_wait_ms},
+        )
         import traceback
 
         with pipeline_errors_lock:

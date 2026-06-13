@@ -19,12 +19,10 @@ from app.models import TailoringJob
 from app.services.admin_config import AdminConfigManager
 from app.services.file_service import serve_download
 from app.services.pipeline import (
-    MAX_QUEUE_DEPTH,
     cleanup_old_jobs,
     jobs,
     jobs_lock,
-    pipeline_queue_depth,
-    pipeline_queue_lock,
+    queue_is_full,
     run_pipeline_job,
 )
 from app.services.telemetry import track
@@ -82,10 +80,9 @@ def start_tailoring():
     else:
         model = admin_config.default_model or DEFAULT_MODEL
 
-    with pipeline_queue_lock:
-        if pipeline_queue_depth >= MAX_QUEUE_DEPTH:
-            track("tailor.request.rejected", category="tailor", user_id=uid, metadata={"reason": "queue_full"})
-            return jsonify({"error": "Server is at capacity. Please try again in a few minutes."}), 503
+    if queue_is_full():
+        track("tailor.request.rejected", category="tailor", user_id=uid, metadata={"reason": "queue_full"})
+        return jsonify({"error": "Server is at capacity. Please try again in a few minutes."}), 503
 
     client_ip = request.remote_addr or "unknown"
     rate_key = f"user:{current_user.id}" if current_user.is_authenticated else f"ip:{client_ip}"
@@ -158,8 +155,13 @@ def start_tailoring():
     )
     thread.start()
 
-    track("tailor.job.created", category="tailor", user_id=uid, job_id=job_id,
-          metadata={"model": model, "mode": mode, "template": template, "resume_ext": resume_ext})
+    track(
+        "tailor.job.created",
+        category="tailor",
+        user_id=uid,
+        job_id=job_id,
+        metadata={"model": model, "mode": mode, "template": template, "resume_ext": resume_ext},
+    )
     return jsonify({"job_id": job_id})
 
 
@@ -418,8 +420,19 @@ def start_batch_tailoring():
 
     admin_config = AdminConfigManager.load()
     api_key = admin_config.api_key.strip()
+    uid = current_user.id if current_user.is_authenticated else None
     if not api_key:
         return jsonify({"error": "Service not configured"}), 400
+
+    if queue_is_full():
+        track("tailor.request.rejected", category="tailor", user_id=uid, metadata={"reason": "queue_full"})
+        return jsonify({"error": "Server is at capacity. Please try again in a few minutes."}), 503
+
+    client_ip = request.remote_addr or "unknown"
+    rate_key = f"user:{current_user.id}" if current_user.is_authenticated else f"ip:{client_ip}"
+    if not usage_tracker.check_and_record(rate_key, admin_config.rate_limit_per_hour):
+        track("tailor.request.rejected", category="tailor", user_id=uid, metadata={"reason": "rate_limited"})
+        return jsonify({"error": "Rate limit exceeded. Please try again later."}), 429
 
     if "resume" not in request.files:
         return jsonify({"error": "No resume file uploaded"}), 400
@@ -432,10 +445,15 @@ def start_batch_tailoring():
     if not job_descriptions_raw:
         return jsonify({"error": "No job descriptions provided"}), 400
 
-    # Parse job descriptions separated by "---"
-    job_descriptions = [
-        jd.strip() for jd in job_descriptions_raw.split("---") if jd.strip() and len(jd.strip()) >= 50
-    ]
+    # Parse job descriptions separated by "---" (same sanitisation as /api/tailor)
+    job_descriptions = []
+    for jd in job_descriptions_raw.split("---"):
+        jd = re.sub(r"<[^>]+>", "", jd).strip()
+        if not jd or len(jd) < 50:
+            continue
+        if len(jd) > 50000:
+            return jsonify({"error": "A job description is too long (maximum 50,000 characters)"}), 400
+        job_descriptions.append(jd)
     if len(job_descriptions) < 2:
         return jsonify({"error": "Provide at least 2 job descriptions separated by ---"}), 400
     if len(job_descriptions) > 5:
@@ -443,6 +461,12 @@ def start_batch_tailoring():
 
     mode = request.form.get("mode", "conservative")
     template = request.form.get("template", "modern")
+    if mode not in ("conservative", "aggressive"):
+        return jsonify({"error": "Invalid mode"}), 400
+    from pdf_generator import ALL_TEMPLATE_NAMES
+
+    if template not in ALL_TEMPLATE_NAMES:
+        return jsonify({"error": "Invalid template"}), 400
 
     error, resume_ext = _validate_resume_file(resume_file)
     if error:
@@ -500,8 +524,13 @@ def start_batch_tailoring():
 def download_file(job_id: str, filename: str):
     uid = current_user.id if current_user.is_authenticated else None
     ext = Path(filename).suffix.lower()
-    track("download.requested", category="download", user_id=uid, job_id=job_id,
-          metadata={"filename_ext": ext, "filename": filename})
+    track(
+        "download.requested",
+        category="download",
+        user_id=uid,
+        job_id=job_id,
+        metadata={"filename_ext": ext, "filename": filename},
+    )
     return serve_download(job_id, filename)
 
 
