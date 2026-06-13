@@ -128,16 +128,24 @@ def start_tailoring():
         track("tailor.request.rejected", category="tailor", user_id=uid, metadata={"reason": "rate_limited"})
         return jsonify({"error": "Rate limit exceeded. Please try again later."}), 429
 
-    if "resume" not in request.files:
+    # Resume source: an uploaded file OR a previously saved resume (saved_resume_id).
+    saved_resume_id = (request.form.get("saved_resume_id") or "").strip()
+    resume_file = request.files.get("resume")
+    saved = None
+    if saved_resume_id:
+        if not current_user.is_authenticated:
+            return jsonify({"error": "Sign in to use saved resumes"}), 401
+        from app.models import SavedResume
+
+        saved = SavedResume.query.filter_by(id=saved_resume_id, user_id=current_user.id).first()
+        if saved is None or not (saved.resume_text or "").strip():
+            return jsonify({"error": "Saved resume not found"}), 404
+    elif resume_file is None or not resume_file.filename:
         return jsonify({"error": "No resume file uploaded"}), 400
 
-    resume_file = request.files["resume"]
     job_text = request.form.get("job_description", "").strip()
     mode = request.form.get("mode", "conservative")
     template = request.form.get("template", "modern")
-
-    if not resume_file.filename:
-        return jsonify({"error": "No resume file selected"}), 400
 
     job_text = re.sub(r"<[^>]+>", "", job_text)
     if len(job_text) > 50000:
@@ -151,9 +159,12 @@ def start_tailoring():
     if template not in ALL_TEMPLATE_NAMES:
         return jsonify({"error": "Invalid template"}), 400
 
-    error, resume_ext = _validate_resume_file(resume_file)
-    if error:
-        return jsonify({"error": error}), 400
+    if saved_resume_id:
+        resume_ext = ".txt"
+    else:
+        error, resume_ext = _validate_resume_file(resume_file)
+        if error:
+            return jsonify({"error": error}), 400
 
     budget_resp = _daily_budget_response(admin_config, rate_key, needed=1)
     if budget_resp:
@@ -165,7 +176,10 @@ def start_tailoring():
         usage_tracker.record_daily(rate_key)
 
     resume_path = output_dir / f"input_resume{resume_ext}"
-    resume_file.save(str(resume_path))
+    if saved_resume_id:
+        resume_path.write_text(saved.resume_text, encoding="utf-8")
+    else:
+        resume_file.save(str(resume_path))
     (output_dir / "input_job_description.txt").write_text(job_text, encoding="utf-8")
 
     user_id = current_user.id if current_user.is_authenticated else None
@@ -204,7 +218,13 @@ def start_tailoring():
         category="tailor",
         user_id=uid,
         job_id=job_id,
-        metadata={"model": model, "mode": mode, "template": template, "resume_ext": resume_ext},
+        metadata={
+            "model": model,
+            "mode": mode,
+            "template": template,
+            "resume_ext": resume_ext,
+            "resume_source": "saved" if saved_resume_id else "upload",
+        },
     )
     return jsonify({"job_id": job_id})
 

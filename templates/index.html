@@ -4537,14 +4537,19 @@
         }
     }
 
-    function renderResultsFromData(data, jobId) {
-        // data should contain the result object (same shape as /api/result response)
+    function renderResultsFromData(data, jobId, opts) {
+        // data should contain the result object (same shape as /api/result response).
+        // opts.animate      → animated score counter + celebration glow (live tailoring)
+        // opts.keepProgress → leave the progress card visible above results (live tailoring)
+        opts = opts || {};
         var s = data.result || data;
 
         try {
             // Reset UI state
             document.getElementById('formSection').style.display = 'none';
-            document.getElementById('progressSection').classList.remove('active');
+            if (!opts.keepProgress) {
+                document.getElementById('progressSection').classList.remove('active');
+            }
 
             // Clean up dynamically inserted elements from previous render
             var prevSectionScores = document.querySelector('.score-section > div[style*="border-top"]');
@@ -4553,9 +4558,26 @@
             if (prevQuality) prevQuality.remove();
 
             // --- Circular Score ---
-            var scoreVal = (s.match_score || 0).toFixed(0);
-            var scoreNum = parseFloat(scoreVal);
-            document.getElementById("matchScore").textContent = scoreVal + "%";
+            var primaryScore = s.tailored_match_score != null ? s.tailored_match_score : (s.match_score || 0);
+            var scoreNum = parseFloat(primaryScore.toFixed(0));
+            var scoreEl = document.getElementById("matchScore");
+            if (opts.animate) {
+                // Animate counter from 0 to score
+                var counterStart = null;
+                var counterDuration = 1200;
+                (function() {
+                    function animateScoreCounter(ts) {
+                        if (!counterStart) counterStart = ts;
+                        var progress = Math.min((ts - counterStart) / counterDuration, 1);
+                        var eased = 1 - Math.pow(1 - progress, 3);
+                        scoreEl.textContent = Math.round(scoreNum * eased) + "%";
+                        if (progress < 1) requestAnimationFrame(animateScoreCounter);
+                    }
+                    requestAnimationFrame(animateScoreCounter);
+                })();
+            } else {
+                scoreEl.textContent = scoreNum + "%";
+            }
 
             var circumference = 2 * Math.PI * 68;
             var offset = circumference - (scoreNum / 100) * circumference;
@@ -4565,12 +4587,18 @@
             ring.style.stroke = scoreColor;
             setTimeout(function() { ring.style.strokeDashoffset = offset; }, 100);
 
+            // Celebration glow for high scores (live flow only)
+            if (opts.animate && scoreNum >= 80) {
+                var wrap = document.querySelector('.score-ring-wrap');
+                if (wrap) { wrap.classList.add('celebrate'); setTimeout(function() { wrap.classList.remove('celebrate'); }, 1500); }
+            }
+
             // Keyword Match
             var kwMatchPct = Math.round((s.cosine_similarity || 0) * 100);
             document.getElementById("keywordMatch").textContent = kwMatchPct + "%";
 
             // Keywords Added
-            var keywordsAddedCount = typeof s.matched_keywords_count === 'number' ? s.matched_keywords_count : Math.max(1, Math.round((s.match_score || 0) * 0.3));
+            var keywordsAddedCount = typeof s.matched_keywords_count === 'number' ? s.matched_keywords_count : Math.max(1, Math.round(primaryScore * 0.3));
             document.getElementById("keywordsAdded").textContent = keywordsAddedCount;
 
             // Keywords chips
@@ -4775,10 +4803,10 @@
             if (isPremiumUser) {
                 document.getElementById("previewCard").style.display = "block";
                 document.getElementById("previewContent").innerHTML = renderMarkdown(currentResumeMd);
-                setPreviewMode('preview');
             } else {
                 document.getElementById("previewCard").style.display = "none";
             }
+            setPreviewMode('preview');
 
             // --- Related Articles ---
             loadRelatedArticles(s.job_title || '');
@@ -4788,9 +4816,14 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
             setTimeout(function() { openDownloadPopup(); }, 1500);
         } catch(renderErr) {
-            console.error("Failed to render history results:", renderErr);
-            showError("Results loaded but failed to display.");
-            document.getElementById('formSection').style.display = '';
+            console.error("Failed to render results:", renderErr);
+            if (opts.animate) {
+                showError("Results loaded but failed to display. Try downloading the files directly.");
+                document.getElementById("resultsSection").classList.add("active");
+            } else {
+                showError("Results loaded but failed to display.");
+                document.getElementById('formSection').style.display = '';
+            }
         }
     }
 
@@ -5350,275 +5383,12 @@
             }
             return;
         }
-        var s = d.result;
-        try {
-        // Clean up dynamically inserted elements from previous render
-        var prevSectionScores = document.querySelector('.score-section > div[style*="border-top"]');
-        if (prevSectionScores) prevSectionScores.remove();
-        var prevQuality = document.querySelector('.score-section + .card[style*="margin-top:20px"]');
-        if (prevQuality) prevQuality.remove();
-
-        // --- Circular Score with animated counter ---
-        var primaryScore = s.tailored_match_score != null ? s.tailored_match_score : (s.match_score || 0);
-        var scoreNum = parseFloat(primaryScore.toFixed(0));
-        var scoreEl = document.getElementById("matchScore");
-
-        // Animate counter from 0 to score
-        var counterStart = null;
-        var counterDuration = 1200;
-        function animateScoreCounter(ts) {
-            if (!counterStart) counterStart = ts;
-            var progress = Math.min((ts - counterStart) / counterDuration, 1);
-            var eased = 1 - Math.pow(1 - progress, 3);
-            scoreEl.textContent = Math.round(scoreNum * eased) + "%";
-            if (progress < 1) requestAnimationFrame(animateScoreCounter);
-        }
-        requestAnimationFrame(animateScoreCounter);
-
-        // Animate the ring
-        var circumference = 2 * Math.PI * 68;
-        var offset = circumference - (scoreNum / 100) * circumference;
-        var ring = document.getElementById("scoreRing");
-        ring.style.strokeDasharray = circumference;
-        var scoreColor = scoreNum >= 80 ? 'var(--score-high)' : scoreNum >= 50 ? 'var(--score-mid)' : 'var(--score-low)';
-        ring.style.stroke = scoreColor;
-        setTimeout(function() {
-            ring.style.strokeDashoffset = offset;
-        }, 100);
-
-        // Celebration glow for high scores
-        if (scoreNum >= 80) {
-            var wrap = document.querySelector('.score-ring-wrap');
-            if (wrap) { wrap.classList.add('celebrate'); setTimeout(function() { wrap.classList.remove('celebrate'); }, 1500); }
-        }
-
-        // Keyword Match
-        var kwMatchPct = Math.round(s.cosine_similarity * 100);
-        document.getElementById("keywordMatch").textContent = kwMatchPct + "%";
-
-        // Keywords Added
-        var totalKeywords = (s.missing_keywords ? s.missing_keywords.length : 0);
-        var keywordsAddedCount;
-        if (typeof s.matched_keywords_count === 'number') {
-            keywordsAddedCount = s.matched_keywords_count;
-        } else {
-            keywordsAddedCount = Math.max(1, Math.round(primaryScore * 0.3));
-        }
-        document.getElementById("keywordsAdded").textContent = keywordsAddedCount;
-
-        // Keywords chips
-        if (s.missing_keywords && s.missing_keywords.length > 0) {
-            document.getElementById("kwSection").style.display = "block";
-            document.getElementById("kwList").innerHTML = s.missing_keywords.map(function(k) {
-                return '<span class="kw kw-missing">' + escapeHtml(k) + '</span>';
-            }).join("");
-        }
-
-        // Section scores (if available)
-        if (s.section_scores && Object.keys(s.section_scores).length > 0) {
-            var ssHtml = '<div style="margin-top:24px;padding-top:24px;border-top:1px solid var(--border);">';
-            ssHtml += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-secondary);margin-bottom:12px;">Section Match Breakdown</div>';
-            ssHtml += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">';
-            var sectionNames = {summary:'Summary',experience:'Experience',skills:'Skills',education:'Education'};
-            for (var sec in sectionNames) {
-                var pct = Math.round(s.section_scores[sec] || 0);
-                var barColor = pct >= 70 ? 'var(--score-high)' : pct >= 40 ? 'var(--score-mid)' : 'var(--score-low)';
-                ssHtml += '<div style="text-align:center;padding:12px 8px;background:var(--primary-bg);border-radius:12px;">';
-                ssHtml += '<div style="font-size:20px;font-weight:800;color:' + barColor + ';">' + pct + '%</div>';
-                ssHtml += '<div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">' + sectionNames[sec] + '</div>';
-                ssHtml += '</div>';
-            }
-            ssHtml += '</div></div>';
-            document.querySelector('.score-section').insertAdjacentHTML('beforeend', ssHtml);
-        }
-
-        // Resume quality (if available)
-        if (s.resume_quality) {
-            var rq = s.resume_quality;
-            var qualityHtml = '<div class="card" style="margin-top:20px;">';
-            qualityHtml += '<h2 style="font-size:16px;font-weight:700;margin-bottom:16px;">Resume Quality Analysis</h2>';
-            qualityHtml += '<div style="display:flex;gap:16px;flex-wrap:wrap;">';
-            qualityHtml += '<div style="flex:1;min-width:120px;text-align:center;padding:16px;background:var(--primary-bg);border-radius:12px;">';
-            qualityHtml += '<div style="font-size:28px;font-weight:800;color:var(--text-secondary);">' + (rq.before ? rq.before.score : '--') + '</div>';
-            qualityHtml += '<div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">BEFORE</div></div>';
-            qualityHtml += '<div style="flex:1;min-width:120px;text-align:center;padding:16px;background:var(--primary-bg);border-radius:12px;">';
-            qualityHtml += '<div style="font-size:28px;font-weight:800;color:var(--primary);">' + (rq.after ? rq.after.score : '--') + '</div>';
-            qualityHtml += '<div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">AFTER</div></div>';
-            qualityHtml += '<div style="flex:1;min-width:120px;text-align:center;padding:16px;background:rgba(0,184,148,0.08);border-radius:12px;">';
-            qualityHtml += '<div style="font-size:28px;font-weight:800;color:var(--score-high);">+' + (rq.improvement || 0) + '</div>';
-            qualityHtml += '<div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">IMPROVEMENT</div></div>';
-            qualityHtml += '</div>';
-            // Detail drill-down
-            if (rq.before && rq.after) {
-                qualityHtml += '<div style="margin-top:16px;"><div>';
-                qualityHtml += '<h3 class="collapsible-header" onclick="toggleCollapsible(this)" style="font-size:13px;font-weight:600;color:var(--text-secondary);cursor:pointer;">Quality Details <span class="collapsible-chevron">&#9662;</span></h3>';
-                qualityHtml += '</div><div class="collapsible-content collapsed">';
-                qualityHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;">';
-                qualityHtml += '<div style="padding:12px;background:var(--primary-bg);border-radius:8px;"><div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">METRICS USAGE</div>';
-                qualityHtml += '<div style="font-size:13px;color:var(--text);">Before: ' + (rq.before.metrics_pct || 0) + '% of bullets</div>';
-                qualityHtml += '<div style="font-size:13px;color:var(--primary);">After: ' + (rq.after.metrics_pct || 0) + '% of bullets</div></div>';
-                qualityHtml += '<div style="padding:12px;background:var(--primary-bg);border-radius:8px;"><div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">BULLET COUNT</div>';
-                qualityHtml += '<div style="font-size:13px;color:var(--text);">' + ((rq.after.metrics_pct || 0) > (rq.before.metrics_pct || 0) ? 'More bullets now include numbers and metrics' : 'Consider adding more quantifiable results') + '</div></div>';
-                qualityHtml += '</div>';
-                if (rq.after.weak_verbs && rq.after.weak_verbs.length > 0) {
-                    qualityHtml += '<div style="margin-top:12px;padding:12px;background:rgba(239,68,68,0.05);border-radius:8px;border:1px solid rgba(239,68,68,0.15);">';
-                    qualityHtml += '<div style="font-size:11px;font-weight:600;color:#ef4444;margin-bottom:6px;">WEAK VERBS REMAINING</div>';
-                    qualityHtml += '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
-                    rq.after.weak_verbs.forEach(function(v) { qualityHtml += '<span style="padding:2px 8px;background:rgba(239,68,68,0.1);border-radius:4px;font-size:12px;color:#ef4444;">' + escapeHtml(v) + '</span>'; });
-                    qualityHtml += '</div></div>';
-                }
-                if (rq.after.filler_words && rq.after.filler_words.length > 0) {
-                    qualityHtml += '<div style="margin-top:8px;padding:12px;background:rgba(245,158,11,0.05);border-radius:8px;border:1px solid rgba(245,158,11,0.15);">';
-                    qualityHtml += '<div style="font-size:11px;font-weight:600;color:#f59e0b;margin-bottom:6px;">FILLER WORDS REMAINING</div>';
-                    qualityHtml += '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
-                    rq.after.filler_words.forEach(function(v) { qualityHtml += '<span style="padding:2px 8px;background:rgba(245,158,11,0.1);border-radius:4px;font-size:12px;color:#f59e0b;">' + escapeHtml(v) + '</span>'; });
-                    qualityHtml += '</div></div>';
-                }
-                qualityHtml += '</div></div>';
-            }
-            qualityHtml += '</div>';
-            document.querySelector('.score-section').insertAdjacentHTML('afterend', qualityHtml);
-        }
-
-        // Keyword Density (if available)
-        if (s.keyword_density && s.keyword_density.keywords) {
-            var kd = s.keyword_density;
-            var kdHtml = '<div class="card" style="margin-top:20px;">';
-            kdHtml += '<h2 class="collapsible-header" onclick="toggleCollapsible(this)">Keyword Density Analysis <span class="collapsible-chevron">&#9662;</span></h2>';
-            kdHtml += '<div class="collapsible-content">';
-            kdHtml += '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">';
-            kdHtml += '<div style="flex:1;min-width:100px;text-align:center;padding:12px;background:var(--primary-bg);border-radius:12px;"><div style="font-size:24px;font-weight:800;color:var(--text);">' + kd.total + '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">JD Keywords</div></div>';
-            kdHtml += '<div style="flex:1;min-width:100px;text-align:center;padding:12px;background:var(--primary-bg);border-radius:12px;"><div style="font-size:24px;font-weight:800;color:var(--text-secondary);">' + kd.matched_before + '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Matched Before</div></div>';
-            kdHtml += '<div style="flex:1;min-width:100px;text-align:center;padding:12px;background:var(--primary-bg);border-radius:12px;"><div style="font-size:24px;font-weight:800;color:var(--primary);">' + kd.matched_after + '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Matched After</div></div>';
-            kdHtml += '<div style="flex:1;min-width:100px;text-align:center;padding:12px;background:rgba(0,184,148,0.08);border-radius:12px;"><div style="font-size:24px;font-weight:800;color:var(--score-high);">+' + kd.improvement + '%</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Improvement</div></div>';
-            kdHtml += '</div>';
-            kdHtml += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
-            kd.keywords.forEach(function(kw) {
-                var statusColor = kw.status === 'matched' ? 'var(--primary)' : kw.status === 'improved' ? 'var(--score-high)' : kw.status === 'new' ? '#8b5cf6' : '#ef4444';
-                var statusBg = kw.status === 'matched' ? 'var(--primary-bg)' : kw.status === 'improved' ? 'rgba(0,184,148,0.08)' : kw.status === 'new' ? 'rgba(139,92,246,0.08)' : 'rgba(239,68,68,0.08)';
-                var statusIcon = kw.status === 'matched' ? '&#10003;' : kw.status === 'improved' ? '&#9650;' : kw.status === 'new' ? '&#10010;' : '&#10007;';
-                kdHtml += '<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;color:' + statusColor + ';background:' + statusBg + ';border:1px solid ' + statusColor + '22;">' + statusIcon + ' ' + escapeHtml(kw.keyword) + '</span>';
-            });
-            kdHtml += '</div>';
-            kdHtml += '<div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--text-secondary);">';
-            kdHtml += '<span>&#10003; Matched</span><span style="color:var(--score-high);">&#9650; Improved</span><span style="color:#8b5cf6;">&#10010; New</span><span style="color:#ef4444;">&#10007; Missing</span>';
-            kdHtml += '</div></div></div>';
-            document.querySelector('.score-section').parentElement.insertAdjacentHTML('afterend', kdHtml);
-        }
-
-        // --- Downloads ---
-        var secondaryHtml = '';
-        var seenCats = {};
-
-        // Store for template download function
-        currentJobId = jobId;
-
-        // Use file list from result, or fallback to standard files (DB fallback has empty files[])
-        var fileList = (s.files && s.files.length > 0) ? s.files : [
-            "tailored_resume_ats.pdf",
-            "tailored_resume_ats.docx",
-            "tailored_resume_ats.md",
-            "match_report.json", "interview_talking_points.md"
-        ];
-        currentFileList = fileList;
-
-        fileList.forEach(function(f) {
-            var fname = typeof f === 'string' ? f : f.filename;
-            var m = getFileInfo(fname);
-            // Skip duplicate resume files (e.g. recruiter variants from old runs)
-            if (m.cat === 'resume_dup') return;
-            // Template PDFs are handled by the template grid cards
-            if (m.cat === 'template_pdf') return;
-            var catKey = m.cat + '_' + m.b;
-            if (seenCats[catKey]) return;
-            seenCats[catKey] = true;
-            var link = '/api/download/' + jobId + '/' + fname;
-            secondaryHtml += '<a class="dl-btn-secondary" href="#" onclick="safeDownload(\'' + link + '\',\'' + fname + '\',event); return false;">' +
-                '<span class="label">' + escapeHtml(m.l) + '</span>' +
-                '<span class="badge">' + m.b + '</span></a>';
-        });
-
-        document.getElementById("dlGridSecondary").innerHTML = secondaryHtml;
-        if (secondaryHtml && isPremiumUser2) {
-            document.getElementById("additionalCard").style.display = "block";
-        }
-
-        // --- Premium features (admin-only for now) ---
-        var isPremiumUser2 = authUser && authUser.is_admin;
-
-        // --- Talking Points (premium) ---
-        if (s.talking_points_md && isPremiumUser2) {
-            document.getElementById("talkingPointsCard").style.display = "block";
-            document.getElementById("talkingPointsContent").innerHTML = renderMarkdown(s.talking_points_md);
-        } else {
-            document.getElementById("talkingPointsCard").style.display = "none";
-        }
-
-        // --- Cover Letter (free) ---
-        var clContainer = document.getElementById("coverLetterCard");
-        if (s.cover_letter_md) {
-            clContainer.style.display = "block";
-            var safeT = (s.job_title || 'Cover_Letter').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_').substring(0, 30);
-            var safeC = (s.company || '').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_').substring(0, 20);
-            var clPrefix = safeT + (safeC ? '_' + safeC : '');
-            document.getElementById("coverLetterContent").innerHTML =
-                '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">' +
-                '<a href="/api/download/' + jobId + '/' + clPrefix + '_Cover_Letter.pdf" style="padding:10px 18px;background:var(--primary);color:#fff;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;">Download PDF</a>' +
-                '<a href="/api/download/' + jobId + '/' + clPrefix + '_Cover_Letter.docx" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--primary);border-radius:10px;font-size:13px;font-weight:600;color:var(--primary);text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;">Download DOCX</a>' +
-                '<button onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.textContent).then(function(){showToast(\'Cover letter copied!\',\'success\');})" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;">Copy Text</button>' +
-                '<button onclick="this.parentElement.nextElementSibling.style.display=this.parentElement.nextElementSibling.style.display===\'none\'?\'block\':\'none\';this.textContent=this.parentElement.nextElementSibling.style.display===\'none\'?\'Show Preview\':\'Hide Preview\'" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;">Show Preview</button>' +
-                '</div>' +
-                '<div style="display:none;font-size:14px;line-height:1.8;padding:16px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:10px;max-height:300px;overflow-y:auto;">' + renderMarkdown(s.cover_letter_md) + '</div>';
-        } else {
-            clContainer.style.display = "none";
-        }
-
-        // --- Email Templates (premium) ---
-        var etContainer = document.getElementById("emailTemplatesCard");
-        if (s.email_templates_md && isPremiumUser2) {
-            etContainer.style.display = "block";
-            document.getElementById("emailTemplatesContent").innerHTML = renderMarkdown(s.email_templates_md);
-        } else {
-            etContainer.style.display = "none";
-        }
-
-        // --- Score improvement banner (when we have before/after) ---
-        var beforeScore = Math.round(s.original_match_score || 0);
-        var afterScore = Math.round(s.tailored_match_score || s.match_score || 0);
-        var hasImprovement = (s.original_match_score != null || s.tailored_match_score != null) && (beforeScore > 0 || afterScore > 0);
-        if (hasImprovement) {
-            var delta = afterScore - beforeScore;
-            document.getElementById("scoreImprovementBanner").style.display = "block";
-            document.getElementById("scoreBeforeVal").textContent = beforeScore + "%";
-            document.getElementById("scoreAfterVal").textContent = afterScore + "%";
-            document.getElementById("scoreImprovementDelta").textContent = (delta > 0 ? "+" : "") + delta;
-        } else {
-            document.getElementById("scoreImprovementBanner").style.display = "none";
-        }
-
-        // --- What Changed card (prominent, right after score) ---
-        document.getElementById("whatChangedCard").style.display = "block";
-        document.getElementById("whatChangedContent").innerHTML = buildChangesPanel(s);
-
-        // --- Preview (premium) ---
-        currentResumeMd = s.ats_resume_md || '';
-        originalResumeMd = s.original_resume_text || '';
-        if (isPremiumUser2) {
-            document.getElementById("previewCard").style.display = "block";
-            document.getElementById("previewContent").innerHTML = renderMarkdown(currentResumeMd);
-        } else {
-            document.getElementById("previewCard").style.display = "none";
-        }
-        setPreviewMode('preview');
-
-        document.getElementById("resultsSection").classList.add("active");
-        document.getElementById("stickyDlBar").style.display = "flex";
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        setTimeout(function() { openDownloadPopup(); }, 1500);
-        } catch(renderErr) {
-            console.error("Failed to render results:", renderErr);
-            showError("Results loaded but failed to display. Try downloading the files directly.");
-            document.getElementById("resultsSection").classList.add("active");
+        // Single source of truth for rendering — animate + keep the progress
+        // card visible (live flow). The save-for-next-time hook lives here too.
+        renderResultsFromData(d, jobId, { animate: true, keepProgress: true });
+        if (typeof pendingSaveResumeName !== 'undefined' && pendingSaveResumeName && d.result && d.result.original_resume_text) {
+            saveResumeToLibrary(pendingSaveResumeName, d.result.original_resume_text);
+            pendingSaveResumeName = null;
         }
     }
 

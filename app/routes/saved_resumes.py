@@ -42,14 +42,16 @@ def save_resume():
     name = data.get("name", "My Resume").strip()[:255]
     resume_id = data.get("id")
 
-    if not resume_text:
+    # Text is required when creating; an update may be a rename only.
+    if not resume_text and not resume_id:
         return jsonify({"error": "Resume text is required"}), 400
 
     if resume_id:
         resume = SavedResume.query.filter_by(id=resume_id, user_id=current_user.id).first()
         if not resume:
             return jsonify({"error": "Resume not found"}), 404
-        resume.resume_text = resume_text
+        if resume_text:
+            resume.resume_text = resume_text
         resume.name = name
         resume.updated_at = datetime.now(timezone.utc)
     else:
