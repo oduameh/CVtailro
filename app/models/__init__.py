@@ -10,7 +10,17 @@ from app.models.user import User
 from app.models.user_session import UserSession
 
 __all__ = [
-    "User", "TailoringJob", "JobFile", "JobStatus", "JobApplication", "SavedResume",
-    "AdminSetting", "AnalyticsEvent", "DailyMetric", "UserSession", "LoginEvent",
-    "BlogPost", "BlogImage",
+    "User",
+    "TailoringJob",
+    "JobFile",
+    "JobStatus",
+    "JobApplication",
+    "SavedResume",
+    "AdminSetting",
+    "AnalyticsEvent",
+    "DailyMetric",
+    "UserSession",
+    "LoginEvent",
+    "BlogPost",
+    "BlogImage",
 ]

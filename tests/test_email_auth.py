@@ -253,15 +253,17 @@ def test_session_manager_revoke_all_other(client, flask_app):
     now = datetime.now(timezone.utc)
 
     for i in range(4):
-        _db.session.add(UserSession(
-            user_id=user.id,
-            session_token=f"tok-{i}",
-            ip_address="1.1.1.1",
-            created_at=now,
-            last_activity_at=now,
-            expires_at=now + timedelta(hours=24),
-            is_active=True,
-        ))
+        _db.session.add(
+            UserSession(
+                user_id=user.id,
+                session_token=f"tok-{i}",
+                ip_address="1.1.1.1",
+                created_at=now,
+                last_activity_at=now,
+                expires_at=now + timedelta(hours=24),
+                is_active=True,
+            )
+        )
     _db.session.commit()
 
     count = revoke_all_other_sessions(user.id, "tok-0")

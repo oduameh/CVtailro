@@ -23,12 +23,24 @@ from flask import g, has_request_context
 logger = logging.getLogger("cvtailro.telemetry")
 
 _EMAIL_RE = re.compile(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+")
-_REDACT_KEYS = frozenset({
-    "email", "password", "api_key", "secret", "token",
-    "resume_text", "original_resume_text", "job_description_full",
-    "job_description", "resume_md", "ats_resume_md", "cover_letter_md",
-    "talking_points_md", "password_hash",
-})
+_REDACT_KEYS = frozenset(
+    {
+        "email",
+        "password",
+        "api_key",
+        "secret",
+        "token",
+        "resume_text",
+        "original_resume_text",
+        "job_description_full",
+        "job_description",
+        "resume_md",
+        "ats_resume_md",
+        "cover_letter_md",
+        "talking_points_md",
+        "password_hash",
+    }
+)
 
 
 def _redact_value(key: str, value: Any) -> Any:
@@ -74,7 +86,10 @@ def track(
     # Structured log line (always emitted, works even if DB is down)
     logger.info(
         "event=%s category=%s job_id=%s rid=%s meta=%s",
-        event_name, category, job_id or "-", rid or "-",
+        event_name,
+        category,
+        job_id or "-",
+        rid or "-",
         {k: v for k, v in (safe_meta or {}).items() if k not in ("traceback",)} if safe_meta else "-",
     )
 
@@ -101,6 +116,7 @@ def _persist_event(
 
         from app.extensions import db
         from app.models.analytics import AnalyticsEvent, hash_user_id
+
         try:
             app = current_app._get_current_object()
         except RuntimeError:
@@ -140,7 +156,10 @@ def track_with_app(
 
     logger.info(
         "event=%s category=%s job_id=%s rid=%s",
-        event_name, category, job_id or "-", rid or "-",
+        event_name,
+        category,
+        job_id or "-",
+        rid or "-",
     )
 
     threading.Thread(

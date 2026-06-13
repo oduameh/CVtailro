@@ -75,15 +75,13 @@ def init_request_id(flask_app: Flask) -> None:
         duration_ms = (time.time() - getattr(g, "request_start", time.time())) * 1000
         rid = getattr(g, "request_id", "-")
         alog = logging.getLogger("cvtailro.access")
-        alog.info(
-            f"{request.method} {request.path} {response.status_code} "
-            f"{duration_ms:.0f}ms rid={rid}"
-        )
+        alog.info(f"{request.method} {request.path} {response.status_code} {duration_ms:.0f}ms rid={rid}")
         response.headers["X-Request-ID"] = getattr(g, "request_id", "")
 
         # Sentry breadcrumb for request tracing
         try:
             import sentry_sdk
+
             sentry_sdk.add_breadcrumb(
                 category="http",
                 message=f"{request.method} {request.path}",

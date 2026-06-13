@@ -226,7 +226,9 @@ def _register_context_processors(flask_app: Flask) -> None:
     def inject_ads_config():
         from app.services.admin_config import AdminConfigManager
 
-        client_id = AdminConfigManager.get("adsense_client_id") or flask_app.config.get("ADSENSE_CLIENT_ID", "")
+        client_id = AdminConfigManager.get("adsense_client_id") or flask_app.config.get(
+            "ADSENSE_CLIENT_ID", ""
+        )
         enabled = AdminConfigManager.get("adsense_enabled")
         return {
             "ads_config": {
@@ -378,7 +380,9 @@ def _apply_column_migrations() -> None:
             le_indexes = {idx["name"] for idx in insp.get_indexes("login_events")}
             if "idx_login_events_user_created" not in le_indexes:
                 db.session.execute(
-                    text("CREATE INDEX idx_login_events_user_created ON login_events(user_id, created_at DESC)")
+                    text(
+                        "CREATE INDEX idx_login_events_user_created ON login_events(user_id, created_at DESC)"
+                    )
                 )
                 db.session.commit()
         except Exception:

@@ -24,7 +24,9 @@ def _get_admin_emails() -> list[str]:
 
 
 def _client_ip() -> str:
-    return request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.remote_addr or "unknown"
+    return (
+        request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.remote_addr or "unknown"
+    )
 
 
 def _is_local_request() -> bool:
@@ -52,7 +54,11 @@ def google_callback():
         userinfo = token.get("userinfo") or oauth.google.userinfo()
     except Exception as e:
         logger.error(f"OAuth callback failed: {e}")
-        track("auth.login.failed", category="auth", metadata={"provider": "google", "reason": "oauth_callback_error"})
+        track(
+            "auth.login.failed",
+            category="auth",
+            metadata={"provider": "google", "reason": "oauth_callback_error"},
+        )
         return redirect("/?auth_error=oauth_failed")
 
     google_id = userinfo["sub"]
@@ -101,7 +107,12 @@ def google_callback():
     create_session(user, request)
 
     logger.info(f"User logged in via Google: {email} (admin={user.is_admin})")
-    track("auth.login.succeeded", category="auth", user_id=user.id, metadata={"provider": "google", "is_admin": user.is_admin})
+    track(
+        "auth.login.succeeded",
+        category="auth",
+        user_id=user.id,
+        metadata={"provider": "google", "is_admin": user.is_admin},
+    )
     return redirect("/")
 
 
@@ -140,18 +151,20 @@ def list_sessions():
     sessions = get_active_sessions(current_user.id)
     result = []
     for s in sessions:
-        result.append({
-            "id": s.id,
-            "ip_address": s.ip_address,
-            "device_type": s.device_type,
-            "browser_name": s.browser_name,
-            "os_name": s.os_name,
-            "country": s.country,
-            "city": s.city,
-            "created_at": s.created_at.isoformat() if s.created_at else None,
-            "last_activity_at": s.last_activity_at.isoformat() if s.last_activity_at else None,
-            "is_current": s.session_token == current_token,
-        })
+        result.append(
+            {
+                "id": s.id,
+                "ip_address": s.ip_address,
+                "device_type": s.device_type,
+                "browser_name": s.browser_name,
+                "os_name": s.os_name,
+                "country": s.country,
+                "city": s.city,
+                "created_at": s.created_at.isoformat() if s.created_at else None,
+                "last_activity_at": s.last_activity_at.isoformat() if s.last_activity_at else None,
+                "is_current": s.session_token == current_token,
+            }
+        )
     return jsonify({"sessions": result})
 
 
@@ -255,12 +268,20 @@ def me():
             "picture": current_user.picture_url,
             "is_admin": current_user.is_admin,
             "session": {
-                "created_at": session_info.created_at.isoformat() if session_info and session_info.created_at else None,
-                "last_activity_at": session_info.last_activity_at.isoformat() if session_info and session_info.last_activity_at else None,
-                "expires_at": session_info.expires_at.isoformat() if session_info and session_info.expires_at else None,
+                "created_at": session_info.created_at.isoformat()
+                if session_info and session_info.created_at
+                else None,
+                "last_activity_at": session_info.last_activity_at.isoformat()
+                if session_info and session_info.last_activity_at
+                else None,
+                "expires_at": session_info.expires_at.isoformat()
+                if session_info and session_info.expires_at
+                else None,
                 "ip_address": session_info.ip_address if session_info else None,
                 "device_type": session_info.device_type if session_info else None,
-            } if session_info else None,
+            }
+            if session_info
+            else None,
         }
     )
 

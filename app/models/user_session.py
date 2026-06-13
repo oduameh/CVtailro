@@ -16,7 +16,9 @@ class UserSession(db.Model):
     __tablename__ = "user_sessions"
 
     id = db.Column(db.String(32), primary_key=True, default=_uuid)
-    user_id = db.Column(db.String(32), db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = db.Column(
+        db.String(32), db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     session_token = db.Column(db.String(64), unique=True, nullable=False, index=True)
     ip_address = db.Column(db.String(45), nullable=True)
     user_agent = db.Column(db.String(512), nullable=True)

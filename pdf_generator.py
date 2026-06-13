@@ -769,9 +769,11 @@ def _inline_md(text: str) -> str:
     text = re.sub(r"\*(.+?)\*", r"<em>\1</em>", text)
     text = re.sub(
         r"\[([^\]]+)\]\(([^)]+(?:\([^)]*\))*[^)]*)\)",
-        lambda m: f'<a href="{m.group(2)}">{m.group(1)}</a>'
-        if m.group(2).startswith(("http://", "https://", "mailto:"))
-        else m.group(1),
+        lambda m: (
+            f'<a href="{m.group(2)}">{m.group(1)}</a>'
+            if m.group(2).startswith(("http://", "https://", "mailto:"))
+            else m.group(1)
+        ),
         text,
     )
     return text

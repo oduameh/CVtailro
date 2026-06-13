@@ -18,6 +18,7 @@ def _wait_for_event(event_name: str, timeout: float = 2.0, interval: float = 0.1
         time.sleep(interval)
     return AnalyticsEvent.query.filter_by(event_name=event_name).first()
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # PII Redaction
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -137,10 +138,12 @@ class TestAnalyticsModels:
 
     def test_analytics_event_indexes(self, db):
         for i in range(5):
-            db.session.add(AnalyticsEvent(
-                event_name=f"test.event.{i % 2}",
-                category="test" if i % 2 == 0 else "other",
-            ))
+            db.session.add(
+                AnalyticsEvent(
+                    event_name=f"test.event.{i % 2}",
+                    category="test" if i % 2 == 0 else "other",
+                )
+            )
         db.session.commit()
 
         test_events = AnalyticsEvent.query.filter_by(category="test").count()
@@ -155,9 +158,11 @@ class TestAnalyticsModels:
 class TestTelemetryTrack:
     def test_track_persists_event(self, flask_app, db):
         from app.services.telemetry import track_with_app
+
         with flask_app.app_context():
             track_with_app(
-                flask_app, "test.track",
+                flask_app,
+                "test.track",
                 category="test",
                 user_id="user123",
                 job_id="job456",
@@ -173,9 +178,11 @@ class TestTelemetryTrack:
 
     def test_track_redacts_pii(self, flask_app, db):
         from app.services.telemetry import track_with_app
+
         with flask_app.app_context():
             track_with_app(
-                flask_app, "test.pii",
+                flask_app,
+                "test.pii",
                 category="test",
                 metadata={"email": "secret@test.com", "model": "gpt-4o"},
             )
@@ -188,6 +195,7 @@ class TestTelemetryTrack:
 
     def test_track_handles_no_metadata(self, flask_app, db):
         from app.services.telemetry import track_with_app
+
         with flask_app.app_context():
             track_with_app(flask_app, "test.noop", category="test")
 
@@ -235,7 +243,7 @@ def _seed_jobs(db, user, count=5, status="complete"):
             company=f"Company {i}",
             duration_seconds=10.0 + i,
             created_at=now - timedelta(days=i),
-            completed_at=now - timedelta(days=i) + timedelta(seconds=10+i),
+            completed_at=now - timedelta(days=i) + timedelta(seconds=10 + i),
         )
         db.session.add(j)
     db.session.commit()
@@ -283,8 +291,11 @@ class TestReliabilityEndpoint:
     def test_returns_recent_errors(self, client, flask_app, db):
         user = _login_admin(client, flask_app, db)
         j = TailoringJob(
-            user_id=user.id, status="error", model_used="test/model",
-            error_message="Test failure", created_at=datetime.now(timezone.utc),
+            user_id=user.id,
+            status="error",
+            model_used="test/model",
+            error_message="Test failure",
+            created_at=datetime.now(timezone.utc),
         )
         db.session.add(j)
         db.session.commit()
@@ -313,16 +324,20 @@ class TestAuditEndpoint:
         _login_admin(client, flask_app, db)
 
         with flask_app.app_context():
-            db.session.add(AnalyticsEvent(
-                event_name="admin.config.updated",
-                category="admin",
-                metadata_json={"changed_keys": ["default_model"]},
-            ))
-            db.session.add(AnalyticsEvent(
-                event_name="auth.login.failed",
-                category="auth",
-                metadata_json={"provider": "email", "reason": "wrong_password"},
-            ))
+            db.session.add(
+                AnalyticsEvent(
+                    event_name="admin.config.updated",
+                    category="admin",
+                    metadata_json={"changed_keys": ["default_model"]},
+                )
+            )
+            db.session.add(
+                AnalyticsEvent(
+                    event_name="auth.login.failed",
+                    category="auth",
+                    metadata_json={"provider": "email", "reason": "wrong_password"},
+                )
+            )
             db.session.commit()
 
         resp = client.get("/admin/api/observability/audit")
@@ -340,10 +355,12 @@ class TestEventFeedEndpoint:
 
         with flask_app.app_context():
             for i in range(15):
-                db.session.add(AnalyticsEvent(
-                    event_name=f"test.event.{i}",
-                    category="test" if i % 2 == 0 else "auth",
-                ))
+                db.session.add(
+                    AnalyticsEvent(
+                        event_name=f"test.event.{i}",
+                        category="test" if i % 2 == 0 else "auth",
+                    )
+                )
             db.session.commit()
 
         resp = client.get("/admin/api/observability/events?per_page=10")
@@ -381,14 +398,23 @@ class TestAlertsEndpoint:
         user = _login_admin(client, flask_app, db)
         now = datetime.now(timezone.utc)
         for _i in range(4):
-            db.session.add(TailoringJob(
-                user_id=user.id, status="error", model_used="test/model",
-                error_message="fail", created_at=now - timedelta(hours=1),
-            ))
-        db.session.add(TailoringJob(
-            user_id=user.id, status="complete", model_used="test/model",
-            created_at=now - timedelta(hours=1),
-        ))
+            db.session.add(
+                TailoringJob(
+                    user_id=user.id,
+                    status="error",
+                    model_used="test/model",
+                    error_message="fail",
+                    created_at=now - timedelta(hours=1),
+                )
+            )
+        db.session.add(
+            TailoringJob(
+                user_id=user.id,
+                status="complete",
+                model_used="test/model",
+                created_at=now - timedelta(hours=1),
+            )
+        )
         db.session.commit()
 
         resp = client.get("/admin/api/observability/alerts")
@@ -403,12 +429,19 @@ class TestRetentionEndpoint:
 
         with flask_app.app_context():
             old_time = datetime.now(timezone.utc) - timedelta(days=100)
-            db.session.add(AnalyticsEvent(
-                event_name="old.event", category="test", event_time=old_time,
-            ))
-            db.session.add(AnalyticsEvent(
-                event_name="new.event", category="test",
-            ))
+            db.session.add(
+                AnalyticsEvent(
+                    event_name="old.event",
+                    category="test",
+                    event_time=old_time,
+                )
+            )
+            db.session.add(
+                AnalyticsEvent(
+                    event_name="new.event",
+                    category="test",
+                )
+            )
             db.session.commit()
 
         resp = client.post(

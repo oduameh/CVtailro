@@ -14,14 +14,40 @@ from app.models.blog import BlogPost, _slugify
 logger = logging.getLogger("cvtailro.blog")
 
 ALLOWED_TAGS = {
-    "h1", "h2", "h3", "h4", "h5", "h6",
-    "p", "br", "hr",
-    "ul", "ol", "li",
-    "a", "strong", "em", "code", "pre", "blockquote",
-    "img", "figure", "figcaption",
-    "table", "thead", "tbody", "tr", "th", "td",
-    "div", "span", "section",
-    "sup", "sub", "del", "ins",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "p",
+    "br",
+    "hr",
+    "ul",
+    "ol",
+    "li",
+    "a",
+    "strong",
+    "em",
+    "code",
+    "pre",
+    "blockquote",
+    "img",
+    "figure",
+    "figcaption",
+    "table",
+    "thead",
+    "tbody",
+    "tr",
+    "th",
+    "td",
+    "div",
+    "span",
+    "section",
+    "sup",
+    "sub",
+    "del",
+    "ins",
 }
 
 ALLOWED_ATTRS = {
@@ -156,8 +182,13 @@ def update_post(post_id: str, **fields) -> BlogPost | None:
             post.slug = new_slug
 
     simple_fields = [
-        "description", "keywords", "category", "audience",
-        "feature_image_url", "canonical_url", "author_id",
+        "description",
+        "keywords",
+        "category",
+        "audience",
+        "feature_image_url",
+        "canonical_url",
+        "author_id",
     ]
     for f in simple_fields:
         if f in fields:
@@ -244,12 +275,7 @@ def list_published_posts(
 
 
 def published_categories() -> list[str]:
-    rows = (
-        db.session.query(BlogPost.category)
-        .filter(BlogPost.status == "published")
-        .distinct()
-        .all()
-    )
+    rows = db.session.query(BlogPost.category).filter(BlogPost.status == "published").distinct().all()
     return sorted({r[0] for r in rows if r[0]})
 
 

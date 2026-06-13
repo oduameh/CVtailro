@@ -44,7 +44,9 @@ def ads_txt():
 
 @main_bp.route("/robots.txt")
 def robots_txt():
-    base_url = current_app.config.get("BLOG_BASE_URL", "https://cvtailro-production.up.railway.app").rstrip("/")
+    base_url = current_app.config.get("BLOG_BASE_URL", "https://cvtailro-production.up.railway.app").rstrip(
+        "/"
+    )
     body = "\n".join(
         [
             "User-agent: *",
@@ -58,7 +60,9 @@ def robots_txt():
 
 @main_bp.route("/sitemap.xml")
 def sitemap_xml():
-    base_url = current_app.config.get("BLOG_BASE_URL", "https://cvtailro-production.up.railway.app").rstrip("/")
+    base_url = current_app.config.get("BLOG_BASE_URL", "https://cvtailro-production.up.railway.app").rstrip(
+        "/"
+    )
     urls = [
         f"{base_url}/",
         f"{base_url}/pricing",
@@ -72,8 +76,8 @@ def sitemap_xml():
 
     items = "\n".join(f"  <url><loc>{u}</loc></url>" for u in urls)
     xml = (
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n"
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         f"{items}\n"
         "</urlset>\n"
     )
