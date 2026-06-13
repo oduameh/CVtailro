@@ -77,11 +77,18 @@ def _daily_budget_response(admin_config, rate_key: str, needed: int = 1):
         return None
 
     if current_user.is_authenticated:
+        # Authenticated users are counted from the durable TailoringJob table.
+        # The row is inserted by the background pipeline, so this is a soft cap
+        # with a small check→insert window; it self-corrects on the next request
+        # and the burst is bounded by the hourly limiter.
         used = daily_jobs_used(current_user.id)
+        over_limit = used + needed > limit
     else:
+        # Anonymous users: atomic check-and-record (no check→record gap in-memory).
         used = usage_tracker.daily_count(rate_key)
+        over_limit = not usage_tracker.check_and_record_daily(rate_key, limit, needed)
 
-    if used + needed > limit:
+    if over_limit:
         uid = current_user.id if current_user.is_authenticated else None
         track(
             "tailor.request.rejected",
@@ -170,10 +177,9 @@ def start_tailoring():
     if budget_resp:
         return budget_resp
 
+    # Anonymous daily usage was already recorded atomically in the budget check.
     job_id = uuid.uuid4().hex[:16]
     output_dir = create_output_dir(job_id=job_id)
-    if not current_user.is_authenticated:
-        usage_tracker.record_daily(rate_key)
 
     resume_path = output_dir / f"input_resume{resume_ext}"
     if saved_resume_id:
@@ -540,12 +546,12 @@ def start_batch_tailoring():
     if budget_resp:
         return budget_resp
 
+    # Anonymous daily usage for all batch jobs was recorded atomically in the
+    # budget check (needed=len(job_descriptions)).
     job_ids = []
     for i, jd in enumerate(job_descriptions):
         job_id = uuid.uuid4().hex[:16]
         output_dir = create_output_dir(job_id=job_id)
-        if not current_user.is_authenticated:
-            usage_tracker.record_daily(rate_key)
 
         resume_file.stream.seek(0)
         resume_path = output_dir / f"input_resume{resume_ext}"

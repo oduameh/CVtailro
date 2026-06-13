@@ -200,14 +200,20 @@ def run_pipeline_job(
         queue_position = pipeline_queue_depth
     queue_enter = time.time()
     emit(0, 6, "Pipeline", "queued", "Waiting for available slot...", position=queue_position)
-    pipeline_semaphore.acquire()
-    with pipeline_queue_lock:
-        pipeline_queue_depth -= 1
-    queue_wait_ms = round((time.time() - queue_enter) * 1000)
-    _te("tailor.queue.exited", metadata={"wait_ms": queue_wait_ms, "model": model})
-
     log_cleanup = None
+    queue_wait_ms = 0
+    acquired = False
     try:
+        # Acquire inside the try so the finally's release() only runs when the
+        # permit was actually taken — a failure between acquire and here (e.g. in
+        # telemetry) can no longer leak a concurrency slot.
+        pipeline_semaphore.acquire()
+        acquired = True
+        with pipeline_queue_lock:
+            pipeline_queue_depth -= 1
+        queue_wait_ms = round((time.time() - queue_enter) * 1000)
+        _te("tailor.queue.exited", metadata={"wait_ms": queue_wait_ms, "model": model})
+
         pipeline_config = AppConfig(
             rewrite_mode=RewriteMode(mode),
             output_dir=str(output_dir),
@@ -825,4 +831,5 @@ def run_pipeline_job(
                 log_cleanup()
         except Exception:
             pass
-        pipeline_semaphore.release()
+        if acquired:
+            pipeline_semaphore.release()

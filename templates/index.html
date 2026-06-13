@@ -4785,6 +4785,9 @@
             }
 
             // --- Downloads ---
+            // Declared here (not below) so the Additional-downloads card check
+            // at the end of this block sees the real value, not a hoisted undefined.
+            var isPremiumUser = authUser && authUser.is_admin;
             var secondaryHtml = '';
             var seenCats = {};
             var effectiveJobId = jobId || s.job_id || s.id || '';
@@ -4821,8 +4824,7 @@
                 document.getElementById("additionalCard").style.display = "block";
             }
 
-            // --- Premium features (admin-only for now) ---
-            var isPremiumUser = authUser && authUser.is_admin;
+            // --- Premium features (admin-only for now; isPremiumUser declared above) ---
 
             // --- Talking Points (premium) ---
             if (s.talking_points_md && isPremiumUser) {

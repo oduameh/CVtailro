@@ -48,21 +48,43 @@ class UsageTracker:
         if redis_available():
             return rate_limit_count("daily_usage", key, 86400)
         with self._lock:
-            now = time.time()
-            times = [t for t in self._daily.get(key, []) if t > now - 86400]
-            self._daily[key] = times
-            return len(times)
+            return len(self._prune(self._daily, key, 86400))
 
-    def record_daily(self, key: str) -> None:
-        """Record one job for *key* in the rolling 24h window (anonymous/IP path)."""
+    def check_and_record_daily(self, key: str, limit: int, needed: int = 1) -> bool:
+        """Atomically check the rolling-24h count against *limit* and record *needed*
+        if allowed (anonymous/IP path). Returns False if it would exceed the limit.
+
+        The in-memory branch is fully atomic under the lock (no check→record gap).
+        The Redis branch is check-then-incr — a soft over-count is acceptable for a
+        cost-control cap that is already bounded by the hourly limiter.
+        """
+        if limit <= 0:
+            return True
         if redis_available():
-            rate_limit_incr("daily_usage", key, 86400)
-            return
+            if rate_limit_count("daily_usage", key, 86400) + needed > limit:
+                return False
+            for _ in range(needed):
+                rate_limit_incr("daily_usage", key, 86400)
+            return True
         with self._lock:
             now = time.time()
-            times = [t for t in self._daily.get(key, []) if t > now - 86400]
-            times.append(now)
+            times = self._prune(self._daily, key, 86400)
+            if len(times) + needed > limit:
+                return False
+            times.extend([now] * needed)
             self._daily[key] = times
+            return True
+
+    def _prune(self, store: dict[str, list[float]], key: str, window: int) -> list[float]:
+        """Drop timestamps outside *window*; remove the key entirely if none remain
+        (prevents unbounded growth of per-IP keys). Caller must hold self._lock."""
+        now = time.time()
+        times = [t for t in store.get(key, []) if t > now - window]
+        if times:
+            store[key] = times
+        else:
+            store.pop(key, None)
+        return times
 
     def check_and_record(self, key: str, limit: int) -> bool:
         """Return True if the request is allowed, False if rate-limited."""
@@ -73,11 +95,10 @@ class UsageTracker:
         if redis_available():
             return rate_limit_check_incr("usage", key, limit, 3600)
         with self._lock:
-            now = time.time()
-            times = [t for t in self._requests.get(key, []) if t > now - 3600]
+            times = self._prune(self._requests, key, 3600)
             if len(times) >= limit:
                 return False
-            times.append(now)
+            times.append(time.time())
             self._requests[key] = times
             self._total += 1
             return True
@@ -113,23 +134,29 @@ class LoginRateLimiter:
         self._lock = threading.Lock()
         self._failures: dict[str, list[float]] = {}
 
+    def _prune(self, ip: str) -> list[float]:
+        """Drop attempts outside the window; remove the key if none remain. Holds lock."""
+        now = time.time()
+        attempts = [t for t in self._failures.get(ip, []) if t > now - self.WINDOW]
+        if attempts:
+            self._failures[ip] = attempts
+        else:
+            self._failures.pop(ip, None)
+        return attempts
+
     def is_blocked(self, ip: str) -> bool:
         if redis_available():
             return rate_limit_count("login_fail", ip, self.WINDOW) >= self.MAX_ATTEMPTS
         with self._lock:
-            now = time.time()
-            attempts = [t for t in self._failures.get(ip, []) if t > now - self.WINDOW]
-            self._failures[ip] = attempts
-            return len(attempts) >= self.MAX_ATTEMPTS
+            return len(self._prune(ip)) >= self.MAX_ATTEMPTS
 
     def record_failure(self, ip: str) -> None:
         if redis_available():
             rate_limit_incr("login_fail", ip, self.WINDOW)
             return
         with self._lock:
-            now = time.time()
-            attempts = [t for t in self._failures.get(ip, []) if t > now - self.WINDOW]
-            attempts.append(now)
+            attempts = self._prune(ip)
+            attempts.append(time.time())
             self._failures[ip] = attempts
 
     def reset(self, ip: str) -> None:

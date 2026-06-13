@@ -242,6 +242,12 @@ def _cache_regenerated_file(job_id: str | None, filename: str, data: bytes) -> N
 
     Never raises — the response already holds the bytes, so a failure here only
     means the next download regenerates again.
+
+    Note: two concurrent first-downloads of the same lazily-rendered file can both
+    insert a JobFile row (no unique constraint on job_id+filename), leaving a rare
+    duplicate row pointing at the same R2 key. This is benign — serve_download's
+    .first() still returns a valid row and the download response is unaffected — so
+    it is accepted rather than guarded with a constraint + migration.
     """
     if not job_id or not r2_storage.is_configured:
         return

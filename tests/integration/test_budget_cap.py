@@ -108,6 +108,18 @@ class TestDailyBudgetCap:
             resp = client.post("/api/tailor", data=_tailor_payload(), content_type="multipart/form-data")
         assert resp.status_code == 200
 
+    def test_anonymous_cap_atomic_check_and_record(self, client, db, monkeypatch):
+        # Anonymous users are capped via the in-memory rolling-24h counter
+        # (check_and_record_daily). With limit=1 the second request is rejected.
+        monkeypatch.setattr("app.routes.api.threading.Thread", _NoopThread)
+        with patch("app.services.admin_config.AdminConfigManager.load") as m:
+            _config_mock(m, daily_job_limit=1)
+            first = client.post("/api/tailor", data=_tailor_payload(), content_type="multipart/form-data")
+            second = client.post("/api/tailor", data=_tailor_payload(), content_type="multipart/form-data")
+        assert first.status_code == 200
+        assert second.status_code == 429
+        assert second.get_json()["daily_limit"] == 1
+
 
 class _NoopThread:
     """Drop-in for threading.Thread that never actually runs the target."""
