@@ -2964,6 +2964,53 @@
             .auth-modal { max-width: 100%; margin: 12px; }
             .auth-modal-body { padding: 16px 18px 20px; }
         }
+
+        /* ── Saved Resumes ── */
+        .saved-resume-strip { border-top: 0.5px solid var(--border); padding: 14px 16px; }
+        .saved-resume-strip-label {
+            font-size: 12px; font-weight: 600; color: var(--text-secondary);
+            margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .saved-resume-manage-link {
+            background: none; border: none; color: var(--primary); font-size: 12px; font-weight: 600;
+            cursor: pointer; font-family: inherit; padding: 0;
+        }
+        .saved-resume-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+        .saved-resume-chip {
+            border: 0.5px solid var(--border); border-radius: 999px; background: var(--card); color: var(--text);
+            font-size: 12px; font-weight: 600; padding: 6px 14px; cursor: pointer; font-family: inherit;
+            transition: all 0.15s; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .saved-resume-chip:hover { border-color: var(--primary); }
+        .saved-resume-chip.selected { background: var(--primary-bg); border-color: var(--primary); color: var(--primary); }
+        .saved-resume-chip:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+        .saved-resume-chip .sr-date { font-weight: 500; color: var(--text-secondary); margin-left: 6px; }
+        .saved-resume-chip.selected .sr-date { color: var(--primary); }
+        .save-resume-row {
+            display: flex; align-items: center; gap: 10px; padding: 12px 16px; cursor: pointer;
+            border-top: 0.5px solid var(--border); font-size: 13px; color: var(--text);
+        }
+        .save-resume-row input { accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer; }
+        .saved-resume-item {
+            display: flex; align-items: flex-start; gap: 12px; padding: 14px; border: 0.5px solid var(--border);
+            border-radius: 12px; margin-bottom: 10px; background: var(--card);
+        }
+        .saved-resume-item-main { flex: 1; min-width: 0; }
+        .saved-resume-item-name { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+        .saved-resume-item-meta { font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; }
+        .saved-resume-item-preview {
+            font-size: 12px; color: var(--text-secondary); line-height: 1.5; max-height: 3em; overflow: hidden;
+        }
+        .saved-resume-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .saved-resume-action-btn {
+            background: var(--primary-bg); border: 0.5px solid var(--border); border-radius: 8px;
+            font-size: 12px; font-weight: 600; color: var(--text); cursor: pointer; padding: 6px 10px; font-family: inherit;
+        }
+        .saved-resume-action-btn.danger { color: var(--score-low); border-color: rgba(220,38,38,0.2); }
+        .saved-resume-rename-input {
+            width: 100%; padding: 6px 8px; border: 0.5px solid var(--primary); border-radius: 8px;
+            font-size: 13px; font-family: inherit; background: var(--card); color: var(--text);
+        }
     </style>
     <script type="application/ld+json">
     {
@@ -3091,6 +3138,17 @@
                         </div>
                         <div class="file-name" id="fileName" style="display:none"></div>
                     </div>
+                    <div class="saved-resume-strip" id="savedResumeStrip" style="display:none;">
+                        <div class="saved-resume-strip-label">
+                            <span>Or reuse a saved resume</span>
+                            <button type="button" class="saved-resume-manage-link" onclick="openSavedResumeManager()">Manage</button>
+                        </div>
+                        <div class="saved-resume-chips" id="savedResumeChips" role="listbox" aria-label="Saved resumes"></div>
+                    </div>
+                    <label class="save-resume-row" id="saveResumeRow" style="display:none;">
+                        <input type="checkbox" id="saveResumeOpt">
+                        <span>Save this resume for next time</span>
+                    </label>
                 </div>
 
                 <!-- Job Description (editorial card) -->
@@ -3574,6 +3632,13 @@
                     <button class="profile-save-btn" style="background:rgba(220,38,38,0.1);color:var(--score-low);border-color:rgba(220,38,38,0.2);" onclick="revokeOtherSessions()">Sign Out All Other Devices</button>
                 </div>
 
+                <!-- Saved Resumes -->
+                <div class="profile-edit-section">
+                    <h3>Saved Resumes</h3>
+                    <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Reusable master resumes for one-click tailoring (<span id="profileSavedResumeCount">--</span> of 10).</p>
+                    <button class="profile-save-btn" onclick="closeProfile();openSavedResumeManager();">Manage Saved Resumes</button>
+                </div>
+
                 <!-- Quick stats (filled by JS) -->
                 <div id="profileQuickStats" style="margin-bottom:16px;"></div>
 
@@ -3586,6 +3651,18 @@
                 <h3 class="profile-section-title">Recent Jobs</h3>
                 <div id="profileJobs" style="max-height:300px;overflow-y:auto;"></div>
             </div>
+        </div>
+    </div>
+
+    <!-- Saved Resumes Overlay -->
+    <div class="history-overlay" id="savedResumesOverlay" role="dialog" aria-modal="true"
+         aria-labelledby="savedResumesTitle" onclick="if(event.target===this)closeSavedResumeManager()">
+        <div class="history-panel">
+            <div class="history-header">
+                <h2 id="savedResumesTitle">Saved Resumes</h2>
+                <button class="history-close" onclick="closeSavedResumeManager()" aria-label="Close saved resumes">&times;</button>
+            </div>
+            <div class="history-body" id="savedResumesBody" style="padding:20px;"></div>
         </div>
     </div>
 
@@ -4431,6 +4508,10 @@
             if (document.getElementById('profileOverlay').classList.contains('active')) {
                 closeProfile();
             }
+            if (document.getElementById('savedResumesOverlay').classList.contains('active')) {
+                closeSavedResumeManager();
+                return;
+            }
             var overlay = document.getElementById('historyOverlay');
             if (overlay.classList.contains('active')) {
                 closeHistory();
@@ -4985,6 +5066,11 @@
             uploadZone.classList.add("has-file");
             fileNameEl.textContent = fileInput.files[0].name;
             fileNameEl.style.display = "block";
+            // Picking a fresh file deselects any saved-resume chip and, for
+            // logged-in users, offers to save it for next time.
+            if (typeof clearSavedResumeSelection === 'function') clearSavedResumeSelection();
+            var saveRow = document.getElementById('saveResumeRow');
+            if (saveRow && authUser && authUser.email) saveRow.style.display = 'flex';
         }
     });
     uploadZone.addEventListener("dragover", function(e) { e.preventDefault(); uploadZone.classList.add("dragover"); });
@@ -5159,7 +5245,7 @@
         var mode = document.querySelector('input[name="mode"]:checked').value;
         var model = getSelectedModel();
 
-        if (!file) { showError("Please upload your resume first."); return; }
+        if (!file && !selectedSavedResumeId) { showError("Please upload your resume or pick a saved one."); return; }
         if (!jd || jd.length < 50) {
             jdTA.classList.add('input-error');
             document.getElementById('jdError').classList.add('visible');
@@ -5189,7 +5275,16 @@
         document.getElementById('reconnectingBadge').classList.remove('visible');
 
         var fd = new FormData();
-        fd.append("resume", file);
+        if (selectedSavedResumeId) {
+            fd.append("saved_resume_id", selectedSavedResumeId);
+            pendingSaveResumeName = null;
+        } else {
+            fd.append("resume", file);
+            // Capture whether to save this upload before the form resets.
+            var saveOpt = document.getElementById('saveResumeOpt');
+            pendingSaveResumeName = (saveOpt && saveOpt.checked && file)
+                ? file.name.replace(/\.[^.]+$/, '') : null;
+        }
         fd.append("job_description", jd);
         fd.append("mode", mode);
         if (model) fd.append("model", model);
@@ -5541,6 +5636,11 @@
         jdTA.value = "";
         uploadZone.classList.remove("has-file");
         fileNameEl.style.display = "none";
+        if (typeof clearSavedResumeSelection === 'function') clearSavedResumeSelection();
+        var saveOpt = document.getElementById('saveResumeOpt');
+        if (saveOpt) saveOpt.checked = false;
+        var saveRow = document.getElementById('saveResumeRow');
+        if (saveRow) saveRow.style.display = 'none';
         document.getElementById("resultsSection").classList.remove("active");
         document.getElementById("progressSection").classList.remove("active");
         document.getElementById("formSection").style.display = "";
@@ -5937,12 +6037,185 @@
             .then(function() { loadTrackerApps(); showToast('Removed', 'success'); });
     }
 
-    // Init tracker after auth check completes
+    // Init tracker + saved resumes after auth check completes
     var _origRenderAuthUI = renderAuthUI;
     renderAuthUI = function() {
         _origRenderAuthUI();
         try { initTracker(); } catch(e) {}
+        try { initSavedResumes(); } catch(e) {}
     };
+
+    // ── Saved Resumes ─────────────────────────────────────────────────────
+    var savedResumes = [];
+    var selectedSavedResumeId = null;
+    var pendingSaveResumeName = null;
+
+    function initSavedResumes() {
+        var strip = document.getElementById('savedResumeStrip');
+        var saveRow = document.getElementById('saveResumeRow');
+        if (!(authUser && authUser.email)) {
+            savedResumes = [];
+            selectedSavedResumeId = null;
+            if (strip) strip.style.display = 'none';
+            if (saveRow) saveRow.style.display = 'none';
+            return;
+        }
+        fetch('/api/saved-resumes', { credentials: 'same-origin' })
+            .then(function(r) { return r.ok ? r.json() : { resumes: [] }; })
+            .then(function(data) {
+                savedResumes = (data && data.resumes) || [];
+                renderSavedResumeStrip();
+                var countEl = document.getElementById('profileSavedResumeCount');
+                if (countEl) countEl.textContent = savedResumes.length;
+            })
+            .catch(function() {});
+    }
+
+    function renderSavedResumeStrip() {
+        var strip = document.getElementById('savedResumeStrip');
+        var chips = document.getElementById('savedResumeChips');
+        if (!strip || !chips) return;
+        if (!savedResumes.length) { strip.style.display = 'none'; return; }
+        strip.style.display = 'block';
+        chips.innerHTML = savedResumes.map(function(r) {
+            var sel = r.id === selectedSavedResumeId;
+            return '<button type="button" class="saved-resume-chip' + (sel ? ' selected' : '') +
+                '" role="option" aria-selected="' + sel + '" data-id="' + escapeAttr(r.id) +
+                '" onclick="selectSavedResume(\'' + escapeAttr(r.id) + '\')">' +
+                escapeHtml(r.name) + '<span class="sr-date">' + escapeHtml(formatDate(r.updated_at)) + '</span></button>';
+        }).join('');
+    }
+
+    function selectSavedResume(id) {
+        var saveRow = document.getElementById('saveResumeRow');
+        if (selectedSavedResumeId === id) {
+            // Deselect
+            selectedSavedResumeId = null;
+            uploadZone.classList.remove('has-file');
+            fileNameEl.style.display = 'none';
+        } else {
+            selectedSavedResumeId = id;
+            fileInput.value = '';
+            var r = savedResumes.find(function(x) { return x.id === id; });
+            uploadZone.classList.add('has-file');
+            fileNameEl.textContent = 'Saved: ' + (r ? r.name : 'resume');
+            fileNameEl.style.display = 'block';
+            if (saveRow) saveRow.style.display = 'none';
+        }
+        renderSavedResumeStrip();
+    }
+
+    function clearSavedResumeSelection() {
+        selectedSavedResumeId = null;
+        renderSavedResumeStrip();
+    }
+
+    function saveResumeToLibrary(name, text) {
+        return fetch('/api/saved-resumes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, resume_text: text })
+        }).then(function(r) { return r.json().then(function(d) { return { ok: r.ok, d: d }; }); })
+          .then(function(res) {
+              if (res.ok) {
+                  showToast('Resume saved for next time', 'success');
+                  initSavedResumes();
+              } else {
+                  showToast((res.d && res.d.error) || 'Could not save resume', 'error');
+              }
+          })
+          .catch(function() {});
+    }
+
+    function openSavedResumeManager() {
+        var overlay = document.getElementById('savedResumesOverlay');
+        overlay.classList.add('active');
+        if (document.documentElement.classList.contains('dark')) {
+            overlay.classList.add('dark');
+        } else {
+            overlay.classList.remove('dark');
+        }
+        document.body.style.overflow = 'hidden';
+        renderSavedResumeManager();
+    }
+
+    function closeSavedResumeManager() {
+        document.getElementById('savedResumesOverlay').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    function renderSavedResumeManager() {
+        var body = document.getElementById('savedResumesBody');
+        if (!body) return;
+        if (!savedResumes.length) {
+            body.innerHTML = '<div class="history-empty"><p>No saved resumes yet. Upload a resume and tick "Save this resume for next time" to reuse it later.</p></div>';
+            return;
+        }
+        var html = '<p style="font-size:12px;color:var(--text-secondary);margin-bottom:14px;">' +
+            savedResumes.length + ' of 10 saved</p>';
+        html += savedResumes.map(function(r) {
+            return '<div class="saved-resume-item" data-id="' + escapeAttr(r.id) + '">' +
+                '<div class="saved-resume-item-main">' +
+                    '<div class="saved-resume-item-name" data-name>' + escapeHtml(r.name) + '</div>' +
+                    '<div class="saved-resume-item-meta">Updated ' + escapeHtml(formatDate(r.updated_at)) + '</div>' +
+                    '<div class="saved-resume-item-preview">' + escapeHtml(r.preview || '') + '</div>' +
+                '</div>' +
+                '<div class="saved-resume-item-actions">' +
+                    '<button class="saved-resume-action-btn" onclick="startRenameSavedResume(\'' + escapeAttr(r.id) + '\')">Rename</button>' +
+                    '<button class="saved-resume-action-btn danger" onclick="deleteSavedResume(\'' + escapeAttr(r.id) + '\')">Delete</button>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+        body.innerHTML = html;
+    }
+
+    function startRenameSavedResume(id) {
+        var item = document.querySelector('.saved-resume-item[data-id="' + id + '"]');
+        if (!item) return;
+        var r = savedResumes.find(function(x) { return x.id === id; });
+        var main = item.querySelector('.saved-resume-item-main');
+        var actions = item.querySelector('.saved-resume-item-actions');
+        main.innerHTML = '<input class="saved-resume-rename-input" id="renameInput" value="' + escapeAttr(r ? r.name : '') + '" maxlength="255">';
+        actions.innerHTML =
+            '<button class="saved-resume-action-btn" onclick="commitRenameSavedResume(\'' + escapeAttr(id) + '\')">Save</button>' +
+            '<button class="saved-resume-action-btn" onclick="renderSavedResumeManager()">Cancel</button>';
+        var input = document.getElementById('renameInput');
+        input.focus();
+        input.addEventListener('keydown', function(e) { if (e.key === 'Enter') commitRenameSavedResume(id); });
+    }
+
+    function commitRenameSavedResume(id) {
+        var input = document.getElementById('renameInput');
+        var name = (input ? input.value : '').trim();
+        if (!name) { showToast('Name cannot be empty', 'error'); return; }
+        fetch('/api/saved-resumes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id, name: name })
+        }).then(function(r) {
+            if (!r.ok) { showToast('Rename failed', 'error'); return; }
+            var r2 = savedResumes.find(function(x) { return x.id === id; });
+            if (r2) r2.name = name;
+            renderSavedResumeManager();
+            renderSavedResumeStrip();
+            showToast('Renamed', 'success');
+        }).catch(function() { showToast('Rename failed', 'error'); });
+    }
+
+    function deleteSavedResume(id) {
+        if (!confirm('Delete this saved resume? This cannot be undone.')) return;
+        fetch('/api/saved-resumes/' + id, { method: 'DELETE' })
+            .then(function(r) {
+                if (!r.ok) { showToast('Delete failed', 'error'); return; }
+                if (selectedSavedResumeId === id) clearSavedResumeSelection();
+                savedResumes = savedResumes.filter(function(x) { return x.id !== id; });
+                renderSavedResumeManager();
+                renderSavedResumeStrip();
+                var countEl = document.getElementById('profileSavedResumeCount');
+                if (countEl) countEl.textContent = savedResumes.length;
+                showToast('Deleted', 'success');
+            }).catch(function() { showToast('Delete failed', 'error'); });
+    }
 
     // ── Batch Tailoring ──────────────────────────────────────────────────
     function startBatchTailoring() {
