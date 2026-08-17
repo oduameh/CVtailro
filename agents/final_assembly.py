@@ -125,22 +125,28 @@ class FinalAssemblyAgent(BaseAgent["FinalOutput"]):
 
         logger.info(f"[{self.AGENT_NAME}] Generating interview talking points...")
 
-        try:
-            raw_text = self._call_llm_api(system, user_message)
-            parsed_json = self._extract_json(raw_text)
+        # Talking points are optional (job succeeds with an empty list), so a
+        # single attempt per candidate model is enough — but a ':free' primary
+        # still walks the free fallback chain before giving up.
+        for model in self._model_candidates():
+            try:
+                raw_text = self._call_llm_api(system, user_message, model)
+                parsed_json = self._extract_json(raw_text)
 
-            # Handle both {"talking_points": [...]} and bare [...]
-            if isinstance(parsed_json, dict) and "talking_points" in parsed_json:
-                points_data = parsed_json["talking_points"]
-            elif isinstance(parsed_json, list):
-                points_data = parsed_json
-            else:
-                points_data = parsed_json.get("talking_points", [])
+                # Handle both {"talking_points": [...]} and bare [...]
+                if isinstance(parsed_json, dict) and "talking_points" in parsed_json:
+                    points_data = parsed_json["talking_points"]
+                elif isinstance(parsed_json, list):
+                    points_data = parsed_json
+                else:
+                    points_data = parsed_json.get("talking_points", [])
 
-            return [TalkingPoint.model_validate(p) for p in points_data]
+                return [TalkingPoint.model_validate(p) for p in points_data]
 
-        except Exception as e:
-            logger.warning(
-                f"[{self.AGENT_NAME}] Failed to generate talking points: {e}. Returning empty list."
-            )
-            return []
+            except Exception as e:
+                logger.warning(f"[{self.AGENT_NAME}] Talking points failed on {model}: {e}")
+                if "Invalid OpenRouter API key" in str(e) or "Daily free-model limit" in str(e):
+                    break  # account-level failure — no other model helps
+
+        logger.warning(f"[{self.AGENT_NAME}] Talking points generation failed. Returning empty list.")
+        return []
