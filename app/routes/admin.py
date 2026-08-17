@@ -7,6 +7,7 @@ import os
 import platform as platform_mod
 import resource as resource_mod
 import threading
+import time
 from datetime import datetime, timedelta, timezone
 
 import requests as http_requests
@@ -22,10 +23,9 @@ from app.services.admin_config import AdminConfigManager
 from app.services.pipeline import (
     MAX_CONCURRENT_PIPELINES,
     MAX_QUEUE_DEPTH,
+    current_queue_depth,
     pipeline_errors,
     pipeline_errors_lock,
-    pipeline_queue_depth,
-    pipeline_queue_lock,
     pipeline_semaphore,
 )
 from app.services.telemetry import track
@@ -66,14 +66,18 @@ def _live_pipeline_state() -> dict:
         active = MAX_CONCURRENT_PIPELINES - available
     except AttributeError:
         active = -1
-    with pipeline_queue_lock:
-        queue_depth = pipeline_queue_depth
     return {
         "active_pipelines": active,
-        "queue_depth": queue_depth,
+        "queue_depth": current_queue_depth(),
         "max_concurrent": MAX_CONCURRENT_PIPELINES,
         "max_queue": MAX_QUEUE_DEPTH,
     }
+
+
+# Password-based admin sessions expire after this many hours. The flag lives
+# in the signed client-side cookie with no server-side record, so without an
+# expiry it would be an irrevocable bearer token.
+ADMIN_SESSION_MAX_AGE_HOURS = 12
 
 
 def _admin_required(f):
@@ -83,7 +87,11 @@ def _admin_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if session.get("admin_authenticated"):
-            return f(*args, **kwargs)
+            auth_at = session.get("admin_auth_at", 0)
+            if time.time() - auth_at < ADMIN_SESSION_MAX_AGE_HOURS * 3600:
+                return f(*args, **kwargs)
+            session.pop("admin_authenticated", None)
+            session.pop("admin_auth_at", None)
         if current_user.is_authenticated and current_user.is_admin:
             return f(*args, **kwargs)
         return jsonify({"error": "Not authenticated"}), 401
@@ -114,12 +122,13 @@ def admin_login():
         return jsonify({"error": "Password is required"}), 400
 
     if not AdminConfigManager.has_password():
-        return jsonify({
-            "error": "Admin password not configured. Set the ADMIN_PASSWORD environment variable."
-        }), 503
+        return jsonify(
+            {"error": "Admin password not configured. Set the ADMIN_PASSWORD environment variable."}
+        ), 503
 
     if AdminConfigManager.verify_password(password):
         session["admin_authenticated"] = True
+        session["admin_auth_at"] = time.time()
         login_rate_limiter.reset(client_ip)
         track("admin.login", category="admin", metadata={"method": "password"})
         return jsonify({"ok": True})
@@ -149,6 +158,7 @@ def admin_get_config():
             "default_model": config.default_model,
             "allow_user_model_selection": config.allow_user_model_selection,
             "rate_limit_per_hour": config.rate_limit_per_hour,
+            "daily_job_limit": config.daily_job_limit,
             "updated_at": config.updated_at,
         }
     )
@@ -171,13 +181,28 @@ def admin_save_config():
         config.allow_user_model_selection = bool(data["allow_user_model_selection"])
     if "rate_limit_per_hour" in data:
         config.rate_limit_per_hour = int(data["rate_limit_per_hour"])
+    if "daily_job_limit" in data:
+        try:
+            config.daily_job_limit = max(0, int(data["daily_job_limit"]))
+        except (ValueError, TypeError):
+            return jsonify({"error": "daily_job_limit must be a whole number"}), 400
 
     try:
         AdminConfigManager.save(config)
     except Exception as e:
         logger.exception("Failed to save admin config")
         return jsonify({"error": f"Save failed: {e}"}), 500
-    changed_keys = [k for k in ("api_key", "default_model", "allow_user_model_selection", "rate_limit_per_hour") if k in data]
+    changed_keys = [
+        k
+        for k in (
+            "api_key",
+            "default_model",
+            "allow_user_model_selection",
+            "rate_limit_per_hour",
+            "daily_job_limit",
+        )
+        if k in data
+    ]
     track("admin.config.updated", category="admin", metadata={"changed_keys": changed_keys})
     return jsonify({"ok": True, "updated_at": config.updated_at})
 
@@ -297,7 +322,14 @@ def admin_user_jobs(user_id: str):
     user = db.session.get(User, user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
-    jobs_list = TailoringJob.query.filter_by(user_id=user_id).order_by(TailoringJob.created_at.desc()).all()
+    # Full text fields are serialized below, so cap the row count — an
+    # unbounded query here can return hundreds of multi-100KB rows.
+    jobs_list = (
+        TailoringJob.query.filter_by(user_id=user_id)
+        .order_by(TailoringJob.created_at.desc())
+        .limit(100)
+        .all()
+    )
     return jsonify(
         {
             "user": {"id": user.id, "email": user.email, "name": user.name},
@@ -352,9 +384,15 @@ def admin_download_file(job_id: str, filename: str):
         job_data = jobs.get(job_id)
     if job_data:
         from flask import send_from_directory
+
         file_path = Path(job_data["output_dir"]) / safe_name
         if file_path.exists():
-            track("admin.download", category="admin", job_id=job_id, metadata={"filename": safe_name, "source": "local"})
+            track(
+                "admin.download",
+                category="admin",
+                job_id=job_id,
+                metadata={"filename": safe_name, "source": "local"},
+            )
             return send_from_directory(job_data["output_dir"], safe_name, as_attachment=True)
 
     # 2. R2 cloud storage
@@ -363,8 +401,14 @@ def admin_download_file(job_id: str, filename: str):
         if job_file and job_file.r2_key:
             try:
                 from flask import redirect
+
                 url = r2_storage.generate_presigned_url(job_file.r2_key)
-                track("admin.download", category="admin", job_id=job_id, metadata={"filename": safe_name, "source": "r2"})
+                track(
+                    "admin.download",
+                    category="admin",
+                    job_id=job_id,
+                    metadata={"filename": safe_name, "source": "r2"},
+                )
                 return redirect(url)
             except Exception as e:
                 logger.error(f"R2 presigned URL failed for admin download: {e}")
@@ -374,7 +418,12 @@ def admin_download_file(job_id: str, filename: str):
     if db_job is None:
         return jsonify({"error": "Job not found"}), 404
 
-    track("admin.download", category="admin", job_id=job_id, metadata={"filename": safe_name, "source": "db_regen"})
+    track(
+        "admin.download",
+        category="admin",
+        job_id=job_id,
+        metadata={"filename": safe_name, "source": "db_regen"},
+    )
     return _serve_from_db(db_job, safe_name)
 
 
@@ -688,29 +737,28 @@ def admin_product_usage():
     dau = (
         db.session.query(func.count(func.distinct(TailoringJob.user_id)))
         .filter(TailoringJob.created_at >= now.replace(hour=0, minute=0, second=0))
-        .scalar() or 0
+        .scalar()
+        or 0
     )
     wau = (
         db.session.query(func.count(func.distinct(TailoringJob.user_id)))
         .filter(TailoringJob.created_at >= now - timedelta(days=7))
-        .scalar() or 0
+        .scalar()
+        or 0
     )
     mau = (
         db.session.query(func.count(func.distinct(TailoringJob.user_id)))
         .filter(TailoringJob.created_at >= now - timedelta(days=30))
-        .scalar() or 0
+        .scalar()
+        or 0
     )
 
     # New user registrations over 30 days
     new_users_30d = User.query.filter(User.created_at >= now - timedelta(days=30)).count()
 
     # Feature adoption: saved resumes, tracker apps, downloads
-    users_with_saved_resumes = (
-        db.session.query(func.count(func.distinct(SavedResume.user_id))).scalar() or 0
-    )
-    users_with_tracker = (
-        db.session.query(func.count(func.distinct(JobApplication.user_id))).scalar() or 0
-    )
+    users_with_saved_resumes = db.session.query(func.count(func.distinct(SavedResume.user_id))).scalar() or 0
+    users_with_tracker = db.session.query(func.count(func.distinct(JobApplication.user_id))).scalar() or 0
     total_users = User.query.count()
 
     # Jobs per day (last 30 days) for trend chart
@@ -746,27 +794,30 @@ def admin_product_usage():
         .all()
     )
 
-    return jsonify({
-        "dau": dau, "wau": wau, "mau": mau,
-        "total_users": total_users,
-        "new_users_30d": new_users_30d,
-        "feature_adoption": {
-            "saved_resumes_users": users_with_saved_resumes,
-            "tracker_users": users_with_tracker,
+    return jsonify(
+        {
+            "dau": dau,
+            "wau": wau,
+            "mau": mau,
             "total_users": total_users,
-            "saved_resumes_pct": round(users_with_saved_resumes / max(total_users, 1) * 100, 1),
-            "tracker_pct": round(users_with_tracker / max(total_users, 1) * 100, 1),
-        },
-        "jobs_per_day": [
-            {"date": str(d).split()[0] if d else "1970-01-01", "total": t, "completed": c, "failed": f}
-            for d, t, c, f in jobs_per_day
-        ],
-        "users_per_day": [
-            {"date": str(d).split()[0] if d else "1970-01-01", "count": c}
-            for d, c in users_per_day
-        ],
-        "tracker_funnel": tracker_by_status,
-    })
+            "new_users_30d": new_users_30d,
+            "feature_adoption": {
+                "saved_resumes_users": users_with_saved_resumes,
+                "tracker_users": users_with_tracker,
+                "total_users": total_users,
+                "saved_resumes_pct": round(users_with_saved_resumes / max(total_users, 1) * 100, 1),
+                "tracker_pct": round(users_with_tracker / max(total_users, 1) * 100, 1),
+            },
+            "jobs_per_day": [
+                {"date": str(d).split()[0] if d else "1970-01-01", "total": t, "completed": c, "failed": f}
+                for d, t, c, f in jobs_per_day
+            ],
+            "users_per_day": [
+                {"date": str(d).split()[0] if d else "1970-01-01", "count": c} for d, c in users_per_day
+            ],
+            "tracker_funnel": tracker_by_status,
+        }
+    )
 
 
 @admin_bp.route("/admin/api/observability/reliability")
@@ -784,8 +835,8 @@ def admin_reliability():
 
     # Duration percentiles (completed jobs, last 30 days)
     durations = [
-        d[0] for d in
-        db.session.query(TailoringJob.duration_seconds)
+        d[0]
+        for d in db.session.query(TailoringJob.duration_seconds)
         .filter(
             TailoringJob.created_at >= month_ago,
             TailoringJob.duration_seconds.isnot(None),
@@ -835,28 +886,30 @@ def admin_reliability():
         .all()
     )
 
-    return jsonify({
-        "success_rate": success_rate,
-        "total_completed_30d": completed,
-        "total_errors_30d": errors,
-        "duration_p50": round(p50, 1),
-        "duration_p95": round(p95, 1),
-        "duration_avg": avg_dur,
-        "errors_by_model": errors_by_model,
-        "failures_per_day": [
-            {"date": str(d).split()[0] if d else "1970-01-01", "total": t, "errors": e}
-            for d, t, e in failures_per_day
-        ],
-        "recent_errors": [
-            {
-                "time": t.isoformat() if t else None,
-                "model": m,
-                "error": (msg or "")[:300],
-            }
-            for t, m, msg in recent_errors_db
-        ],
-        "live": _live_pipeline_state(),
-    })
+    return jsonify(
+        {
+            "success_rate": success_rate,
+            "total_completed_30d": completed,
+            "total_errors_30d": errors,
+            "duration_p50": round(p50, 1),
+            "duration_p95": round(p95, 1),
+            "duration_avg": avg_dur,
+            "errors_by_model": errors_by_model,
+            "failures_per_day": [
+                {"date": str(d).split()[0] if d else "1970-01-01", "total": t, "errors": e}
+                for d, t, e in failures_per_day
+            ],
+            "recent_errors": [
+                {
+                    "time": t.isoformat() if t else None,
+                    "model": m,
+                    "error": (msg or "")[:300],
+                }
+                for t, m, msg in recent_errors_db
+            ],
+            "live": _live_pipeline_state(),
+        }
+    )
 
 
 @admin_bp.route("/admin/api/observability/cost")
@@ -932,27 +985,28 @@ def admin_cost():
     completed_30d = sum(c for _, c in jobs_per_day_cost)
     cost_per_resume = round(total_cost_30d / max(completed_30d, 1), 4)
 
-    return jsonify({
-        "live_stats": {
-            "total_tokens_session": live_stats.get("total_tokens", 0),
-            "total_cost_session": round(live_stats.get("total_cost_usd", 0), 4),
-            "total_jobs_session": live_stats.get("total_jobs", 0),
-            "avg_cost_per_job": live_stats.get("avg_cost_per_job", 0),
-        },
-        "cost_30d": {
-            "total_cost_usd": round(total_cost_30d, 4),
-            "total_tokens": total_tokens_30d,
-            "completed_jobs": completed_30d,
-            "cost_per_resume": cost_per_resume,
-        },
-        "model_usage_all": {m: c for m, c in model_usage},
-        "model_usage_30d": {m: c for m, c in model_usage_30d},
-        "model_cost_30d": {k: round(v, 4) for k, v in model_cost.items()},
-        "jobs_per_day": [
-            {"date": str(d).split()[0] if d else "1970-01-01", "count": c}
-            for d, c in jobs_per_day_cost
-        ],
-    })
+    return jsonify(
+        {
+            "live_stats": {
+                "total_tokens_session": live_stats.get("total_tokens", 0),
+                "total_cost_session": round(live_stats.get("total_cost_usd", 0), 4),
+                "total_jobs_session": live_stats.get("total_jobs", 0),
+                "avg_cost_per_job": live_stats.get("avg_cost_per_job", 0),
+            },
+            "cost_30d": {
+                "total_cost_usd": round(total_cost_30d, 4),
+                "total_tokens": total_tokens_30d,
+                "completed_jobs": completed_30d,
+                "cost_per_resume": cost_per_resume,
+            },
+            "model_usage_all": {m: c for m, c in model_usage},
+            "model_usage_30d": {m: c for m, c in model_usage_30d},
+            "model_cost_30d": {k: round(v, 4) for k, v in model_cost.items()},
+            "jobs_per_day": [
+                {"date": str(d).split()[0] if d else "1970-01-01", "count": c} for d, c in jobs_per_day_cost
+            ],
+        }
+    )
 
 
 @admin_bp.route("/admin/api/observability/audit")
@@ -965,8 +1019,7 @@ def admin_audit():
 
     # Admin actions from analytics events
     admin_events = (
-        AnalyticsEvent.query
-        .filter(
+        AnalyticsEvent.query.filter(
             AnalyticsEvent.category == "admin",
             AnalyticsEvent.event_time >= since,
         )
@@ -977,8 +1030,7 @@ def admin_audit():
 
     # Auth events (failures, resets)
     auth_events = (
-        AnalyticsEvent.query
-        .filter(
+        AnalyticsEvent.query.filter(
             AnalyticsEvent.category == "auth",
             AnalyticsEvent.event_time >= since,
         )
@@ -1021,36 +1073,40 @@ def admin_audit():
         users_map = {u.id: u for u in User.query.filter(User.id.in_(user_ids)).all()} if user_ids else {}
         for uid, count in heavy_users:
             u = users_map.get(uid)
-            heavy_user_details.append({
-                "user_id": uid,
-                "email": u.email if u else "—",
-                "name": u.name if u else "—",
-                "job_count": count,
-            })
+            heavy_user_details.append(
+                {
+                    "user_id": uid,
+                    "email": u.email if u else "—",
+                    "name": u.name if u else "—",
+                    "job_count": count,
+                }
+            )
 
-    return jsonify({
-        "admin_actions": [
-            {
-                "event": e.event_name,
-                "time": e.event_time.isoformat() if e.event_time else None,
-                "metadata": e.metadata_json,
-            }
-            for e in admin_events
-        ],
-        "auth_events": [
-            {
-                "event": e.event_name,
-                "time": e.event_time.isoformat() if e.event_time else None,
-                "metadata": e.metadata_json,
-            }
-            for e in auth_events
-        ],
-        "auth_failures_by_day": [
-            {"date": str(d).split()[0] if d else "1970-01-01", "count": c}
-            for d, c in auth_failures_by_day
-        ],
-        "heavy_users": heavy_user_details,
-    })
+    return jsonify(
+        {
+            "admin_actions": [
+                {
+                    "event": e.event_name,
+                    "time": e.event_time.isoformat() if e.event_time else None,
+                    "metadata": e.metadata_json,
+                }
+                for e in admin_events
+            ],
+            "auth_events": [
+                {
+                    "event": e.event_name,
+                    "time": e.event_time.isoformat() if e.event_time else None,
+                    "metadata": e.metadata_json,
+                }
+                for e in auth_events
+            ],
+            "auth_failures_by_day": [
+                {"date": str(d).split()[0] if d else "1970-01-01", "count": c}
+                for d, c in auth_failures_by_day
+            ],
+            "heavy_users": heavy_user_details,
+        }
+    )
 
 
 @admin_bp.route("/admin/api/observability/events")
@@ -1071,29 +1127,28 @@ def admin_events_feed():
 
     total = query.count()
     events = (
-        query.order_by(AnalyticsEvent.event_time.desc())
-        .offset((page - 1) * per_page)
-        .limit(per_page)
-        .all()
+        query.order_by(AnalyticsEvent.event_time.desc()).offset((page - 1) * per_page).limit(per_page).all()
     )
 
-    return jsonify({
-        "total": total,
-        "page": page,
-        "per_page": per_page,
-        "events": [
-            {
-                "id": e.id,
-                "event_name": e.event_name,
-                "category": e.category,
-                "time": e.event_time.isoformat() if e.event_time else None,
-                "job_id": e.job_id,
-                "request_id": e.request_id,
-                "metadata": e.metadata_json,
-            }
-            for e in events
-        ],
-    })
+    return jsonify(
+        {
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "events": [
+                {
+                    "id": e.id,
+                    "event_name": e.event_name,
+                    "category": e.category,
+                    "time": e.event_time.isoformat() if e.event_time else None,
+                    "job_id": e.job_id,
+                    "request_id": e.request_id,
+                    "metadata": e.metadata_json,
+                }
+                for e in events
+            ],
+        }
+    )
 
 
 @admin_bp.route("/admin/api/observability/alerts")
@@ -1109,66 +1164,74 @@ def admin_alerts():
     errors_24h = status_24h.get("error", 0)
     total_24h = completed_24h + errors_24h
     if total_24h >= 3 and errors_24h / total_24h > 0.2:
-        alerts.append({
-            "severity": "high",
-            "type": "error_rate_spike",
-            "message": f"High error rate: {errors_24h}/{total_24h} jobs failed in 24h ({round(errors_24h/total_24h*100)}%)",
-        })
+        alerts.append(
+            {
+                "severity": "high",
+                "type": "error_rate_spike",
+                "message": f"High error rate: {errors_24h}/{total_24h} jobs failed in 24h ({round(errors_24h / total_24h * 100)}%)",
+            }
+        )
 
     # 2. Queue saturation: queue depth > 80% of max
     live = _live_pipeline_state()
     current_queue = live["queue_depth"]
     if current_queue > MAX_QUEUE_DEPTH * 0.8:
-        alerts.append({
-            "severity": "high",
-            "type": "queue_saturation",
-            "message": f"Queue near capacity: {current_queue}/{MAX_QUEUE_DEPTH}",
-        })
+        alerts.append(
+            {
+                "severity": "high",
+                "type": "queue_saturation",
+                "message": f"Queue near capacity: {current_queue}/{MAX_QUEUE_DEPTH}",
+            }
+        )
 
     # 3. No completed jobs in 24h (if there were attempts)
     running_24h = status_24h.get("running", 0)
     if total_24h == 0 and running_24h > 0:
-        alerts.append({
-            "severity": "medium",
-            "type": "pipeline_stalled",
-            "message": f"{running_24h} jobs running but none completed in 24h",
-        })
+        alerts.append(
+            {
+                "severity": "medium",
+                "type": "pipeline_stalled",
+                "message": f"{running_24h} jobs running but none completed in 24h",
+            }
+        )
 
     # 4. Auth failure burst: >10 failures in last hour
-    auth_failures_1h = (
-        AnalyticsEvent.query
-        .filter(
-            AnalyticsEvent.event_name.in_(["auth.login.failed", "admin.login.failed"]),
-            AnalyticsEvent.event_time >= now - timedelta(hours=1),
-        )
-        .count()
-    )
+    auth_failures_1h = AnalyticsEvent.query.filter(
+        AnalyticsEvent.event_name.in_(["auth.login.failed", "admin.login.failed"]),
+        AnalyticsEvent.event_time >= now - timedelta(hours=1),
+    ).count()
     if auth_failures_1h > 10:
-        alerts.append({
-            "severity": "medium",
-            "type": "auth_failure_burst",
-            "message": f"{auth_failures_1h} auth failures in the last hour",
-        })
+        alerts.append(
+            {
+                "severity": "medium",
+                "type": "auth_failure_burst",
+                "message": f"{auth_failures_1h} auth failures in the last hour",
+            }
+        )
 
     # 5. Cost anomaly: session cost > $5 (unusual for GPT-4o-mini)
     live_cost = pipeline_analytics.get_global_stats().get("total_cost_usd", 0)
     if live_cost > 5.0:
-        alerts.append({
-            "severity": "medium",
-            "type": "cost_anomaly",
-            "message": f"Session cost unusually high: ${live_cost:.2f}",
-        })
+        alerts.append(
+            {
+                "severity": "medium",
+                "type": "cost_anomaly",
+                "message": f"Session cost unusually high: ${live_cost:.2f}",
+            }
+        )
 
-    return jsonify({
-        "alerts": alerts,
-        "checked_at": now.isoformat(),
-        "slo": {
-            "error_rate_24h": round(errors_24h / max(total_24h, 1) * 100, 1),
-            "queue_utilization": round(current_queue / max(MAX_QUEUE_DEPTH, 1) * 100, 1),
-            "auth_failures_1h": auth_failures_1h,
-            "session_cost_usd": round(live_cost, 4),
-        },
-    })
+    return jsonify(
+        {
+            "alerts": alerts,
+            "checked_at": now.isoformat(),
+            "slo": {
+                "error_rate_24h": round(errors_24h / max(total_24h, 1) * 100, 1),
+                "queue_utilization": round(current_queue / max(MAX_QUEUE_DEPTH, 1) * 100, 1),
+                "auth_failures_1h": auth_failures_1h,
+                "session_cost_usd": round(live_cost, 4),
+            },
+        }
+    )
 
 
 @admin_bp.route("/admin/api/observability/retention", methods=["POST"])
@@ -1192,11 +1255,13 @@ def admin_run_retention():
 @_admin_required
 def admin_get_session_config():
     """Get current session policy settings."""
-    return jsonify({
-        "max_concurrent_sessions": int(AdminConfigManager.get("max_concurrent_sessions") or 3),
-        "idle_timeout_minutes": int(AdminConfigManager.get("idle_timeout_minutes") or 60),
-        "session_max_age_hours": int(AdminConfigManager.get("session_max_age_hours") or 168),
-    })
+    return jsonify(
+        {
+            "max_concurrent_sessions": int(AdminConfigManager.get("max_concurrent_sessions") or 3),
+            "idle_timeout_minutes": int(AdminConfigManager.get("idle_timeout_minutes") or 60),
+            "session_max_age_hours": int(AdminConfigManager.get("session_max_age_hours") or 168),
+        }
+    )
 
 
 @admin_bp.route("/admin/api/session-config", methods=["POST"])
@@ -1217,10 +1282,12 @@ def admin_save_session_config():
 @_admin_required
 def admin_get_adsense_config():
     """Get current AdSense settings."""
-    return jsonify({
-        "adsense_enabled": AdminConfigManager.get("adsense_enabled") or "false",
-        "adsense_client_id": AdminConfigManager.get("adsense_client_id") or "",
-    })
+    return jsonify(
+        {
+            "adsense_enabled": AdminConfigManager.get("adsense_enabled") or "false",
+            "adsense_client_id": AdminConfigManager.get("adsense_client_id") or "",
+        }
+    )
 
 
 @admin_bp.route("/admin/api/adsense-config", methods=["POST"])
@@ -1247,27 +1314,29 @@ def admin_list_sessions():
     user_ids = list({s.user_id for s in sessions})
     users_map = {u.id: u for u in User.query.filter(User.id.in_(user_ids)).all()} if user_ids else {}
 
-    return jsonify({
-        "total": len(sessions),
-        "sessions": [
-            {
-                "id": s.id,
-                "user_id": s.user_id,
-                "user_email": users_map[s.user_id].email if s.user_id in users_map else "—",
-                "user_name": users_map[s.user_id].name if s.user_id in users_map else "—",
-                "ip_address": s.ip_address,
-                "device_type": s.device_type,
-                "browser_name": s.browser_name,
-                "os_name": s.os_name,
-                "country": s.country,
-                "city": s.city,
-                "created_at": s.created_at.isoformat() if s.created_at else None,
-                "last_activity_at": s.last_activity_at.isoformat() if s.last_activity_at else None,
-                "expires_at": s.expires_at.isoformat() if s.expires_at else None,
-            }
-            for s in sessions
-        ],
-    })
+    return jsonify(
+        {
+            "total": len(sessions),
+            "sessions": [
+                {
+                    "id": s.id,
+                    "user_id": s.user_id,
+                    "user_email": users_map[s.user_id].email if s.user_id in users_map else "—",
+                    "user_name": users_map[s.user_id].name if s.user_id in users_map else "—",
+                    "ip_address": s.ip_address,
+                    "device_type": s.device_type,
+                    "browser_name": s.browser_name,
+                    "os_name": s.os_name,
+                    "country": s.country,
+                    "city": s.city,
+                    "created_at": s.created_at.isoformat() if s.created_at else None,
+                    "last_activity_at": s.last_activity_at.isoformat() if s.last_activity_at else None,
+                    "expires_at": s.expires_at.isoformat() if s.expires_at else None,
+                }
+                for s in sessions
+            ],
+        }
+    )
 
 
 @admin_bp.route("/admin/api/sessions/<session_id>", methods=["DELETE"])
@@ -1290,7 +1359,9 @@ def admin_revoke_user_sessions(user_id: str):
     from app.services.session_manager import revoke_all_user_sessions
 
     count = revoke_all_user_sessions(user_id)
-    track("admin.user.force_logout", category="admin", metadata={"user_id": user_id, "sessions_revoked": count})
+    track(
+        "admin.user.force_logout", category="admin", metadata={"user_id": user_id, "sessions_revoked": count}
+    )
     return jsonify({"ok": True, "revoked_count": count})
 
 
@@ -1311,30 +1382,32 @@ def admin_login_history():
     user_ids = list({e.user_id for e in events if e.user_id})
     users_map = {u.id: u for u in User.query.filter(User.id.in_(user_ids)).all()} if user_ids else {}
 
-    return jsonify({
-        "total": total,
-        "limit": limit,
-        "offset": offset,
-        "events": [
-            {
-                "id": e.id,
-                "user_id": e.user_id,
-                "user_email": users_map[e.user_id].email if e.user_id in users_map else e.email or "—",
-                "user_name": users_map[e.user_id].name if e.user_id in users_map else "—",
-                "event_type": e.event_type,
-                "ip_address": e.ip_address,
-                "device_type": e.device_type,
-                "browser_name": e.browser_name,
-                "os_name": e.os_name,
-                "country": e.country,
-                "city": e.city,
-                "success": e.success,
-                "failure_reason": e.failure_reason,
-                "created_at": e.created_at.isoformat() if e.created_at else None,
-            }
-            for e in events
-        ],
-    })
+    return jsonify(
+        {
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "events": [
+                {
+                    "id": e.id,
+                    "user_id": e.user_id,
+                    "user_email": users_map[e.user_id].email if e.user_id in users_map else e.email or "—",
+                    "user_name": users_map[e.user_id].name if e.user_id in users_map else "—",
+                    "event_type": e.event_type,
+                    "ip_address": e.ip_address,
+                    "device_type": e.device_type,
+                    "browser_name": e.browser_name,
+                    "os_name": e.os_name,
+                    "country": e.country,
+                    "city": e.city,
+                    "success": e.success,
+                    "failure_reason": e.failure_reason,
+                    "created_at": e.created_at.isoformat() if e.created_at else None,
+                }
+                for e in events
+            ],
+        }
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1518,7 +1591,9 @@ def admin_blog_image_upload():
     db.session.add(img)
     db.session.commit()
 
-    track("admin.blog.image_uploaded", category="admin", metadata={"image_id": img.id, "filename": f.filename})
+    track(
+        "admin.blog.image_uploaded", category="admin", metadata={"image_id": img.id, "filename": f.filename}
+    )
     return jsonify(img.to_dict()), 201
 
 

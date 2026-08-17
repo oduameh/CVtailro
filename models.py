@@ -75,7 +75,7 @@ class JobAnalysis(BaseModel):
     inferred_priority_skills: list[PrioritisedSkill]
     raw_text_for_similarity: str = Field(
         default="",
-        description="Cleaned job text for cosine similarity computation",
+        description="Leave empty — computed downstream from the original job text",
     )
 
 
@@ -136,7 +136,7 @@ class ResumeData(BaseModel):
     total_years_estimate: float
     raw_text_for_similarity: str = Field(
         default="",
-        description="Cleaned resume text for cosine similarity computation",
+        description="Leave empty — computed downstream from the original resume text",
     )
 
 
@@ -286,6 +286,17 @@ class TalkingPoint(BaseModel):
         default="",
         description="Which role/bullet this maps back to",
     )
+
+
+class TalkingPointsOutput(BaseModel):
+    """LLM output shape for talking-points generation.
+
+    The talking-points call only produces this array — injecting the full
+    FinalOutput schema would instruct the model to re-emit both resumes and
+    a match report into a 4096-token budget.
+    """
+
+    talking_points: list[TalkingPoint]
 
 
 class MatchReport(BaseModel):

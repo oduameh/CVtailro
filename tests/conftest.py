@@ -31,6 +31,29 @@ def db(flask_app):
         _db.drop_all()
 
 
+@pytest.fixture(scope="function", autouse=True)
+def _reset_rate_limits(flask_app):
+    """Reset the shared in-memory limiter storage between tests.
+
+    The limiter is attached to the session-scoped app, so without this its
+    counters accumulate across the whole run — making any test that POSTs to a
+    rate-limited endpoint (e.g. /api/tailor) order-dependent.
+    """
+    from app.extensions import limiter
+    from app.services.usage import usage_tracker
+
+    try:
+        limiter.reset()
+    except Exception:
+        pass
+    # The usage tracker is a module-level singleton; clear its in-memory
+    # hourly + daily counters so anonymous-IP state doesn't leak between tests.
+    with usage_tracker._lock:
+        usage_tracker._requests.clear()
+        usage_tracker._daily.clear()
+    yield
+
+
 @pytest.fixture(scope="function")
 def client(flask_app, db):
     """Flask test client with a fresh database."""

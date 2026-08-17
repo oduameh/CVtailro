@@ -44,7 +44,9 @@ def ads_txt():
 
 @main_bp.route("/robots.txt")
 def robots_txt():
-    base_url = current_app.config.get("BLOG_BASE_URL", "https://cvtailro-production.up.railway.app").rstrip("/")
+    base_url = current_app.config.get("BLOG_BASE_URL", "https://cvtailro-production.up.railway.app").rstrip(
+        "/"
+    )
     body = "\n".join(
         [
             "User-agent: *",
@@ -58,7 +60,9 @@ def robots_txt():
 
 @main_bp.route("/sitemap.xml")
 def sitemap_xml():
-    base_url = current_app.config.get("BLOG_BASE_URL", "https://cvtailro-production.up.railway.app").rstrip("/")
+    base_url = current_app.config.get("BLOG_BASE_URL", "https://cvtailro-production.up.railway.app").rstrip(
+        "/"
+    )
     urls = [
         f"{base_url}/",
         f"{base_url}/pricing",
@@ -72,8 +76,8 @@ def sitemap_xml():
 
     items = "\n".join(f"  <url><loc>{u}</loc></url>" for u in urls)
     xml = (
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n"
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         f"{items}\n"
         "</urlset>\n"
     )
@@ -113,12 +117,16 @@ def api_status():
 def list_models():
     config = AdminConfigManager.load()
     default = config.default_model if config.default_model else DEFAULT_MODEL
+
+    models = RECOMMENDED_MODELS
+    if not current_app.config.get("TESTING"):
+        from app.services.model_catalog import filter_available
+
+        models = filter_available(RECOMMENDED_MODELS)
+
     return jsonify(
         {
-            "models": [
-                {"id": model_id, "name": display_name}
-                for display_name, model_id in RECOMMENDED_MODELS.items()
-            ],
+            "models": [{"id": model_id, "name": display_name} for display_name, model_id in models.items()],
             "default": default,
             "user_selectable": config.allow_user_model_selection,
         }

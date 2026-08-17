@@ -59,6 +59,6 @@ class TestStripContactInfo:
     def test_all_parts_contact_drops_line(self):
         md = "# Name\n+1-555-0199 | me@test.com | linkedin.com/in/me\n\n## Summary"
         result = strip_contact_info(md)
-        lines = [l for l in result.split("\n") if l.strip()]
+        lines = [ln for ln in result.split("\n") if ln.strip()]
         assert lines[0] == "# Name"
         assert lines[1] == "## Summary"

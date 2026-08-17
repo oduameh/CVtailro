@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
 import time
 import uuid
 from typing import Any
@@ -15,6 +16,12 @@ logger = logging.getLogger(__name__)
 
 _redis_client = None
 _redis_available = False
+
+# Bounded in-process fallback for cache_get/cache_set when Redis is absent.
+# Single-instance Railway deploys still benefit from JD-intelligence caching.
+_MEM_CACHE_MAX = 256
+_mem_cache: dict[str, tuple[str, float]] = {}  # key -> (value, expires_at)
+_mem_cache_lock = threading.Lock()
 
 
 def init_redis() -> bool:
@@ -53,9 +60,31 @@ def is_available() -> bool:
     return _redis_available
 
 
+def _mem_get(key: str) -> str | None:
+    now = time.time()
+    with _mem_cache_lock:
+        entry = _mem_cache.get(key)
+        if entry is None:
+            return None
+        value, expires_at = entry
+        if expires_at <= now:
+            _mem_cache.pop(key, None)
+            return None
+        return value
+
+
+def _mem_set(key: str, value: str, ttl: int) -> None:
+    with _mem_cache_lock:
+        if len(_mem_cache) >= _MEM_CACHE_MAX and key not in _mem_cache:
+            # Evict the entry expiring soonest to bound memory.
+            oldest = min(_mem_cache, key=lambda k: _mem_cache[k][1])
+            _mem_cache.pop(oldest, None)
+        _mem_cache[key] = (value, time.time() + ttl)
+
+
 def cache_get(key: str) -> str | None:
     if not _redis_available or _redis_client is None:
-        return None
+        return _mem_get(key)
     try:
         return _redis_client.get(key)
     except Exception:
@@ -64,7 +93,8 @@ def cache_get(key: str) -> str | None:
 
 def cache_set(key: str, value: Any, ttl: int = 300) -> bool:
     if not _redis_available or _redis_client is None:
-        return False
+        _mem_set(key, str(value), ttl)
+        return True
     try:
         _redis_client.setex(key, ttl, str(value))
         return True
@@ -74,7 +104,9 @@ def cache_set(key: str, value: Any, ttl: int = 300) -> bool:
 
 def cache_delete(key: str) -> bool:
     if not _redis_available or _redis_client is None:
-        return False
+        with _mem_cache_lock:
+            _mem_cache.pop(key, None)
+        return True
     try:
         _redis_client.delete(key)
         return True

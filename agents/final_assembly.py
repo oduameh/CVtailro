@@ -20,6 +20,7 @@ from models import (
     MatchReport,
     RecruiterResume,
     TalkingPoint,
+    TalkingPointsOutput,
 )
 
 logger = logging.getLogger(__name__)
@@ -29,7 +30,10 @@ class FinalAssemblyAgent(BaseAgent["FinalOutput"]):
     """Assembles final output artifacts and generates talking points."""
 
     PROMPT_FILE = "final_assembly.txt"
-    OUTPUT_MODEL = FinalOutput
+    # The only LLM call this agent makes produces talking points; injecting
+    # the full FinalOutput schema made the model echo both resumes + a match
+    # report into the 4096-token budget on every job.
+    OUTPUT_MODEL = TalkingPointsOutput
     AGENT_NAME = "Final Assembly Agent"
     AGENT_MAX_TOKENS = 4096
 

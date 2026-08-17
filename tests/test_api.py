@@ -13,6 +13,7 @@ def test_tailor_no_resume(client):
         m.return_value.allow_user_model_selection = False
         m.return_value.default_model = "gpt-4o-mini"
         m.return_value.rate_limit_per_hour = 100
+        m.return_value.daily_job_limit = 0
         resp = client.post("/api/tailor", data={"job_description": "x" * 100})
     assert resp.status_code == 400
     assert "resume" in resp.get_json()["error"].lower()
@@ -25,6 +26,7 @@ def test_tailor_short_jd(client):
         m.return_value.allow_user_model_selection = False
         m.return_value.default_model = "gpt-4o-mini"
         m.return_value.rate_limit_per_hour = 100
+        m.return_value.daily_job_limit = 0
         data = {
             "resume": (io.BytesIO(b"test resume"), "resume.txt"),
             "job_description": "too short",
@@ -41,6 +43,7 @@ def test_tailor_invalid_mode(client):
         m.return_value.allow_user_model_selection = False
         m.return_value.default_model = "gpt-4o-mini"
         m.return_value.rate_limit_per_hour = 100
+        m.return_value.daily_job_limit = 0
         data = {
             "resume": (io.BytesIO(b"test resume"), "resume.txt"),
             "job_description": "x" * 100,

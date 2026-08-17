@@ -7,6 +7,7 @@ emits progress events through a queue, and persists results to the DB.
 from __future__ import annotations
 
 import gc
+import hashlib
 import logging
 import mimetypes
 import re
@@ -27,16 +28,32 @@ from agents.resume_parser import ResumeParserAgent
 from analytics import pipeline_analytics
 from app.extensions import db
 from app.models import JobFile, TailoringJob
+from app.services.cache import cache_get, cache_set
 from app.services.telemetry import track_with_app
 from config import AppConfig
 from docx_generator import generate_resume_docx
-from models import MatchReport, RewriteMode
+from models import JobAnalysis, MatchReport, ResumeData, RewriteMode
 from pdf_generator import ALL_TEMPLATE_NAMES, generate_resume_pdf
 from similarity import resume_job_similarity
 from storage import r2_storage
 from utils import load_resume, save_json, save_markdown, setup_logging
 
 logger = logging.getLogger("cvtailro.pipeline")
+
+# Job-intelligence (Stage 1) cache — repeated tailoring against the same JD
+# (very common when users iterate) reuses the LLM analysis instead of re-paying.
+JD_INTEL_CACHE_TTL = 7 * 24 * 3600  # 7 days
+
+
+def _jd_cache_key(job_text: str, model: str) -> str:
+    return "jdintel:" + hashlib.sha256(f"{model}\n{job_text}".encode()).hexdigest()
+
+
+def _resume_cache_key(resume_text: str, model: str) -> str:
+    # Saved Resumes and batch tailoring submit byte-identical resume text
+    # across many jobs — the parse result is deterministic per (model, text).
+    return "resparse:" + hashlib.sha256(f"{model}\n{resume_text}".encode()).hexdigest()
+
 
 # ── Thread-safe job storage ──────────────────────────────────────────────────
 jobs: dict[str, dict] = {}
@@ -55,6 +72,22 @@ JOB_TTL_SECONDS = 900
 pipeline_semaphore = threading.Semaphore(MAX_CONCURRENT_PIPELINES)
 pipeline_queue_depth = 0
 pipeline_queue_lock = threading.Lock()
+
+
+def current_queue_depth() -> int:
+    """Live pipeline queue depth.
+
+    Callers must use this rather than importing ``pipeline_queue_depth``
+    directly — ``from ... import`` binds the int by value, so the imported
+    copy never reflects updates made here.
+    """
+    with pipeline_queue_lock:
+        return pipeline_queue_depth
+
+
+def queue_is_full() -> bool:
+    """True when the pipeline queue has no capacity for another job."""
+    return current_queue_depth() >= MAX_QUEUE_DEPTH
 
 
 def cleanup_old_jobs(ttl: int = JOB_TTL_SECONDS) -> None:
@@ -173,14 +206,20 @@ def run_pipeline_job(
         queue_position = pipeline_queue_depth
     queue_enter = time.time()
     emit(0, 6, "Pipeline", "queued", "Waiting for available slot...", position=queue_position)
-    pipeline_semaphore.acquire()
-    with pipeline_queue_lock:
-        pipeline_queue_depth -= 1
-    queue_wait_ms = round((time.time() - queue_enter) * 1000)
-    _te("tailor.queue.exited", metadata={"wait_ms": queue_wait_ms, "model": model})
-
     log_cleanup = None
+    queue_wait_ms = 0
+    acquired = False
     try:
+        # Acquire inside the try so the finally's release() only runs when the
+        # permit was actually taken — a failure between acquire and here (e.g. in
+        # telemetry) can no longer leak a concurrency slot.
+        pipeline_semaphore.acquire()
+        acquired = True
+        with pipeline_queue_lock:
+            pipeline_queue_depth -= 1
+        queue_wait_ms = round((time.time() - queue_enter) * 1000)
+        _te("tailor.queue.exited", metadata={"wait_ms": queue_wait_ms, "model": model})
+
         pipeline_config = AppConfig(
             rewrite_mode=RewriteMode(mode),
             output_dir=str(output_dir),
@@ -225,17 +264,33 @@ def run_pipeline_job(
         def run_stage1():
             nonlocal job_analysis
             try:
-                agent1 = JobIntelligenceAgent(pipeline_config)
-                job_analysis = agent1.run(job_text)
+                cache_key = _jd_cache_key(job_text, model)
+                from_cache = False
+                cached = cache_get(cache_key)
+                if cached:
+                    try:
+                        job_analysis = JobAnalysis.model_validate_json(cached)
+                        from_cache = True
+                    except Exception as ce:
+                        logger.warning(f"JD intel cache hit failed to parse, re-running: {ce}")
+
+                if job_analysis is None:
+                    agent1 = JobIntelligenceAgent(pipeline_config)
+                    job_analysis = agent1.run(job_text)
+                    try:
+                        cache_set(cache_key, job_analysis.model_dump_json(), ttl=JD_INTEL_CACHE_TTL)
+                    except Exception as se:
+                        logger.warning(f"JD intel cache store failed: {se}")
+
                 save_json(job_analysis.model_dump(), output_dir / "01_job_analysis.json")
-                emit(
-                    1,
-                    6,
-                    "Job Intelligence",
-                    "done",
+                detail = (
                     f"{len(job_analysis.required_skills)} required skills, "
-                    f"{len(job_analysis.tools)} tools detected",
+                    f"{len(job_analysis.tools)} tools detected"
                 )
+                if from_cache:
+                    detail += " (cached)"
+                    _te("tailor.stage1.cache_hit", metadata={"model": model})
+                emit(1, 6, "Job Intelligence", "done", detail)
             except Exception as e:
                 stage_errors.append(e)
                 emit(1, 6, "Job Intelligence", "error", str(e))
@@ -243,18 +298,34 @@ def run_pipeline_job(
         def run_stage2():
             nonlocal resume_data
             try:
-                agent2 = ResumeParserAgent(pipeline_config)
-                resume_data = agent2.run(resume_text)
+                cache_key = _resume_cache_key(resume_text, model)
+                from_cache = False
+                cached = cache_get(cache_key)
+                if cached:
+                    try:
+                        resume_data = ResumeData.model_validate_json(cached)
+                        from_cache = True
+                    except Exception as ce:
+                        logger.warning(f"Resume parse cache hit failed to parse, re-running: {ce}")
+
+                if resume_data is None:
+                    agent2 = ResumeParserAgent(pipeline_config)
+                    resume_data = agent2.run(resume_text)
+                    try:
+                        cache_set(cache_key, resume_data.model_dump_json(), ttl=JD_INTEL_CACHE_TTL)
+                    except Exception as se:
+                        logger.warning(f"Resume parse cache store failed: {se}")
+
                 save_json(resume_data.model_dump(), output_dir / "02_resume_data.json")
                 total_bullets = sum(len(r.bullets) for r in resume_data.roles)
-                emit(
-                    2,
-                    6,
-                    "Resume Parser",
-                    "done",
+                detail = (
                     f"{len(resume_data.roles)} roles, {total_bullets} bullets, "
-                    f"{resume_data.total_years_estimate:.0f} years experience",
+                    f"{resume_data.total_years_estimate:.0f} years experience"
                 )
+                if from_cache:
+                    detail += " (cached)"
+                    _te("tailor.stage2.cache_hit", metadata={"model": model})
+                emit(2, 6, "Resume Parser", "done", detail)
             except Exception as e:
                 stage_errors.append(e)
                 emit(2, 6, "Resume Parser", "error", str(e))
@@ -464,26 +535,47 @@ def run_pipeline_job(
         resume_md_name = safe_filename(job_analysis.job_title, job_analysis.company, "Resume.md")
         report_name = safe_filename(job_analysis.job_title, job_analysis.company, "Match_Report.json")
         tp_name = safe_filename(job_analysis.job_title, job_analysis.company, "Talking_Points.md")
+        recruiter_docx_name = safe_filename(job_analysis.job_title, job_analysis.company, "Recruiter.docx")
 
+        # Text artifacts are instant — write them eagerly.
         save_markdown(ats_resume.markdown_content, output_dir / resume_md_name)
-        template_pdf_names = []
-        for tpl_name in ALL_TEMPLATE_NAMES:
-            pdf_name = safe_filename(job_analysis.job_title, job_analysis.company, f"{tpl_name.title()}.pdf")
-            generate_resume_pdf(ats_resume.markdown_content, output_dir / pdf_name, template=tpl_name)
-            template_pdf_names.append(pdf_name)
-        generate_resume_docx(ats_resume.markdown_content, output_dir / resume_docx_name, template=template)
         save_json(match_report.model_dump(), output_dir / report_name)
         save_markdown(format_talking_points(talking_points), output_dir / tp_name)
 
-        # ── Recruiter version (contact info stripped) ─────────────────────
         recruiter_md = strip_contact_info(ats_resume.markdown_content)
-        recruiter_pdf_names = []
-        recruiter_docx_name = safe_filename(job_analysis.job_title, job_analysis.company, "Recruiter.docx")
-        for tpl_name in ALL_TEMPLATE_NAMES:
-            rec_pdf_name = safe_filename(job_analysis.job_title, job_analysis.company, f"Recruiter_{tpl_name.title()}.pdf")
-            generate_resume_pdf(recruiter_md, output_dir / rec_pdf_name, template=tpl_name)
-            recruiter_pdf_names.append(rec_pdf_name)
-        generate_resume_docx(recruiter_md, output_dir / recruiter_docx_name, template=template)
+
+        # Build the FULL filename manifest (names only). The 8 template PDFs and
+        # 8 recruiter PDFs are NOT rendered here — WeasyPrint is the slow tail
+        # (~2-4s each). They are regenerated on first download by file_service
+        # (which then caches the result to R2), so most jobs render 1 PDF, not 17.
+        template_pdf_names = [
+            safe_filename(job_analysis.job_title, job_analysis.company, f"{tpl.title()}.pdf")
+            for tpl in ALL_TEMPLATE_NAMES
+        ]
+        recruiter_pdf_names = [
+            safe_filename(job_analysis.job_title, job_analysis.company, f"Recruiter_{tpl.title()}.pdf")
+            for tpl in ALL_TEMPLATE_NAMES
+        ]
+
+        # Eagerly render only the user-selected template PDF + the resume DOCX so
+        # the primary downloads are instant. Both are recoverable via lazy regen,
+        # so failures here are non-fatal.
+        selected_template = template if template in ALL_TEMPLATE_NAMES else "modern"
+        selected_pdf_name = safe_filename(
+            job_analysis.job_title, job_analysis.company, f"{selected_template.title()}.pdf"
+        )
+        try:
+            generate_resume_pdf(
+                ats_resume.markdown_content, output_dir / selected_pdf_name, template=selected_template
+            )
+        except Exception as e:
+            logger.warning(f"Eager selected-template PDF generation failed (will regen on demand): {e}")
+        try:
+            generate_resume_docx(
+                ats_resume.markdown_content, output_dir / resume_docx_name, template=selected_template
+            )
+        except Exception as e:
+            logger.warning(f"Eager resume DOCX generation failed (will regen on demand): {e}")
 
         emit(6, 6, "Final Assembly", "done", f"{len(talking_points)} talking points generated")
 
@@ -577,21 +669,11 @@ def run_pipeline_job(
             logger.warning(f"Cover letter generation failed (non-critical): {e}")
             cover_letter_md = None
 
+        # Cover letter files are rendered lazily on download (regenerated from
+        # cover_letter_md by file_service) — only reserve their names here.
         if cover_letter_md:
-            try:
-                cl_pdf_name = safe_filename(job_analysis.job_title, job_analysis.company, "Cover_Letter.pdf")
-                generate_resume_pdf(cover_letter_md, output_dir / cl_pdf_name, template=template)
-            except Exception as e:
-                logger.warning(f"Cover letter PDF generation failed: {e}")
-                cl_pdf_name = None
-            try:
-                cl_docx_name = safe_filename(
-                    job_analysis.job_title, job_analysis.company, "Cover_Letter.docx"
-                )
-                generate_resume_docx(cover_letter_md, output_dir / cl_docx_name, template=template)
-            except Exception as e:
-                logger.warning(f"Cover letter DOCX generation failed: {e}")
-                cl_docx_name = None
+            cl_pdf_name = safe_filename(job_analysis.job_title, job_analysis.company, "Cover_Letter.pdf")
+            cl_docx_name = safe_filename(job_analysis.job_title, job_analysis.company, "Cover_Letter.docx")
         else:
             cl_pdf_name = None
             cl_docx_name = None
@@ -607,20 +689,27 @@ def run_pipeline_job(
                 f"${job_stats.get('estimated_cost_usd', 0):.4f} est. cost"
             )
 
-        _te("tailor.job.completed", metadata={
-            "duration_s": round(total_elapsed, 1),
-            "model": model,
-            "total_tokens": job_stats.get("total_tokens", 0) if job_stats else 0,
-            "api_calls": job_stats.get("api_calls", 0) if job_stats else 0,
-            "retries": job_stats.get("retries", 0) if job_stats else 0,
-            "estimated_cost_usd": job_stats.get("estimated_cost_usd", 0) if job_stats else 0,
-            "tailored_match_score": tailored_match_score,
-            "original_match_score": gap_report.match_score,
-            "queue_wait_ms": queue_wait_ms,
-        })
+        _te(
+            "tailor.job.completed",
+            metadata={
+                "duration_s": round(total_elapsed, 1),
+                "model": model,
+                "total_tokens": job_stats.get("total_tokens", 0) if job_stats else 0,
+                "api_calls": job_stats.get("api_calls", 0) if job_stats else 0,
+                "retries": job_stats.get("retries", 0) if job_stats else 0,
+                "estimated_cost_usd": job_stats.get("estimated_cost_usd", 0) if job_stats else 0,
+                "tailored_match_score": tailored_match_score,
+                "original_match_score": gap_report.match_score,
+                "queue_wait_ms": queue_wait_ms,
+            },
+        )
 
         # ── Persist to DB and upload to R2 ───────────────────────────────────
-        files_list = template_pdf_names + recruiter_pdf_names + [resume_docx_name, recruiter_docx_name, resume_md_name, report_name, tp_name]
+        files_list = (
+            template_pdf_names
+            + recruiter_pdf_names
+            + [resume_docx_name, recruiter_docx_name, resume_md_name, report_name, tp_name]
+        )
         if cl_pdf_name:
             files_list.append(cl_pdf_name)
         if cl_docx_name:
@@ -650,24 +739,30 @@ def run_pipeline_job(
                 db_job.completed_at = datetime.now(timezone.utc)
                 db_job.duration_seconds = total_elapsed
 
+                # Create a JobFile row for EVERY manifest name. Files rendered
+                # eagerly (the selected PDF, resume DOCX, text artifacts) get a real
+                # r2_key + size; lazily-rendered ones get a "virtual" row
+                # (r2_key="", size_bytes=None) that file_service regenerates and
+                # caches on first download.
                 for filename in files_list:
                     file_path = output_dir / filename
+                    r2_key = ""
+                    size_bytes = None
                     if file_path.exists():
-                        r2_key = ""
+                        size_bytes = file_path.stat().st_size
                         if r2_storage.is_configured:
                             try:
                                 r2_key = r2_storage.upload_file(job_id, filename, file_path=file_path)
                             except Exception as upload_err:
                                 logger.error(f"R2 upload failed for {filename}: {upload_err}")
-                        # Always create JobFile record (for filename tracking + DB fallback)
-                        job_file = JobFile(
-                            job_id=job_id,
-                            filename=filename,
-                            r2_key=r2_key,
-                            content_type=mimetypes.guess_type(filename)[0] or "application/octet-stream",
-                            size_bytes=file_path.stat().st_size,
-                        )
-                        db.session.add(job_file)
+                    job_file = JobFile(
+                        job_id=job_id,
+                        filename=filename,
+                        r2_key=r2_key,
+                        content_type=mimetypes.guess_type(filename)[0] or "application/octet-stream",
+                        size_bytes=size_bytes,
+                    )
+                    db.session.add(job_file)
 
                 db.session.commit()
                 logger.info(f"Job {job_id} persisted to database")
@@ -681,7 +776,9 @@ def run_pipeline_job(
         with jobs_lock:
             jobs[job_id]["status"] = "complete"
             jobs[job_id]["result"] = {
-                "match_score": match_report.overall_match_score,
+                # Tailored score, matching the DB fallback in /api/result and
+                # history — the original score stays in original_match_score.
+                "match_score": tailored_match_score,
                 "original_match_score": gap_report.match_score,
                 "tailored_match_score": tailored_match_score,
                 "cosine_similarity": match_report.cosine_similarity,
@@ -718,7 +815,10 @@ def run_pipeline_job(
         logging.getLogger("cvtailro.pipeline").exception("Pipeline failed")
         error_msg = str(e)
         pipeline_analytics.complete_job(job_id)
-        _te("tailor.job.failed", metadata={"model": model, "error": error_msg[:500], "queue_wait_ms": queue_wait_ms})
+        _te(
+            "tailor.job.failed",
+            metadata={"model": model, "error": error_msg[:500], "queue_wait_ms": queue_wait_ms},
+        )
         import traceback
 
         with pipeline_errors_lock:
@@ -755,4 +855,5 @@ def run_pipeline_job(
                 log_cleanup()
         except Exception:
             pass
-        pipeline_semaphore.release()
+        if acquired:
+            pipeline_semaphore.release()

@@ -144,7 +144,8 @@ def _register_security_headers(flask_app: Flask) -> None:
             "default-src 'self'; "
             "script-src 'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com "
             "https://pagead2.googlesyndication.com https://www.googletagservices.com "
-            "https://tpc.googlesyndication.com https://googleads.g.doubleclick.net; "
+            "https://tpc.googlesyndication.com https://googleads.g.doubleclick.net "
+            "https://cdn.jsdelivr.net; "
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             "font-src 'self' https://fonts.gstatic.com; "
             "img-src 'self' data: https: blob:; "
@@ -226,7 +227,9 @@ def _register_context_processors(flask_app: Flask) -> None:
     def inject_ads_config():
         from app.services.admin_config import AdminConfigManager
 
-        client_id = AdminConfigManager.get("adsense_client_id") or flask_app.config.get("ADSENSE_CLIENT_ID", "")
+        client_id = AdminConfigManager.get("adsense_client_id") or flask_app.config.get(
+            "ADSENSE_CLIENT_ID", ""
+        )
         enabled = AdminConfigManager.get("adsense_enabled")
         return {
             "ads_config": {
@@ -378,7 +381,9 @@ def _apply_column_migrations() -> None:
             le_indexes = {idx["name"] for idx in insp.get_indexes("login_events")}
             if "idx_login_events_user_created" not in le_indexes:
                 db.session.execute(
-                    text("CREATE INDEX idx_login_events_user_created ON login_events(user_id, created_at DESC)")
+                    text(
+                        "CREATE INDEX idx_login_events_user_created ON login_events(user_id, created_at DESC)"
+                    )
                 )
                 db.session.commit()
         except Exception:

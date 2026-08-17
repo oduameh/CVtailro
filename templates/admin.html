@@ -1434,6 +1434,10 @@
                                 <label for="rateLimit">Rate Limit (requests/hour, 0 = unlimited)</label>
                                 <input type="number" id="rateLimit" min="0" value="0">
                             </div>
+                            <div class="form-group">
+                                <label for="dailyJobLimit">Daily Job Limit (tailored resumes/user/day, 0 = unlimited)</label>
+                                <input type="number" id="dailyJobLimit" min="0" value="10">
+                            </div>
                             <div style="display:flex;justify-content:space-between;align-items:center;">
                                 <button class="btn btn-primary" onclick="saveConfig()">Save Configuration</button>
                                 <span id="lastUpdated" style="font-size:12px;color:var(--text-secondary);"></span>
@@ -1988,6 +1992,7 @@
         }
         document.getElementById('allowUserModel').checked = config.allow_user_model_selection !== false;
         document.getElementById('rateLimit').value = config.rate_limit_per_hour || 0;
+        document.getElementById('dailyJobLimit').value = (config.daily_job_limit != null) ? config.daily_job_limit : 10;
         document.getElementById('lastUpdated').textContent = config.updated_at ? 'Last saved: ' + config.updated_at : '';
 
         loadModels(config.default_model);
@@ -2598,7 +2603,7 @@
 
         destroyChart('pipeFailures');
         var fctx = document.getElementById('pipeFailuresChart');
-        if (fctx && d.failures_per_day) {
+        if (fctx && d.failures_per_day && typeof Chart !== 'undefined') {
             chartInstances['pipeFailures'] = new Chart(fctx, {
                 type: 'bar',
                 data: {
@@ -2618,7 +2623,7 @@
 
         destroyChart('pipeModelErrors');
         var mctx = document.getElementById('pipeModelErrorsChart');
-        if (mctx && d.errors_by_model) {
+        if (mctx && d.errors_by_model && typeof Chart !== 'undefined') {
             var mLabels = Object.keys(d.errors_by_model).map(shortModel);
             var mValues = Object.values(d.errors_by_model);
             chartInstances['pipeModelErrors'] = new Chart(mctx, {
@@ -2696,7 +2701,7 @@
 
             destroyChart('costModelAll');
             var actx = document.getElementById('costModelAllChart');
-            if (actx && d.model_usage_all) {
+            if (actx && d.model_usage_all && typeof Chart !== 'undefined') {
                 var aLabels = Object.keys(d.model_usage_all).map(shortModel);
                 var aValues = Object.values(d.model_usage_all);
                 chartInstances['costModelAll'] = new Chart(actx, {
@@ -2708,7 +2713,7 @@
 
             destroyChart('costModel30d');
             var mctx = document.getElementById('costModel30dChart');
-            if (mctx && d.model_usage_30d) {
+            if (mctx && d.model_usage_30d && typeof Chart !== 'undefined') {
                 var mLabels = Object.keys(d.model_usage_30d).map(shortModel);
                 var mValues = Object.values(d.model_usage_30d);
                 chartInstances['costModel30d'] = new Chart(mctx, {
@@ -2889,7 +2894,7 @@
 
             destroyChart('auditFailures');
             var fctx = document.getElementById('auditFailuresChart');
-            if (fctx && d.auth_failures_by_day && d.auth_failures_by_day.length) {
+            if (fctx && d.auth_failures_by_day && d.auth_failures_by_day.length && typeof Chart !== 'undefined') {
                 chartInstances['auditFailures'] = new Chart(fctx, {
                     type: 'bar',
                     data: {
@@ -3011,7 +3016,8 @@
             api_key: document.getElementById('apiKeyInput').value.trim(),
             default_model: document.getElementById('defaultModel').value,
             allow_user_model_selection: document.getElementById('allowUserModel').checked,
-            rate_limit_per_hour: parseInt(document.getElementById('rateLimit').value) || 0
+            rate_limit_per_hour: parseInt(document.getElementById('rateLimit').value) || 0,
+            daily_job_limit: parseInt(document.getElementById('dailyJobLimit').value) || 0
         };
         try {
             var r = await fetch('/admin/api/config', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });

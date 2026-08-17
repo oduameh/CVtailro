@@ -2964,6 +2964,53 @@
             .auth-modal { max-width: 100%; margin: 12px; }
             .auth-modal-body { padding: 16px 18px 20px; }
         }
+
+        /* ── Saved Resumes ── */
+        .saved-resume-strip { border-top: 0.5px solid var(--border); padding: 14px 16px; }
+        .saved-resume-strip-label {
+            font-size: 12px; font-weight: 600; color: var(--text-secondary);
+            margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .saved-resume-manage-link {
+            background: none; border: none; color: var(--primary); font-size: 12px; font-weight: 600;
+            cursor: pointer; font-family: inherit; padding: 0;
+        }
+        .saved-resume-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+        .saved-resume-chip {
+            border: 0.5px solid var(--border); border-radius: 999px; background: var(--card); color: var(--text);
+            font-size: 12px; font-weight: 600; padding: 6px 14px; cursor: pointer; font-family: inherit;
+            transition: all 0.15s; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .saved-resume-chip:hover { border-color: var(--primary); }
+        .saved-resume-chip.selected { background: var(--primary-bg); border-color: var(--primary); color: var(--primary); }
+        .saved-resume-chip:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+        .saved-resume-chip .sr-date { font-weight: 500; color: var(--text-secondary); margin-left: 6px; }
+        .saved-resume-chip.selected .sr-date { color: var(--primary); }
+        .save-resume-row {
+            display: flex; align-items: center; gap: 10px; padding: 12px 16px; cursor: pointer;
+            border-top: 0.5px solid var(--border); font-size: 13px; color: var(--text);
+        }
+        .save-resume-row input { accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer; }
+        .saved-resume-item {
+            display: flex; align-items: flex-start; gap: 12px; padding: 14px; border: 0.5px solid var(--border);
+            border-radius: 12px; margin-bottom: 10px; background: var(--card);
+        }
+        .saved-resume-item-main { flex: 1; min-width: 0; }
+        .saved-resume-item-name { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+        .saved-resume-item-meta { font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; }
+        .saved-resume-item-preview {
+            font-size: 12px; color: var(--text-secondary); line-height: 1.5; max-height: 3em; overflow: hidden;
+        }
+        .saved-resume-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .saved-resume-action-btn {
+            background: var(--primary-bg); border: 0.5px solid var(--border); border-radius: 8px;
+            font-size: 12px; font-weight: 600; color: var(--text); cursor: pointer; padding: 6px 10px; font-family: inherit;
+        }
+        .saved-resume-action-btn.danger { color: var(--score-low); border-color: rgba(220,38,38,0.2); }
+        .saved-resume-rename-input {
+            width: 100%; padding: 6px 8px; border: 0.5px solid var(--primary); border-radius: 8px;
+            font-size: 13px; font-family: inherit; background: var(--card); color: var(--text);
+        }
     </style>
     <script type="application/ld+json">
     {
@@ -3091,6 +3138,17 @@
                         </div>
                         <div class="file-name" id="fileName" style="display:none"></div>
                     </div>
+                    <div class="saved-resume-strip" id="savedResumeStrip" style="display:none;">
+                        <div class="saved-resume-strip-label">
+                            <span>Or reuse a saved resume</span>
+                            <button type="button" class="saved-resume-manage-link" onclick="openSavedResumeManager()">Manage</button>
+                        </div>
+                        <div class="saved-resume-chips" id="savedResumeChips" role="listbox" aria-label="Saved resumes"></div>
+                    </div>
+                    <label class="save-resume-row" id="saveResumeRow" style="display:none;">
+                        <input type="checkbox" id="saveResumeOpt">
+                        <span>Save this resume for next time</span>
+                    </label>
                 </div>
 
                 <!-- Job Description (editorial card) -->
@@ -3574,6 +3632,13 @@
                     <button class="profile-save-btn" style="background:rgba(220,38,38,0.1);color:var(--score-low);border-color:rgba(220,38,38,0.2);" onclick="revokeOtherSessions()">Sign Out All Other Devices</button>
                 </div>
 
+                <!-- Saved Resumes -->
+                <div class="profile-edit-section">
+                    <h3>Saved Resumes</h3>
+                    <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Reusable master resumes for one-click tailoring (<span id="profileSavedResumeCount">--</span> of 10).</p>
+                    <button class="profile-save-btn" onclick="closeProfile();openSavedResumeManager();">Manage Saved Resumes</button>
+                </div>
+
                 <!-- Quick stats (filled by JS) -->
                 <div id="profileQuickStats" style="margin-bottom:16px;"></div>
 
@@ -3586,6 +3651,18 @@
                 <h3 class="profile-section-title">Recent Jobs</h3>
                 <div id="profileJobs" style="max-height:300px;overflow-y:auto;"></div>
             </div>
+        </div>
+    </div>
+
+    <!-- Saved Resumes Overlay -->
+    <div class="history-overlay" id="savedResumesOverlay" role="dialog" aria-modal="true"
+         aria-labelledby="savedResumesTitle" onclick="if(event.target===this)closeSavedResumeManager()">
+        <div class="history-panel">
+            <div class="history-header">
+                <h2 id="savedResumesTitle">Saved Resumes</h2>
+                <button class="history-close" onclick="closeSavedResumeManager()" aria-label="Close saved resumes">&times;</button>
+            </div>
+            <div class="history-body" id="savedResumesBody" style="padding:20px;"></div>
         </div>
     </div>
 
@@ -3872,12 +3949,17 @@
             if (format === 'docx' && fl.endsWith('.docx') && fl.indexOf('cover') === -1) { target = f; break; }
             // MD: there's only one resume MD per job
             if (format === 'md' && fl.endsWith('.md') && fl.indexOf('talking') === -1) { target = f; break; }
+            // JSON: the match report is the only JSON per job
+            if (format === 'json' && fl.indexOf('match') !== -1 && fl.endsWith('.json')) { target = f; break; }
         }
         if (target) {
             safeDownload('/api/download/' + currentJobId + '/' + target, target);
         } else {
             // Fallback: request template-specific PDF from DB regeneration
-            var fallbackName = 'Resume_' + tpl.charAt(0).toUpperCase() + tpl.slice(1) + '.' + (format === 'md' ? 'md' : format);
+            // (the match report is a fixed filename, not template-specific)
+            var fallbackName = (format === 'json')
+                ? 'match_report.json'
+                : 'Resume_' + tpl.charAt(0).toUpperCase() + tpl.slice(1) + '.' + (format === 'md' ? 'md' : format);
             safeDownload('/api/download/' + currentJobId + '/' + fallbackName, fallbackName);
         }
     }
@@ -3967,6 +4049,9 @@
     }
     function openHistoryDownload(jobId) {
         currentJobId = jobId;
+        // Clear stale filenames from a previous job — the fallback path
+        // regenerates the correct names for this job on demand.
+        currentFileList = [];
         openDownloadPopup();
     }
     window.openDownloadPopup = openDownloadPopup;
@@ -4285,14 +4370,6 @@
             window.history.replaceState({}, document.title, window.location.pathname);
         }
 
-        // Password reset token — show the reset overlay
-        var resetToken = params.get('reset_token');
-        if (resetToken) {
-            _pendingResetToken = resetToken;
-            document.getElementById('resetPwOverlay').classList.add('active');
-            document.body.style.overflow = 'hidden';
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
     })();
 
     // Check auth on page load
@@ -4424,12 +4501,12 @@
                 closeAuthModal();
                 return;
             }
-            if (document.getElementById('resetPwOverlay').classList.contains('active')) {
-                closeResetOverlay();
-                return;
-            }
             if (document.getElementById('profileOverlay').classList.contains('active')) {
                 closeProfile();
+            }
+            if (document.getElementById('savedResumesOverlay').classList.contains('active')) {
+                closeSavedResumeManager();
+                return;
             }
             var overlay = document.getElementById('historyOverlay');
             if (overlay.classList.contains('active')) {
@@ -4537,14 +4614,19 @@
         }
     }
 
-    function renderResultsFromData(data, jobId) {
-        // data should contain the result object (same shape as /api/result response)
+    function renderResultsFromData(data, jobId, opts) {
+        // data should contain the result object (same shape as /api/result response).
+        // opts.animate      → animated score counter + celebration glow (live tailoring)
+        // opts.keepProgress → leave the progress card visible above results (live tailoring)
+        opts = opts || {};
         var s = data.result || data;
 
         try {
             // Reset UI state
             document.getElementById('formSection').style.display = 'none';
-            document.getElementById('progressSection').classList.remove('active');
+            if (!opts.keepProgress) {
+                document.getElementById('progressSection').classList.remove('active');
+            }
 
             // Clean up dynamically inserted elements from previous render
             var prevSectionScores = document.querySelector('.score-section > div[style*="border-top"]');
@@ -4553,9 +4635,26 @@
             if (prevQuality) prevQuality.remove();
 
             // --- Circular Score ---
-            var scoreVal = (s.match_score || 0).toFixed(0);
-            var scoreNum = parseFloat(scoreVal);
-            document.getElementById("matchScore").textContent = scoreVal + "%";
+            var primaryScore = s.tailored_match_score != null ? s.tailored_match_score : (s.match_score || 0);
+            var scoreNum = parseFloat(primaryScore.toFixed(0));
+            var scoreEl = document.getElementById("matchScore");
+            if (opts.animate) {
+                // Animate counter from 0 to score
+                var counterStart = null;
+                var counterDuration = 1200;
+                (function() {
+                    function animateScoreCounter(ts) {
+                        if (!counterStart) counterStart = ts;
+                        var progress = Math.min((ts - counterStart) / counterDuration, 1);
+                        var eased = 1 - Math.pow(1 - progress, 3);
+                        scoreEl.textContent = Math.round(scoreNum * eased) + "%";
+                        if (progress < 1) requestAnimationFrame(animateScoreCounter);
+                    }
+                    requestAnimationFrame(animateScoreCounter);
+                })();
+            } else {
+                scoreEl.textContent = scoreNum + "%";
+            }
 
             var circumference = 2 * Math.PI * 68;
             var offset = circumference - (scoreNum / 100) * circumference;
@@ -4565,12 +4664,18 @@
             ring.style.stroke = scoreColor;
             setTimeout(function() { ring.style.strokeDashoffset = offset; }, 100);
 
+            // Celebration glow for high scores (live flow only)
+            if (opts.animate && scoreNum >= 80) {
+                var wrap = document.querySelector('.score-ring-wrap');
+                if (wrap) { wrap.classList.add('celebrate'); setTimeout(function() { wrap.classList.remove('celebrate'); }, 1500); }
+            }
+
             // Keyword Match
             var kwMatchPct = Math.round((s.cosine_similarity || 0) * 100);
             document.getElementById("keywordMatch").textContent = kwMatchPct + "%";
 
             // Keywords Added
-            var keywordsAddedCount = typeof s.matched_keywords_count === 'number' ? s.matched_keywords_count : Math.max(1, Math.round((s.match_score || 0) * 0.3));
+            var keywordsAddedCount = typeof s.matched_keywords_count === 'number' ? s.matched_keywords_count : Math.max(1, Math.round(primaryScore * 0.3));
             document.getElementById("keywordsAdded").textContent = keywordsAddedCount;
 
             // Keywords chips
@@ -4676,6 +4781,9 @@
             }
 
             // --- Downloads ---
+            // Declared here (not below) so the Additional-downloads card check
+            // at the end of this block sees the real value, not a hoisted undefined.
+            var isPremiumUser = authUser && authUser.is_admin;
             var secondaryHtml = '';
             var seenCats = {};
             var effectiveJobId = jobId || s.job_id || s.id || '';
@@ -4712,8 +4820,7 @@
                 document.getElementById("additionalCard").style.display = "block";
             }
 
-            // --- Premium features (admin-only for now) ---
-            var isPremiumUser = authUser && authUser.is_admin;
+            // --- Premium features (admin-only for now; isPremiumUser declared above) ---
 
             // --- Talking Points (premium) ---
             if (s.talking_points_md && isPremiumUser) {
@@ -4732,8 +4839,8 @@
                 var clPrefix = safeT + (safeC ? '_' + safeC : '');
                 document.getElementById("coverLetterContent").innerHTML =
                     '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">' +
-                    '<a href="/api/download/' + effectiveJobId + '/' + clPrefix + '_Cover_Letter.pdf" style="padding:10px 18px;background:var(--primary);color:#fff;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;">Download PDF</a>' +
-                    '<a href="/api/download/' + effectiveJobId + '/' + clPrefix + '_Cover_Letter.docx" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--primary);border-radius:10px;font-size:13px;font-weight:600;color:var(--primary);text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;">Download DOCX</a>' +
+                    '<a href="#" onclick="safeDownload(\'/api/download/' + effectiveJobId + '/' + clPrefix + '_Cover_Letter.pdf\',\'' + clPrefix + '_Cover_Letter.pdf\',event); return false;" style="padding:10px 18px;background:var(--primary);color:#fff;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;">Download PDF</a>' +
+                    '<a href="#" onclick="safeDownload(\'/api/download/' + effectiveJobId + '/' + clPrefix + '_Cover_Letter.docx\',\'' + clPrefix + '_Cover_Letter.docx\',event); return false;" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--primary);border-radius:10px;font-size:13px;font-weight:600;color:var(--primary);text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;">Download DOCX</a>' +
                     '<button onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.textContent).then(function(){showToast(\'Cover letter copied!\',\'success\');})" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;">Copy Text</button>' +
                     '<button onclick="this.parentElement.nextElementSibling.style.display=this.parentElement.nextElementSibling.style.display===\'none\'?\'block\':\'none\';this.textContent=this.parentElement.nextElementSibling.style.display===\'none\'?\'Show Preview\':\'Hide Preview\'" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;">Show Preview</button>' +
                     '</div>' +
@@ -4775,10 +4882,10 @@
             if (isPremiumUser) {
                 document.getElementById("previewCard").style.display = "block";
                 document.getElementById("previewContent").innerHTML = renderMarkdown(currentResumeMd);
-                setPreviewMode('preview');
             } else {
                 document.getElementById("previewCard").style.display = "none";
             }
+            setPreviewMode('preview');
 
             // --- Related Articles ---
             loadRelatedArticles(s.job_title || '');
@@ -4788,9 +4895,14 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
             setTimeout(function() { openDownloadPopup(); }, 1500);
         } catch(renderErr) {
-            console.error("Failed to render history results:", renderErr);
-            showError("Results loaded but failed to display.");
-            document.getElementById('formSection').style.display = '';
+            console.error("Failed to render results:", renderErr);
+            if (opts.animate) {
+                showError("Results loaded but failed to display. Try downloading the files directly.");
+                document.getElementById("resultsSection").classList.add("active");
+            } else {
+                showError("Results loaded but failed to display.");
+                document.getElementById('formSection').style.display = '';
+            }
         }
     }
 
@@ -4824,8 +4936,14 @@
             return 'The AI model took too long to respond. Please try again' + (modelName ? ' or try a different model.' : '.');
         }
 
+        // Out of credits / payment required (check before token-limit —
+        // OpenRouter's 402 message mentions "tokens" too)
+        if (msg.match(/insufficient credits/i) || msg.match(/402/i) || msg.match(/payment required/i)) {
+            return 'The service is temporarily out of AI capacity. Please try again later.';
+        }
+
         // Context length / token limit
-        if (msg.match(/context.*length/i) || msg.match(/too.*long/i) || msg.match(/token/i)) {
+        if (msg.match(/context.*length/i) || msg.match(/maximum context/i) || msg.match(/max_tokens/i) || msg.match(/too.*long/i)) {
             return 'Your resume or job description is too long for this model. Try shortening it or using a different model.';
         }
 
@@ -4952,6 +5070,11 @@
             uploadZone.classList.add("has-file");
             fileNameEl.textContent = fileInput.files[0].name;
             fileNameEl.style.display = "block";
+            // Picking a fresh file deselects any saved-resume chip and, for
+            // logged-in users, offers to save it for next time.
+            if (typeof clearSavedResumeSelection === 'function') clearSavedResumeSelection();
+            var saveRow = document.getElementById('saveResumeRow');
+            if (saveRow && authUser && authUser.email) saveRow.style.display = 'flex';
         }
     });
     uploadZone.addEventListener("dragover", function(e) { e.preventDefault(); uploadZone.classList.add("dragover"); });
@@ -4989,6 +5112,13 @@
 
     function dismissError() {
         document.getElementById("errorBanner").classList.remove("active");
+    }
+
+    // Restore the form after a tailoring failure so the user can retry —
+    // btnRun lives inside formSection, which startTailoring() hides.
+    function resetToFormOnError() {
+        document.getElementById('formSection').style.display = '';
+        document.getElementById('progressSection').classList.remove('active');
     }
 
     // --- Safe download via fetch (shows errors as toast instead of navigating away) ---
@@ -5126,7 +5256,7 @@
         var mode = document.querySelector('input[name="mode"]:checked').value;
         var model = getSelectedModel();
 
-        if (!file) { showError("Please upload your resume first."); return; }
+        if (!file && !selectedSavedResumeId) { showError("Please upload your resume or pick a saved one."); return; }
         if (!jd || jd.length < 50) {
             jdTA.classList.add('input-error');
             document.getElementById('jdError').classList.add('visible');
@@ -5156,7 +5286,16 @@
         document.getElementById('reconnectingBadge').classList.remove('visible');
 
         var fd = new FormData();
-        fd.append("resume", file);
+        if (selectedSavedResumeId) {
+            fd.append("saved_resume_id", selectedSavedResumeId);
+            pendingSaveResumeName = null;
+        } else {
+            fd.append("resume", file);
+            // Capture whether to save this upload before the form resets.
+            var saveOpt = document.getElementById('saveResumeOpt');
+            pendingSaveResumeName = (saveOpt && saveOpt.checked && file)
+                ? file.name.replace(/\.[^.]+$/, '') : null;
+        }
         fd.append("job_description", jd);
         fd.append("mode", mode);
         if (model) fd.append("model", model);
@@ -5168,12 +5307,14 @@
                 showError("The system is handling a lot of requests right now. Please wait 30 seconds and try again.");
                 btn.disabled = false; btn.textContent = "Tailor My Resume";
                 stopTipRotation(); stopElapsedTimer();
+                resetToFormOnError();
                 return;
             }
             if (r.status === 429) {
                 showError(d.error || "You've reached your limit for this demo session.");
                 btn.disabled = false; btn.textContent = "Tailor My Resume";
                 stopTipRotation(); stopElapsedTimer();
+                resetToFormOnError();
                 return;
             }
             if (!r.ok) {
@@ -5181,6 +5322,7 @@
                 btn.disabled = false; btn.textContent = "Tailor My Resume";
                 stopTipRotation();
                 stopElapsedTimer();
+                resetToFormOnError();
                 return;
             }
             var jobId = d.job_id;
@@ -5244,6 +5386,7 @@
                 document.getElementById('reconnectingBadge').classList.remove('visible');
                 showError(friendlyErrorMessage(msg, model));
                 btn.disabled = false; btn.textContent = "Tailor My Resume";
+                resetToFormOnError();
             }
 
             function connectSSE() {
@@ -5313,6 +5456,7 @@
             btn.disabled = false; btn.textContent = "Tailor My Resume";
             stopTipRotation();
             stopElapsedTimer();
+            resetToFormOnError();
         }
     }
 
@@ -5322,11 +5466,13 @@
             var r = await fetch('/api/result/' + jobId);
             if (r.status === 404) {
                 showError('Job not found. It may have expired or been cleaned up.');
+                resetToFormOnError();
                 return;
             }
             var d = await r.json();
             if (d.status === "error") {
                 showError(d.error || "The pipeline failed. Please try again.");
+                resetToFormOnError();
                 return;
             }
             if (d.status !== "complete") {
@@ -5335,11 +5481,13 @@
                     setTimeout(function() { loadResults(jobId, retryCount + 1); }, 2000);
                 } else {
                     showError("Results could not be loaded. Please try again.");
+                    resetToFormOnError();
                 }
                 return;
             }
             if (!d.result) {
                 showError("Pipeline completed but produced no results. Check the admin error log.");
+                resetToFormOnError();
                 return;
             }
         } catch(e) {
@@ -5347,278 +5495,16 @@
                 setTimeout(function() { loadResults(jobId, retryCount + 1); }, 2000);
             } else {
                 showError("Failed to load results: " + e.message);
+                resetToFormOnError();
             }
             return;
         }
-        var s = d.result;
-        try {
-        // Clean up dynamically inserted elements from previous render
-        var prevSectionScores = document.querySelector('.score-section > div[style*="border-top"]');
-        if (prevSectionScores) prevSectionScores.remove();
-        var prevQuality = document.querySelector('.score-section + .card[style*="margin-top:20px"]');
-        if (prevQuality) prevQuality.remove();
-
-        // --- Circular Score with animated counter ---
-        var primaryScore = s.tailored_match_score != null ? s.tailored_match_score : (s.match_score || 0);
-        var scoreNum = parseFloat(primaryScore.toFixed(0));
-        var scoreEl = document.getElementById("matchScore");
-
-        // Animate counter from 0 to score
-        var counterStart = null;
-        var counterDuration = 1200;
-        function animateScoreCounter(ts) {
-            if (!counterStart) counterStart = ts;
-            var progress = Math.min((ts - counterStart) / counterDuration, 1);
-            var eased = 1 - Math.pow(1 - progress, 3);
-            scoreEl.textContent = Math.round(scoreNum * eased) + "%";
-            if (progress < 1) requestAnimationFrame(animateScoreCounter);
-        }
-        requestAnimationFrame(animateScoreCounter);
-
-        // Animate the ring
-        var circumference = 2 * Math.PI * 68;
-        var offset = circumference - (scoreNum / 100) * circumference;
-        var ring = document.getElementById("scoreRing");
-        ring.style.strokeDasharray = circumference;
-        var scoreColor = scoreNum >= 80 ? 'var(--score-high)' : scoreNum >= 50 ? 'var(--score-mid)' : 'var(--score-low)';
-        ring.style.stroke = scoreColor;
-        setTimeout(function() {
-            ring.style.strokeDashoffset = offset;
-        }, 100);
-
-        // Celebration glow for high scores
-        if (scoreNum >= 80) {
-            var wrap = document.querySelector('.score-ring-wrap');
-            if (wrap) { wrap.classList.add('celebrate'); setTimeout(function() { wrap.classList.remove('celebrate'); }, 1500); }
-        }
-
-        // Keyword Match
-        var kwMatchPct = Math.round(s.cosine_similarity * 100);
-        document.getElementById("keywordMatch").textContent = kwMatchPct + "%";
-
-        // Keywords Added
-        var totalKeywords = (s.missing_keywords ? s.missing_keywords.length : 0);
-        var keywordsAddedCount;
-        if (typeof s.matched_keywords_count === 'number') {
-            keywordsAddedCount = s.matched_keywords_count;
-        } else {
-            keywordsAddedCount = Math.max(1, Math.round(primaryScore * 0.3));
-        }
-        document.getElementById("keywordsAdded").textContent = keywordsAddedCount;
-
-        // Keywords chips
-        if (s.missing_keywords && s.missing_keywords.length > 0) {
-            document.getElementById("kwSection").style.display = "block";
-            document.getElementById("kwList").innerHTML = s.missing_keywords.map(function(k) {
-                return '<span class="kw kw-missing">' + escapeHtml(k) + '</span>';
-            }).join("");
-        }
-
-        // Section scores (if available)
-        if (s.section_scores && Object.keys(s.section_scores).length > 0) {
-            var ssHtml = '<div style="margin-top:24px;padding-top:24px;border-top:1px solid var(--border);">';
-            ssHtml += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-secondary);margin-bottom:12px;">Section Match Breakdown</div>';
-            ssHtml += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">';
-            var sectionNames = {summary:'Summary',experience:'Experience',skills:'Skills',education:'Education'};
-            for (var sec in sectionNames) {
-                var pct = Math.round(s.section_scores[sec] || 0);
-                var barColor = pct >= 70 ? 'var(--score-high)' : pct >= 40 ? 'var(--score-mid)' : 'var(--score-low)';
-                ssHtml += '<div style="text-align:center;padding:12px 8px;background:var(--primary-bg);border-radius:12px;">';
-                ssHtml += '<div style="font-size:20px;font-weight:800;color:' + barColor + ';">' + pct + '%</div>';
-                ssHtml += '<div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">' + sectionNames[sec] + '</div>';
-                ssHtml += '</div>';
-            }
-            ssHtml += '</div></div>';
-            document.querySelector('.score-section').insertAdjacentHTML('beforeend', ssHtml);
-        }
-
-        // Resume quality (if available)
-        if (s.resume_quality) {
-            var rq = s.resume_quality;
-            var qualityHtml = '<div class="card" style="margin-top:20px;">';
-            qualityHtml += '<h2 style="font-size:16px;font-weight:700;margin-bottom:16px;">Resume Quality Analysis</h2>';
-            qualityHtml += '<div style="display:flex;gap:16px;flex-wrap:wrap;">';
-            qualityHtml += '<div style="flex:1;min-width:120px;text-align:center;padding:16px;background:var(--primary-bg);border-radius:12px;">';
-            qualityHtml += '<div style="font-size:28px;font-weight:800;color:var(--text-secondary);">' + (rq.before ? rq.before.score : '--') + '</div>';
-            qualityHtml += '<div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">BEFORE</div></div>';
-            qualityHtml += '<div style="flex:1;min-width:120px;text-align:center;padding:16px;background:var(--primary-bg);border-radius:12px;">';
-            qualityHtml += '<div style="font-size:28px;font-weight:800;color:var(--primary);">' + (rq.after ? rq.after.score : '--') + '</div>';
-            qualityHtml += '<div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">AFTER</div></div>';
-            qualityHtml += '<div style="flex:1;min-width:120px;text-align:center;padding:16px;background:rgba(0,184,148,0.08);border-radius:12px;">';
-            qualityHtml += '<div style="font-size:28px;font-weight:800;color:var(--score-high);">+' + (rq.improvement || 0) + '</div>';
-            qualityHtml += '<div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">IMPROVEMENT</div></div>';
-            qualityHtml += '</div>';
-            // Detail drill-down
-            if (rq.before && rq.after) {
-                qualityHtml += '<div style="margin-top:16px;"><div>';
-                qualityHtml += '<h3 class="collapsible-header" onclick="toggleCollapsible(this)" style="font-size:13px;font-weight:600;color:var(--text-secondary);cursor:pointer;">Quality Details <span class="collapsible-chevron">&#9662;</span></h3>';
-                qualityHtml += '</div><div class="collapsible-content collapsed">';
-                qualityHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;">';
-                qualityHtml += '<div style="padding:12px;background:var(--primary-bg);border-radius:8px;"><div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">METRICS USAGE</div>';
-                qualityHtml += '<div style="font-size:13px;color:var(--text);">Before: ' + (rq.before.metrics_pct || 0) + '% of bullets</div>';
-                qualityHtml += '<div style="font-size:13px;color:var(--primary);">After: ' + (rq.after.metrics_pct || 0) + '% of bullets</div></div>';
-                qualityHtml += '<div style="padding:12px;background:var(--primary-bg);border-radius:8px;"><div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">BULLET COUNT</div>';
-                qualityHtml += '<div style="font-size:13px;color:var(--text);">' + ((rq.after.metrics_pct || 0) > (rq.before.metrics_pct || 0) ? 'More bullets now include numbers and metrics' : 'Consider adding more quantifiable results') + '</div></div>';
-                qualityHtml += '</div>';
-                if (rq.after.weak_verbs && rq.after.weak_verbs.length > 0) {
-                    qualityHtml += '<div style="margin-top:12px;padding:12px;background:rgba(239,68,68,0.05);border-radius:8px;border:1px solid rgba(239,68,68,0.15);">';
-                    qualityHtml += '<div style="font-size:11px;font-weight:600;color:#ef4444;margin-bottom:6px;">WEAK VERBS REMAINING</div>';
-                    qualityHtml += '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
-                    rq.after.weak_verbs.forEach(function(v) { qualityHtml += '<span style="padding:2px 8px;background:rgba(239,68,68,0.1);border-radius:4px;font-size:12px;color:#ef4444;">' + escapeHtml(v) + '</span>'; });
-                    qualityHtml += '</div></div>';
-                }
-                if (rq.after.filler_words && rq.after.filler_words.length > 0) {
-                    qualityHtml += '<div style="margin-top:8px;padding:12px;background:rgba(245,158,11,0.05);border-radius:8px;border:1px solid rgba(245,158,11,0.15);">';
-                    qualityHtml += '<div style="font-size:11px;font-weight:600;color:#f59e0b;margin-bottom:6px;">FILLER WORDS REMAINING</div>';
-                    qualityHtml += '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
-                    rq.after.filler_words.forEach(function(v) { qualityHtml += '<span style="padding:2px 8px;background:rgba(245,158,11,0.1);border-radius:4px;font-size:12px;color:#f59e0b;">' + escapeHtml(v) + '</span>'; });
-                    qualityHtml += '</div></div>';
-                }
-                qualityHtml += '</div></div>';
-            }
-            qualityHtml += '</div>';
-            document.querySelector('.score-section').insertAdjacentHTML('afterend', qualityHtml);
-        }
-
-        // Keyword Density (if available)
-        if (s.keyword_density && s.keyword_density.keywords) {
-            var kd = s.keyword_density;
-            var kdHtml = '<div class="card" style="margin-top:20px;">';
-            kdHtml += '<h2 class="collapsible-header" onclick="toggleCollapsible(this)">Keyword Density Analysis <span class="collapsible-chevron">&#9662;</span></h2>';
-            kdHtml += '<div class="collapsible-content">';
-            kdHtml += '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">';
-            kdHtml += '<div style="flex:1;min-width:100px;text-align:center;padding:12px;background:var(--primary-bg);border-radius:12px;"><div style="font-size:24px;font-weight:800;color:var(--text);">' + kd.total + '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">JD Keywords</div></div>';
-            kdHtml += '<div style="flex:1;min-width:100px;text-align:center;padding:12px;background:var(--primary-bg);border-radius:12px;"><div style="font-size:24px;font-weight:800;color:var(--text-secondary);">' + kd.matched_before + '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Matched Before</div></div>';
-            kdHtml += '<div style="flex:1;min-width:100px;text-align:center;padding:12px;background:var(--primary-bg);border-radius:12px;"><div style="font-size:24px;font-weight:800;color:var(--primary);">' + kd.matched_after + '</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Matched After</div></div>';
-            kdHtml += '<div style="flex:1;min-width:100px;text-align:center;padding:12px;background:rgba(0,184,148,0.08);border-radius:12px;"><div style="font-size:24px;font-weight:800;color:var(--score-high);">+' + kd.improvement + '%</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Improvement</div></div>';
-            kdHtml += '</div>';
-            kdHtml += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
-            kd.keywords.forEach(function(kw) {
-                var statusColor = kw.status === 'matched' ? 'var(--primary)' : kw.status === 'improved' ? 'var(--score-high)' : kw.status === 'new' ? '#8b5cf6' : '#ef4444';
-                var statusBg = kw.status === 'matched' ? 'var(--primary-bg)' : kw.status === 'improved' ? 'rgba(0,184,148,0.08)' : kw.status === 'new' ? 'rgba(139,92,246,0.08)' : 'rgba(239,68,68,0.08)';
-                var statusIcon = kw.status === 'matched' ? '&#10003;' : kw.status === 'improved' ? '&#9650;' : kw.status === 'new' ? '&#10010;' : '&#10007;';
-                kdHtml += '<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;color:' + statusColor + ';background:' + statusBg + ';border:1px solid ' + statusColor + '22;">' + statusIcon + ' ' + escapeHtml(kw.keyword) + '</span>';
-            });
-            kdHtml += '</div>';
-            kdHtml += '<div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--text-secondary);">';
-            kdHtml += '<span>&#10003; Matched</span><span style="color:var(--score-high);">&#9650; Improved</span><span style="color:#8b5cf6;">&#10010; New</span><span style="color:#ef4444;">&#10007; Missing</span>';
-            kdHtml += '</div></div></div>';
-            document.querySelector('.score-section').parentElement.insertAdjacentHTML('afterend', kdHtml);
-        }
-
-        // --- Downloads ---
-        var secondaryHtml = '';
-        var seenCats = {};
-
-        // Store for template download function
-        currentJobId = jobId;
-
-        // Use file list from result, or fallback to standard files (DB fallback has empty files[])
-        var fileList = (s.files && s.files.length > 0) ? s.files : [
-            "tailored_resume_ats.pdf",
-            "tailored_resume_ats.docx",
-            "tailored_resume_ats.md",
-            "match_report.json", "interview_talking_points.md"
-        ];
-        currentFileList = fileList;
-
-        fileList.forEach(function(f) {
-            var fname = typeof f === 'string' ? f : f.filename;
-            var m = getFileInfo(fname);
-            // Skip duplicate resume files (e.g. recruiter variants from old runs)
-            if (m.cat === 'resume_dup') return;
-            // Template PDFs are handled by the template grid cards
-            if (m.cat === 'template_pdf') return;
-            var catKey = m.cat + '_' + m.b;
-            if (seenCats[catKey]) return;
-            seenCats[catKey] = true;
-            var link = '/api/download/' + jobId + '/' + fname;
-            secondaryHtml += '<a class="dl-btn-secondary" href="#" onclick="safeDownload(\'' + link + '\',\'' + fname + '\',event); return false;">' +
-                '<span class="label">' + escapeHtml(m.l) + '</span>' +
-                '<span class="badge">' + m.b + '</span></a>';
-        });
-
-        document.getElementById("dlGridSecondary").innerHTML = secondaryHtml;
-        if (secondaryHtml && isPremiumUser2) {
-            document.getElementById("additionalCard").style.display = "block";
-        }
-
-        // --- Premium features (admin-only for now) ---
-        var isPremiumUser2 = authUser && authUser.is_admin;
-
-        // --- Talking Points (premium) ---
-        if (s.talking_points_md && isPremiumUser2) {
-            document.getElementById("talkingPointsCard").style.display = "block";
-            document.getElementById("talkingPointsContent").innerHTML = renderMarkdown(s.talking_points_md);
-        } else {
-            document.getElementById("talkingPointsCard").style.display = "none";
-        }
-
-        // --- Cover Letter (free) ---
-        var clContainer = document.getElementById("coverLetterCard");
-        if (s.cover_letter_md) {
-            clContainer.style.display = "block";
-            var safeT = (s.job_title || 'Cover_Letter').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_').substring(0, 30);
-            var safeC = (s.company || '').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_').substring(0, 20);
-            var clPrefix = safeT + (safeC ? '_' + safeC : '');
-            document.getElementById("coverLetterContent").innerHTML =
-                '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">' +
-                '<a href="/api/download/' + jobId + '/' + clPrefix + '_Cover_Letter.pdf" style="padding:10px 18px;background:var(--primary);color:#fff;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;">Download PDF</a>' +
-                '<a href="/api/download/' + jobId + '/' + clPrefix + '_Cover_Letter.docx" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--primary);border-radius:10px;font-size:13px;font-weight:600;color:var(--primary);text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;">Download DOCX</a>' +
-                '<button onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.textContent).then(function(){showToast(\'Cover letter copied!\',\'success\');})" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;">Copy Text</button>' +
-                '<button onclick="this.parentElement.nextElementSibling.style.display=this.parentElement.nextElementSibling.style.display===\'none\'?\'block\':\'none\';this.textContent=this.parentElement.nextElementSibling.style.display===\'none\'?\'Show Preview\':\'Hide Preview\'" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;">Show Preview</button>' +
-                '</div>' +
-                '<div style="display:none;font-size:14px;line-height:1.8;padding:16px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:10px;max-height:300px;overflow-y:auto;">' + renderMarkdown(s.cover_letter_md) + '</div>';
-        } else {
-            clContainer.style.display = "none";
-        }
-
-        // --- Email Templates (premium) ---
-        var etContainer = document.getElementById("emailTemplatesCard");
-        if (s.email_templates_md && isPremiumUser2) {
-            etContainer.style.display = "block";
-            document.getElementById("emailTemplatesContent").innerHTML = renderMarkdown(s.email_templates_md);
-        } else {
-            etContainer.style.display = "none";
-        }
-
-        // --- Score improvement banner (when we have before/after) ---
-        var beforeScore = Math.round(s.original_match_score || 0);
-        var afterScore = Math.round(s.tailored_match_score || s.match_score || 0);
-        var hasImprovement = (s.original_match_score != null || s.tailored_match_score != null) && (beforeScore > 0 || afterScore > 0);
-        if (hasImprovement) {
-            var delta = afterScore - beforeScore;
-            document.getElementById("scoreImprovementBanner").style.display = "block";
-            document.getElementById("scoreBeforeVal").textContent = beforeScore + "%";
-            document.getElementById("scoreAfterVal").textContent = afterScore + "%";
-            document.getElementById("scoreImprovementDelta").textContent = (delta > 0 ? "+" : "") + delta;
-        } else {
-            document.getElementById("scoreImprovementBanner").style.display = "none";
-        }
-
-        // --- What Changed card (prominent, right after score) ---
-        document.getElementById("whatChangedCard").style.display = "block";
-        document.getElementById("whatChangedContent").innerHTML = buildChangesPanel(s);
-
-        // --- Preview (premium) ---
-        currentResumeMd = s.ats_resume_md || '';
-        originalResumeMd = s.original_resume_text || '';
-        if (isPremiumUser2) {
-            document.getElementById("previewCard").style.display = "block";
-            document.getElementById("previewContent").innerHTML = renderMarkdown(currentResumeMd);
-        } else {
-            document.getElementById("previewCard").style.display = "none";
-        }
-        setPreviewMode('preview');
-
-        document.getElementById("resultsSection").classList.add("active");
-        document.getElementById("stickyDlBar").style.display = "flex";
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        setTimeout(function() { openDownloadPopup(); }, 1500);
-        } catch(renderErr) {
-            console.error("Failed to render results:", renderErr);
-            showError("Results loaded but failed to display. Try downloading the files directly.");
-            document.getElementById("resultsSection").classList.add("active");
+        // Single source of truth for rendering — animate + keep the progress
+        // card visible (live flow). The save-for-next-time hook lives here too.
+        renderResultsFromData(d, jobId, { animate: true, keepProgress: true });
+        if (typeof pendingSaveResumeName !== 'undefined' && pendingSaveResumeName && d.result && d.result.original_resume_text) {
+            saveResumeToLibrary(pendingSaveResumeName, d.result.original_resume_text);
+            pendingSaveResumeName = null;
         }
     }
 
@@ -5771,6 +5657,11 @@
         jdTA.value = "";
         uploadZone.classList.remove("has-file");
         fileNameEl.style.display = "none";
+        if (typeof clearSavedResumeSelection === 'function') clearSavedResumeSelection();
+        var saveOpt = document.getElementById('saveResumeOpt');
+        if (saveOpt) saveOpt.checked = false;
+        var saveRow = document.getElementById('saveResumeRow');
+        if (saveRow) saveRow.style.display = 'none';
         document.getElementById("resultsSection").classList.remove("active");
         document.getElementById("progressSection").classList.remove("active");
         document.getElementById("formSection").style.display = "";
@@ -6167,12 +6058,185 @@
             .then(function() { loadTrackerApps(); showToast('Removed', 'success'); });
     }
 
-    // Init tracker after auth check completes
+    // Init tracker + saved resumes after auth check completes
     var _origRenderAuthUI = renderAuthUI;
     renderAuthUI = function() {
         _origRenderAuthUI();
         try { initTracker(); } catch(e) {}
+        try { initSavedResumes(); } catch(e) {}
     };
+
+    // ── Saved Resumes ─────────────────────────────────────────────────────
+    var savedResumes = [];
+    var selectedSavedResumeId = null;
+    var pendingSaveResumeName = null;
+
+    function initSavedResumes() {
+        var strip = document.getElementById('savedResumeStrip');
+        var saveRow = document.getElementById('saveResumeRow');
+        if (!(authUser && authUser.email)) {
+            savedResumes = [];
+            selectedSavedResumeId = null;
+            if (strip) strip.style.display = 'none';
+            if (saveRow) saveRow.style.display = 'none';
+            return;
+        }
+        fetch('/api/saved-resumes', { credentials: 'same-origin' })
+            .then(function(r) { return r.ok ? r.json() : { resumes: [] }; })
+            .then(function(data) {
+                savedResumes = (data && data.resumes) || [];
+                renderSavedResumeStrip();
+                var countEl = document.getElementById('profileSavedResumeCount');
+                if (countEl) countEl.textContent = savedResumes.length;
+            })
+            .catch(function() {});
+    }
+
+    function renderSavedResumeStrip() {
+        var strip = document.getElementById('savedResumeStrip');
+        var chips = document.getElementById('savedResumeChips');
+        if (!strip || !chips) return;
+        if (!savedResumes.length) { strip.style.display = 'none'; return; }
+        strip.style.display = 'block';
+        chips.innerHTML = savedResumes.map(function(r) {
+            var sel = r.id === selectedSavedResumeId;
+            return '<button type="button" class="saved-resume-chip' + (sel ? ' selected' : '') +
+                '" role="option" aria-selected="' + sel + '" data-id="' + escapeAttr(r.id) +
+                '" onclick="selectSavedResume(\'' + escapeAttr(r.id) + '\')">' +
+                escapeHtml(r.name) + '<span class="sr-date">' + escapeHtml(formatDate(r.updated_at)) + '</span></button>';
+        }).join('');
+    }
+
+    function selectSavedResume(id) {
+        var saveRow = document.getElementById('saveResumeRow');
+        if (selectedSavedResumeId === id) {
+            // Deselect
+            selectedSavedResumeId = null;
+            uploadZone.classList.remove('has-file');
+            fileNameEl.style.display = 'none';
+        } else {
+            selectedSavedResumeId = id;
+            fileInput.value = '';
+            var r = savedResumes.find(function(x) { return x.id === id; });
+            uploadZone.classList.add('has-file');
+            fileNameEl.textContent = 'Saved: ' + (r ? r.name : 'resume');
+            fileNameEl.style.display = 'block';
+            if (saveRow) saveRow.style.display = 'none';
+        }
+        renderSavedResumeStrip();
+    }
+
+    function clearSavedResumeSelection() {
+        selectedSavedResumeId = null;
+        renderSavedResumeStrip();
+    }
+
+    function saveResumeToLibrary(name, text) {
+        return fetch('/api/saved-resumes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, resume_text: text })
+        }).then(function(r) { return r.json().then(function(d) { return { ok: r.ok, d: d }; }); })
+          .then(function(res) {
+              if (res.ok) {
+                  showToast('Resume saved for next time', 'success');
+                  initSavedResumes();
+              } else {
+                  showToast((res.d && res.d.error) || 'Could not save resume', 'error');
+              }
+          })
+          .catch(function() {});
+    }
+
+    function openSavedResumeManager() {
+        var overlay = document.getElementById('savedResumesOverlay');
+        overlay.classList.add('active');
+        if (document.documentElement.classList.contains('dark')) {
+            overlay.classList.add('dark');
+        } else {
+            overlay.classList.remove('dark');
+        }
+        document.body.style.overflow = 'hidden';
+        renderSavedResumeManager();
+    }
+
+    function closeSavedResumeManager() {
+        document.getElementById('savedResumesOverlay').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    function renderSavedResumeManager() {
+        var body = document.getElementById('savedResumesBody');
+        if (!body) return;
+        if (!savedResumes.length) {
+            body.innerHTML = '<div class="history-empty"><p>No saved resumes yet. Upload a resume and tick "Save this resume for next time" to reuse it later.</p></div>';
+            return;
+        }
+        var html = '<p style="font-size:12px;color:var(--text-secondary);margin-bottom:14px;">' +
+            savedResumes.length + ' of 10 saved</p>';
+        html += savedResumes.map(function(r) {
+            return '<div class="saved-resume-item" data-id="' + escapeAttr(r.id) + '">' +
+                '<div class="saved-resume-item-main">' +
+                    '<div class="saved-resume-item-name" data-name>' + escapeHtml(r.name) + '</div>' +
+                    '<div class="saved-resume-item-meta">Updated ' + escapeHtml(formatDate(r.updated_at)) + '</div>' +
+                    '<div class="saved-resume-item-preview">' + escapeHtml(r.preview || '') + '</div>' +
+                '</div>' +
+                '<div class="saved-resume-item-actions">' +
+                    '<button class="saved-resume-action-btn" onclick="startRenameSavedResume(\'' + escapeAttr(r.id) + '\')">Rename</button>' +
+                    '<button class="saved-resume-action-btn danger" onclick="deleteSavedResume(\'' + escapeAttr(r.id) + '\')">Delete</button>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+        body.innerHTML = html;
+    }
+
+    function startRenameSavedResume(id) {
+        var item = document.querySelector('.saved-resume-item[data-id="' + id + '"]');
+        if (!item) return;
+        var r = savedResumes.find(function(x) { return x.id === id; });
+        var main = item.querySelector('.saved-resume-item-main');
+        var actions = item.querySelector('.saved-resume-item-actions');
+        main.innerHTML = '<input class="saved-resume-rename-input" id="renameInput" value="' + escapeAttr(r ? r.name : '') + '" maxlength="255">';
+        actions.innerHTML =
+            '<button class="saved-resume-action-btn" onclick="commitRenameSavedResume(\'' + escapeAttr(id) + '\')">Save</button>' +
+            '<button class="saved-resume-action-btn" onclick="renderSavedResumeManager()">Cancel</button>';
+        var input = document.getElementById('renameInput');
+        input.focus();
+        input.addEventListener('keydown', function(e) { if (e.key === 'Enter') commitRenameSavedResume(id); });
+    }
+
+    function commitRenameSavedResume(id) {
+        var input = document.getElementById('renameInput');
+        var name = (input ? input.value : '').trim();
+        if (!name) { showToast('Name cannot be empty', 'error'); return; }
+        fetch('/api/saved-resumes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id, name: name })
+        }).then(function(r) {
+            if (!r.ok) { showToast('Rename failed', 'error'); return; }
+            var r2 = savedResumes.find(function(x) { return x.id === id; });
+            if (r2) r2.name = name;
+            renderSavedResumeManager();
+            renderSavedResumeStrip();
+            showToast('Renamed', 'success');
+        }).catch(function() { showToast('Rename failed', 'error'); });
+    }
+
+    function deleteSavedResume(id) {
+        if (!confirm('Delete this saved resume? This cannot be undone.')) return;
+        fetch('/api/saved-resumes/' + id, { method: 'DELETE' })
+            .then(function(r) {
+                if (!r.ok) { showToast('Delete failed', 'error'); return; }
+                if (selectedSavedResumeId === id) clearSavedResumeSelection();
+                savedResumes = savedResumes.filter(function(x) { return x.id !== id; });
+                renderSavedResumeManager();
+                renderSavedResumeStrip();
+                var countEl = document.getElementById('profileSavedResumeCount');
+                if (countEl) countEl.textContent = savedResumes.length;
+                showToast('Deleted', 'success');
+            }).catch(function() { showToast('Delete failed', 'error'); });
+    }
 
     // ── Batch Tailoring ──────────────────────────────────────────────────
     function startBatchTailoring() {

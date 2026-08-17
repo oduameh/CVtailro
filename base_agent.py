@@ -76,7 +76,9 @@ class BaseAgent(ABC, Generic[T]):
 
     MAX_RETRIES: int = 5
     RETRY_DELAY_BASE: float = 2.0
-    API_TIMEOUT: int = 600  # 10 minutes per agent call
+    # Healthy calls complete well under 60s; a hanging model must not pin a
+    # pipeline slot for 10 minutes per attempt (x5 retries ≈ 52 min worst case).
+    API_TIMEOUT: int = 180
 
     def __init__(self, config: AppConfig) -> None:
         self.config = config
@@ -164,9 +166,13 @@ class BaseAgent(ABC, Generic[T]):
             if response.status_code == 402:
                 raise AgentError("Insufficient OpenRouter credits. Add credits at openrouter.ai.")
             if response.status_code == 429:
-                # Wait for rate limit to clear, then retry
-                retry_after = int(response.headers.get("Retry-After", "10"))
-                retry_after = min(retry_after, 30)  # Cap at 30s
+                # Wait for rate limit to clear, then retry. Retry-After may be
+                # an HTTP-date rather than seconds — fall back to 10s.
+                try:
+                    retry_after = int(response.headers.get("Retry-After", "10"))
+                except ValueError:
+                    retry_after = 10
+                retry_after = min(max(retry_after, 1), 30)  # Cap at 30s
                 logger.warning(f"Rate limited (429). Waiting {retry_after}s before retry...")
                 time.sleep(retry_after)
                 raise AgentError(
@@ -178,6 +184,16 @@ class BaseAgent(ABC, Generic[T]):
                     error_detail = response.json().get("error", {}).get("message", "")
                 except (ValueError, json.JSONDecodeError):
                     error_detail = response.text[:200]
+                # Retired/invalid model IDs and data-policy blocks won't fix
+                # themselves on retry — surface a clear, actionable message.
+                lowered = error_detail.lower()
+                if "not a valid model" in lowered or "no endpoints found" in lowered:
+                    raise AgentError(
+                        f"Model unavailable: '{self.config.model}' is not available on "
+                        f"OpenRouter (it may have been retired, or your OpenRouter privacy "
+                        f"settings block free models). Please pick a different model. "
+                        f"({error_detail})"
+                    )
                 raise AgentError(f"OpenRouter API error {response.status_code}: {error_detail}")
 
             try:
@@ -213,6 +229,16 @@ class BaseAgent(ABC, Generic[T]):
             content = choices[0].get("message", {}).get("content", "").strip()
             if not content:
                 raise AgentError("OpenRouter returned empty content")
+
+            # A truncated completion can never parse as valid JSON, and
+            # retrying the identical request truncates at the same point —
+            # fail fast with an actionable message instead.
+            finish_reason = choices[0].get("finish_reason") or choices[0].get("native_finish_reason")
+            if finish_reason == "length":
+                raise AgentError(
+                    "Response truncated: the model ran out of output tokens before "
+                    "finishing. Try a shorter resume/job description or a different model."
+                )
 
             return content
 
@@ -271,10 +297,20 @@ class BaseAgent(ABC, Generic[T]):
                 logger.warning(f"[{self.AGENT_NAME}] Attempt {attempt}/{self.MAX_RETRIES} API error: {e}")
                 if self.config.job_id:
                     pipeline_analytics.record_retry(self.config.job_id)
-                # Do NOT retry on auth errors — they won't self-resolve
-                if "Invalid OpenRouter API key" in str(e) or "Insufficient" in str(e):
+                # Do NOT retry on errors that won't self-resolve: bad keys,
+                # exhausted credits, retired models, deterministic truncation.
+                if (
+                    "Invalid OpenRouter API key" in str(e)
+                    or "Insufficient" in str(e)
+                    or "Model unavailable" in str(e)
+                    or "Response truncated" in str(e)
+                ):
                     break
                 if attempt < self.MAX_RETRIES:
+                    if "high demand" in str(e):
+                        # 429 path already slept for Retry-After inside
+                        # _call_llm_api — don't stack exponential backoff on top.
+                        continue
                     delay = self.RETRY_DELAY_BASE**attempt
                     logger.info(f"Retrying in {delay:.1f}s...")
                     time.sleep(delay)
@@ -294,8 +330,12 @@ class BaseAgent(ABC, Generic[T]):
         Handles: trailing commas, single-line // comments,
         unquoted NaN/Infinity, smart quotes.
         """
-        # Remove single-line comments (// ...)
-        text = re.sub(r"//[^\n]*", "", text)
+        # Remove single-line comments (// ...) — but never the // inside a URL
+        # (https://...) or other ://, and never // directly following a word
+        # character, both of which appear in real resume content (LinkedIn
+        # links are mandated on the contact line).
+        text = re.sub(r"(?m)^\s*//[^\n]*$", "", text)
+        text = re.sub(r"(?<![:\w\"'])//[^\n]*", "", text)
         # Remove trailing commas before } or ]
         text = re.sub(r",\s*([}\]])", r"\1", text)
         # Replace smart quotes with straight quotes

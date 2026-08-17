@@ -331,9 +331,7 @@ def run_pipeline(args: argparse.Namespace) -> None:
         checks_passed = sum(1 for c in ats_resume.ats_checks if c.passed)
         logger.info(f"  -> ATS checks: {checks_passed}/{len(ats_resume.ats_checks)} passed")
         logger.info(f"  -> Job title aligned: {ats_resume.job_title_aligned}")
-        aligned_count = sum(
-            1 for ta in ats_resume.title_alignments if ta.original_title != ta.aligned_title
-        )
+        aligned_count = sum(1 for ta in ats_resume.title_alignments if ta.original_title != ta.aligned_title)
         if aligned_count:
             logger.info(f"  -> Titles aligned: {aligned_count} role(s)")
             for ta in ats_resume.title_alignments:

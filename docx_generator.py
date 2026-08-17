@@ -91,8 +91,9 @@ _INLINE_MD_RE = re.compile(
 )
 
 
-def _add_run(paragraph, text: str, font_size, font_name: str, color: tuple,
-             bold: bool = False, italic: bool = False):
+def _add_run(
+    paragraph, text: str, font_size, font_name: str, color: tuple, bold: bool = False, italic: bool = False
+):
     """Append a single formatted run to a paragraph."""
     run = paragraph.add_run(text)
     run.font.size = Pt(font_size)
@@ -112,7 +113,7 @@ def _add_formatted_runs(paragraph, text: str, font_size, font_name: str, color: 
     pos = 0
     for m in _INLINE_MD_RE.finditer(text):
         if m.start() > pos:
-            _add_run(paragraph, text[pos:m.start()], font_size, font_name, color)
+            _add_run(paragraph, text[pos : m.start()], font_size, font_name, color)
         if m.group(1) is not None:
             _add_run(paragraph, m.group(1), font_size, font_name, color, bold=True)
         elif m.group(2) is not None:

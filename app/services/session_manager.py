@@ -25,6 +25,7 @@ _GEOIP_CACHE_SIZE = 256
 # Admin-configurable defaults
 # ---------------------------------------------------------------------------
 
+
 def _get_config(key: str, default: int) -> int:
     """Read a session-policy setting from the admin config (DB-backed)."""
     try:
@@ -53,6 +54,7 @@ def _session_max_age_hours() -> int:
 # ---------------------------------------------------------------------------
 # User-Agent parsing
 # ---------------------------------------------------------------------------
+
 
 def _parse_user_agent(ua_string: str) -> dict:
     """Extract device type, browser name, and OS from a User-Agent string."""
@@ -103,6 +105,7 @@ def _parse_user_agent(ua_string: str) -> dict:
 # GeoIP lookup (ip-api.com — free for server-side, no key needed)
 # ---------------------------------------------------------------------------
 
+
 @lru_cache(maxsize=_GEOIP_CACHE_SIZE)
 def _geoip_lookup_cached(ip: str) -> dict:
     """Cached GeoIP lookup. Returns {"country": ..., "city": ...}."""
@@ -126,6 +129,7 @@ def _geoip_lookup_cached(ip: str) -> dict:
 
 def _geoip_lookup_async(ip: str, session_id: str, app) -> None:
     """Run GeoIP lookup in a background thread and update the session row."""
+
     def _do_lookup():
         geo = _geoip_lookup_cached(ip)
         if geo["country"] or geo["city"]:
@@ -147,6 +151,7 @@ def _geoip_lookup_async(ip: str, session_id: str, app) -> None:
 
 def _geoip_lookup_async_event(ip: str, event_id: str, app) -> None:
     """Run GeoIP lookup in a background thread and update the login_event row."""
+
     def _do_lookup():
         geo = _geoip_lookup_cached(ip)
         if geo["country"] or geo["city"]:
@@ -170,6 +175,7 @@ def _geoip_lookup_async_event(ip: str, event_id: str, app) -> None:
 # Session lifecycle
 # ---------------------------------------------------------------------------
 
+
 def create_session(user, request_obj) -> str:
     """Create a tracked server-side session. Returns the session token."""
     from flask import current_app
@@ -177,7 +183,10 @@ def create_session(user, request_obj) -> str:
     from app.models.user_session import UserSession
 
     token = secrets.token_hex(32)
-    ip = request_obj.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request_obj.remote_addr or "unknown"
+    # remote_addr is ProxyFix-corrected in production; the first
+    # X-Forwarded-For entry is client-controlled and would let anyone plant
+    # a spoofed IP in the audit trail.
+    ip = request_obj.remote_addr or "unknown"
     ua_string = request_obj.headers.get("User-Agent", "")
     ua_info = _parse_user_agent(ua_string)
 
@@ -227,8 +236,7 @@ def _enforce_max_sessions(user_id: str) -> None:
 
     max_s = _max_sessions()
     active = (
-        UserSession.query
-        .filter_by(user_id=user_id, is_active=True)
+        UserSession.query.filter_by(user_id=user_id, is_active=True)
         .order_by(UserSession.created_at.asc())
         .all()
     )
@@ -320,8 +328,7 @@ def get_active_sessions(user_id: str) -> list:
     from app.models.user_session import UserSession
 
     return (
-        UserSession.query
-        .filter_by(user_id=user_id, is_active=True)
+        UserSession.query.filter_by(user_id=user_id, is_active=True)
         .order_by(UserSession.last_activity_at.desc())
         .all()
     )
@@ -407,8 +414,7 @@ def cleanup_expired_sessions() -> int:
     idle_cutoff = now - timedelta(minutes=_idle_timeout_minutes())
 
     expired = (
-        UserSession.query
-        .filter_by(is_active=True)
+        UserSession.query.filter_by(is_active=True)
         .filter(
             db.or_(
                 UserSession.expires_at < now,
@@ -432,6 +438,7 @@ def cleanup_expired_sessions() -> int:
 # ---------------------------------------------------------------------------
 # Login event logging
 # ---------------------------------------------------------------------------
+
 
 def log_login_event(
     user_id: str | None = None,
@@ -480,13 +487,13 @@ def log_login_event(
 # Admin queries
 # ---------------------------------------------------------------------------
 
+
 def get_all_active_sessions(limit: int = 100) -> list:
     """Admin: get all active sessions across all users."""
     from app.models.user_session import UserSession
 
     return (
-        UserSession.query
-        .filter_by(is_active=True)
+        UserSession.query.filter_by(is_active=True)
         .order_by(UserSession.last_activity_at.desc())
         .limit(limit)
         .all()
