@@ -138,22 +138,20 @@ ATS CHECKS — evaluate each:
 IMPORTANT: Respond with ONLY a JSON object. The JSON must have these exact keys:
 
 ```json
-{{
+{
   "markdown_content": "# Candidate Name\n\n## Professional Summary\n...(the complete resume in markdown)...",
   "ats_checks": [
-    {{"check_name": "standard_headings", "passed": true, "detail": "..."}},
-    {{"check_name": "no_tables", "passed": true, "detail": "..."}}
+    {"check_name": "standard_headings", "passed": true, "detail": "..."},
+    {"check_name": "no_tables", "passed": true, "detail": "..."}
   ],
-  "keyword_density": {{"keyword1": 3, "keyword2": 2}},
+  "keyword_density": {"keyword1": 3, "keyword2": 2},
   "job_title_aligned": true,
   "suggested_title": "...",
   "title_alignments": [
-    {{"role_index": 0, "original_title": "Application Developer", "aligned_title": "Software Engineer", "rationale": "Industry-standard equivalent at same seniority level"}},
-    {{"role_index": 1, "original_title": "Junior Analyst", "aligned_title": "Junior Analyst", "rationale": "No equivalent alignment needed"}}
-  ],
-  "narrative_improvements": ["improvement 1", "improvement 2"],
-  "impact_enhancements": ["enhancement 1", "enhancement 2"]
-}}
+    {"role_index": 0, "original_title": "Application Developer", "aligned_title": "Software Engineer", "rationale": "Industry-standard equivalent at same seniority level"},
+    {"role_index": 1, "original_title": "Junior Analyst", "aligned_title": "Junior Analyst", "rationale": "No equivalent alignment needed"}
+  ]
+}
 ```
 
 The "markdown_content" field MUST contain the full resume text. Do NOT return the schema definition.

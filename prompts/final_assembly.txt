@@ -41,10 +41,8 @@ Each talking point should include:
 - bullet_points: 2-4 specific talking points or prepared responses
 - source_experience: Which role and bullet from the resume this draws from
 
-Respond with a single JSON array of talking point objects matching this schema:
+Respond with a single JSON object with one field, "talking_points", containing the array of talking point objects, matching this schema:
 
 {output_schema}
-
-The response should be a JSON object with a "talking_points" field containing the array.
 
 Do not include any text outside the JSON object.

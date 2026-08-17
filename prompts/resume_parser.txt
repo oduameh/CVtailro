@@ -24,7 +24,7 @@ EXTRACTION RULES:
 6. certifications: Any certifications listed.
 7. global_skills: A comprehensive list of ALL unique skills found anywhere in the resume — technical skills, tools, frameworks, methodologies, and domain expertise.
 8. total_years_estimate: Total years of professional experience, calculated from role durations.
-9. raw_text_for_similarity: The full resume text cleaned of markdown formatting symbols. Keep all substantive content — role descriptions, skills, achievements. Remove only formatting characters (##, **, -, etc.).
+9. raw_text_for_similarity: Return an empty string "" — this field is computed downstream from the original text. Do NOT echo the resume here.
 
 IMPORTANT:
 - Preserve the exact original text of each bullet point — do not rephrase or correct.

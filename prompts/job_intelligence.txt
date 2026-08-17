@@ -17,7 +17,7 @@ EXTRACTION RULES:
    - "high": listed as a required skill
    - "medium": listed as a preferred skill or appears multiple times
    - "low": mentioned once in passing
-10. raw_text_for_similarity: A cleaned version of the full job description text — remove HTML tags, special formatting, and boilerplate (equal opportunity statements, company descriptions). Keep only the substantive job requirements and responsibilities text.
+10. raw_text_for_similarity: Return an empty string "" — this field is computed downstream from the original text. Do NOT echo the job description here.
 
 IMPORTANT:
 - Extract skills exactly as written in the job description (preserve casing and specific version numbers).

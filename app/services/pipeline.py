@@ -32,7 +32,7 @@ from app.services.cache import cache_get, cache_set
 from app.services.telemetry import track_with_app
 from config import AppConfig
 from docx_generator import generate_resume_docx
-from models import JobAnalysis, MatchReport, RewriteMode
+from models import JobAnalysis, MatchReport, ResumeData, RewriteMode
 from pdf_generator import ALL_TEMPLATE_NAMES, generate_resume_pdf
 from similarity import resume_job_similarity
 from storage import r2_storage
@@ -47,6 +47,12 @@ JD_INTEL_CACHE_TTL = 7 * 24 * 3600  # 7 days
 
 def _jd_cache_key(job_text: str, model: str) -> str:
     return "jdintel:" + hashlib.sha256(f"{model}\n{job_text}".encode()).hexdigest()
+
+
+def _resume_cache_key(resume_text: str, model: str) -> str:
+    # Saved Resumes and batch tailoring submit byte-identical resume text
+    # across many jobs — the parse result is deterministic per (model, text).
+    return "resparse:" + hashlib.sha256(f"{model}\n{resume_text}".encode()).hexdigest()
 
 
 # ── Thread-safe job storage ──────────────────────────────────────────────────
@@ -292,18 +298,34 @@ def run_pipeline_job(
         def run_stage2():
             nonlocal resume_data
             try:
-                agent2 = ResumeParserAgent(pipeline_config)
-                resume_data = agent2.run(resume_text)
+                cache_key = _resume_cache_key(resume_text, model)
+                from_cache = False
+                cached = cache_get(cache_key)
+                if cached:
+                    try:
+                        resume_data = ResumeData.model_validate_json(cached)
+                        from_cache = True
+                    except Exception as ce:
+                        logger.warning(f"Resume parse cache hit failed to parse, re-running: {ce}")
+
+                if resume_data is None:
+                    agent2 = ResumeParserAgent(pipeline_config)
+                    resume_data = agent2.run(resume_text)
+                    try:
+                        cache_set(cache_key, resume_data.model_dump_json(), ttl=JD_INTEL_CACHE_TTL)
+                    except Exception as se:
+                        logger.warning(f"Resume parse cache store failed: {se}")
+
                 save_json(resume_data.model_dump(), output_dir / "02_resume_data.json")
                 total_bullets = sum(len(r.bullets) for r in resume_data.roles)
-                emit(
-                    2,
-                    6,
-                    "Resume Parser",
-                    "done",
+                detail = (
                     f"{len(resume_data.roles)} roles, {total_bullets} bullets, "
-                    f"{resume_data.total_years_estimate:.0f} years experience",
+                    f"{resume_data.total_years_estimate:.0f} years experience"
                 )
+                if from_cache:
+                    detail += " (cached)"
+                    _te("tailor.stage2.cache_hit", metadata={"model": model})
+                emit(2, 6, "Resume Parser", "done", detail)
             except Exception as e:
                 stage_errors.append(e)
                 emit(2, 6, "Resume Parser", "error", str(e))
@@ -754,7 +776,9 @@ def run_pipeline_job(
         with jobs_lock:
             jobs[job_id]["status"] = "complete"
             jobs[job_id]["result"] = {
-                "match_score": match_report.overall_match_score,
+                # Tailored score, matching the DB fallback in /api/result and
+                # history — the original score stays in original_match_score.
+                "match_score": tailored_match_score,
                 "original_match_score": gap_report.match_score,
                 "tailored_match_score": tailored_match_score,
                 "cosine_similarity": match_report.cosine_similarity,
