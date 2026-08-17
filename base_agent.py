@@ -240,7 +240,10 @@ class BaseAgent(ABC, Generic[T]):
             if not choices:
                 raise AgentError("OpenRouter returned no choices in response")
 
-            content = choices[0].get("message", {}).get("content", "").strip()
+            # content can be explicit JSON null (some free/reasoning models
+            # return it when output budget is consumed by reasoning tokens) —
+            # `.get("content", "")` would return None and crash on .strip().
+            content = ((choices[0].get("message") or {}).get("content") or "").strip()
             if not content:
                 raise AgentError("OpenRouter returned empty content")
 
