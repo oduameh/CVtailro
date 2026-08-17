@@ -183,11 +183,10 @@ def create_session(user, request_obj) -> str:
     from app.models.user_session import UserSession
 
     token = secrets.token_hex(32)
-    ip = (
-        request_obj.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-        or request_obj.remote_addr
-        or "unknown"
-    )
+    # remote_addr is ProxyFix-corrected in production; the first
+    # X-Forwarded-For entry is client-controlled and would let anyone plant
+    # a spoofed IP in the audit trail.
+    ip = request_obj.remote_addr or "unknown"
     ua_string = request_obj.headers.get("User-Agent", "")
     ua_info = _parse_user_agent(ua_string)
 

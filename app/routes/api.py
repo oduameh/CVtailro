@@ -27,7 +27,7 @@ from app.services.pipeline import (
 )
 from app.services.telemetry import track
 from app.services.usage import daily_jobs_used, usage_tracker
-from config import DEFAULT_MODEL
+from config import DEFAULT_MODEL, RECOMMENDED_MODELS
 from utils import create_output_dir
 
 logger = logging.getLogger("cvtailro.api")
@@ -58,6 +58,24 @@ def _validate_resume_file(resume_file) -> tuple[str | None, str]:
     elif ext not in (".md", ".txt"):
         return "Unsupported file type. Use PDF, MD, or TXT.", ext
     return None, ext
+
+
+def _resolve_model(admin_config) -> str:
+    """Resolve the model for a job, honouring user selection only when allowed.
+
+    User-supplied values are validated against the curated catalog — the admin
+    pays all API costs, so an arbitrary form value must never reach OpenRouter
+    (e.g. a hand-crafted request billing a frontier model to the admin's key).
+    Unknown values silently fall back to the admin default, which itself may be
+    a custom ID the admin chose deliberately.
+    """
+    default = admin_config.default_model or DEFAULT_MODEL
+    if not admin_config.allow_user_model_selection:
+        return default
+    requested = (request.form.get("model") or "").strip()
+    if requested and requested in set(RECOMMENDED_MODELS.values()):
+        return requested
+    return default
 
 
 def _daily_budget_response(admin_config, rate_key: str, needed: int = 1):
@@ -120,10 +138,7 @@ def start_tailoring():
         track("tailor.request.rejected", category="tailor", user_id=uid, metadata={"reason": "no_api_key"})
         return jsonify({"error": "Service not configured. An admin must set the API key at /admin."}), 400
 
-    if admin_config.allow_user_model_selection:
-        model = request.form.get("model", admin_config.default_model or DEFAULT_MODEL).strip()
-    else:
-        model = admin_config.default_model or DEFAULT_MODEL
+    model = _resolve_model(admin_config)
 
     if queue_is_full():
         track("tailor.request.rejected", category="tailor", user_id=uid, metadata={"reason": "queue_full"})
@@ -235,6 +250,15 @@ def start_tailoring():
     return jsonify({"job_id": job_id})
 
 
+# Concurrent SSE listeners per job. Each open stream pins a Gunicorn request
+# thread for the job's lifetime, so without a cap one anonymous job + a handful
+# of EventSource connections can exhaust the whole thread pool (including
+# /api/health, which Railway's healthcheck depends on).
+MAX_STREAMS_PER_JOB = 3
+MAX_KEEPALIVE_CYCLES = 90  # 90 x 10s queue timeout = 15 min absolute stream cap
+_stream_counts: dict[str, int] = {}
+
+
 @api_bp.route("/api/progress/<job_id>")
 def progress_stream(job_id: str):
     with jobs_lock:
@@ -248,26 +272,65 @@ def progress_stream(job_id: str):
                     return jsonify({"error": "Job not found"}), 404
         if job_id not in jobs:
             return jsonify({"error": "Job not found"}), 404
+        if _stream_counts.get(job_id, 0) >= MAX_STREAMS_PER_JOB:
+            return jsonify({"error": "Too many progress connections for this job"}), 429
+
+    def _release_stream_slot():
+        with jobs_lock:
+            remaining = _stream_counts.get(job_id, 1) - 1
+            if remaining <= 0:
+                _stream_counts.pop(job_id, None)
+            else:
+                _stream_counts[job_id] = remaining
 
     def generate():
+        # Increment inside the generator (not the route) so the paired
+        # decrement in `finally` is guaranteed: a generator that is never
+        # iterated runs neither, one that starts runs both.
         with jobs_lock:
-            job = jobs.get(job_id)
-            if job is None:
-                yield f"data: {json.dumps({'status': 'error', 'detail': 'Job has been cleaned up'})}\n\n"
-                return
-            q = job["queue"]
-        while True:
-            try:
-                event = q.get(timeout=10)
-                yield f"data: {json.dumps(event)}\n\n"
-                if event.get("status") in ("complete", "error"):
-                    break
-            except queue.Empty:
-                with jobs_lock:
-                    if job_id not in jobs:
-                        yield f"data: {json.dumps({'status': 'error', 'detail': 'Job expired'})}\n\n"
+            _stream_counts[job_id] = _stream_counts.get(job_id, 0) + 1
+        try:
+            with jobs_lock:
+                job = jobs.get(job_id)
+                if job is None:
+                    yield f"data: {json.dumps({'status': 'error', 'detail': 'Job has been cleaned up'})}\n\n"
+                    return
+                # A (re)connecting client must not block on the queue when the
+                # job already finished — the single terminal event is consumed
+                # destructively, so a second reader would hang on keepalives
+                # until the job entry expires.
+                status = job.get("status")
+                if status == "complete":
+                    yield f"data: {json.dumps({'status': 'complete'})}\n\n"
+                    return
+                if status == "error":
+                    detail = job.get("error") or "Pipeline failed"
+                    yield f"data: {json.dumps({'status': 'error', 'detail': detail})}\n\n"
+                    return
+                q = job["queue"]
+            idle_cycles = 0
+            while True:
+                try:
+                    event = q.get(timeout=10)
+                    idle_cycles = 0
+                    yield f"data: {json.dumps(event)}\n\n"
+                    if event.get("status") in ("complete", "error"):
+                        break
+                except queue.Empty:
+                    idle_cycles += 1
+                    with jobs_lock:
+                        if job_id not in jobs:
+                            yield f"data: {json.dumps({'status': 'error', 'detail': 'Job expired'})}\n\n"
+                            return
+                    if idle_cycles >= MAX_KEEPALIVE_CYCLES:
+                        # Absolute cap so a stream can never pin a request
+                        # thread indefinitely; the client falls back to
+                        # reconnecting or polling /api/result.
+                        yield f"data: {json.dumps({'status': 'error', 'detail': 'Progress stream timed out'})}\n\n"
                         return
-                yield f"data: {json.dumps({'status': 'keepalive'})}\n\n"
+                    yield f"data: {json.dumps({'status': 'keepalive'})}\n\n"
+        finally:
+            _release_stream_slot()
 
     return Response(
         generate(),
@@ -404,9 +467,14 @@ def score_resume():
 
 
 @api_bp.route("/api/boost-bullet", methods=["POST"])
+@login_required
 @limiter.limit("30 per hour")
 def boost_bullet():
-    """Rewrite a single bullet point with stronger action verbs and metrics."""
+    """Rewrite a single bullet point with stronger action verbs and metrics.
+
+    Requires login: each call spends admin-paid OpenRouter credits, and the
+    per-IP rate limit alone is trivially bypassed by rotating IPs.
+    """
     data = request.get_json(silent=True)
     if not data or not data.get("bullet"):
         return jsonify({"error": "No bullet text provided"}), 400
@@ -488,11 +556,15 @@ def start_batch_tailoring():
     """Start tailoring a resume against multiple job descriptions."""
     from flask import current_app
 
+    cleanup_old_jobs()
+
     admin_config = AdminConfigManager.load()
     api_key = admin_config.api_key.strip()
     uid = current_user.id if current_user.is_authenticated else None
     if not api_key:
         return jsonify({"error": "Service not configured"}), 400
+
+    model = _resolve_model(admin_config)
 
     if queue_is_full():
         track("tailor.request.rejected", category="tailor", user_id=uid, metadata={"reason": "queue_full"})
@@ -572,7 +644,6 @@ def start_batch_tailoring():
                 "batch_index": i,
             }
 
-        model = admin_config.default_model or DEFAULT_MODEL
         thread = threading.Thread(
             target=run_pipeline_job,
             args=(
@@ -591,6 +662,22 @@ def start_batch_tailoring():
         )
         thread.start()
         job_ids.append(job_id)
+
+        track(
+            "tailor.job.created",
+            category="tailor",
+            user_id=uid,
+            job_id=job_id,
+            metadata={
+                "model": model,
+                "mode": mode,
+                "template": template,
+                "resume_ext": resume_ext,
+                "resume_source": "upload",
+                "batch": True,
+                "batch_index": i,
+            },
+        )
 
     return jsonify({"job_ids": job_ids, "count": len(job_ids)})
 
@@ -615,6 +702,18 @@ def download_file(job_id: str, filename: str):
 def download_check(job_id: str):
     from storage import r2_storage as r2
 
+    # Ownership gate: file listings embed job metadata (smart filenames carry
+    # role + employer), so only the job's owner — or an admin — may see them.
+    # Anonymous jobs (user_id None) stay visible, matching download semantics.
+    is_admin = getattr(current_user, "is_admin", False)
+    with jobs_lock:
+        mem_job = jobs.get(job_id)
+        mem_owner = mem_job.get("user_id") if mem_job else None
+    owns_mem = mem_job is not None and (mem_owner is None or mem_owner == current_user.id)
+    db_job = TailoringJob.query.filter_by(id=job_id, user_id=current_user.id).first()
+    if not is_admin and not owns_mem and db_job is None:
+        return jsonify({"error": "Job not found"}), 404
+
     result = {
         "job_id": job_id,
         "user_id": current_user.id,
@@ -629,14 +728,12 @@ def download_check(job_id: str):
         "db_has_tp_md": False,
     }
 
-    with jobs_lock:
-        if job_id in jobs:
-            result["in_memory"] = True
-            output_dir = jobs[job_id]["output_dir"]
-            try:
-                result["local_files"] = [f.name for f in Path(output_dir).iterdir() if f.is_file()]
-            except Exception:
-                pass
+    if mem_job is not None and (owns_mem or is_admin):
+        result["in_memory"] = True
+        try:
+            result["local_files"] = [f.name for f in Path(mem_job["output_dir"]).iterdir() if f.is_file()]
+        except Exception:
+            pass
 
     if r2.is_configured:
         from app.models import JobFile
@@ -644,7 +741,6 @@ def download_check(job_id: str):
         job_files = JobFile.query.filter_by(job_id=job_id).all()
         result["r2_files"] = [jf.filename for jf in job_files]
 
-    db_job = TailoringJob.query.filter_by(id=job_id, user_id=current_user.id).first()
     if db_job:
         result["db_found"] = True
         result["db_status"] = db_job.status

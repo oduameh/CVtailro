@@ -24,9 +24,10 @@ def _get_admin_emails() -> list[str]:
 
 
 def _client_ip() -> str:
-    return (
-        request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.remote_addr or "unknown"
-    )
+    # request.remote_addr is already ProxyFix-corrected in production; the
+    # FIRST X-Forwarded-For entry is client-controlled and trivially spoofed,
+    # so it must never feed audit logs or the local-request check.
+    return request.remote_addr or "unknown"
 
 
 def _is_local_request() -> bool:
@@ -68,6 +69,18 @@ def google_callback():
 
     if not email:
         return redirect("/?auth_error=no_email")
+
+    # A Google identity can assert an email it has not verified (e.g. some
+    # Workspace configurations). Trusting it would allow account takeover via
+    # email-based linking below, and admin via ADMIN_EMAILS.
+    if not userinfo.get("email_verified"):
+        logger.warning(f"Rejected Google login with unverified email: {email}")
+        track(
+            "auth.login.failed",
+            category="auth",
+            metadata={"provider": "google", "reason": "email_unverified"},
+        )
+        return redirect("/?auth_error=email_unverified")
 
     user = User.query.filter_by(google_id=google_id).first()
 

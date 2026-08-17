@@ -7,6 +7,7 @@ import os
 import platform as platform_mod
 import resource as resource_mod
 import threading
+import time
 from datetime import datetime, timedelta, timezone
 
 import requests as http_requests
@@ -73,6 +74,12 @@ def _live_pipeline_state() -> dict:
     }
 
 
+# Password-based admin sessions expire after this many hours. The flag lives
+# in the signed client-side cookie with no server-side record, so without an
+# expiry it would be an irrevocable bearer token.
+ADMIN_SESSION_MAX_AGE_HOURS = 12
+
+
 def _admin_required(f):
     """Decorator checking session-based admin auth OR logged-in admin user."""
     from functools import wraps
@@ -80,7 +87,11 @@ def _admin_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if session.get("admin_authenticated"):
-            return f(*args, **kwargs)
+            auth_at = session.get("admin_auth_at", 0)
+            if time.time() - auth_at < ADMIN_SESSION_MAX_AGE_HOURS * 3600:
+                return f(*args, **kwargs)
+            session.pop("admin_authenticated", None)
+            session.pop("admin_auth_at", None)
         if current_user.is_authenticated and current_user.is_admin:
             return f(*args, **kwargs)
         return jsonify({"error": "Not authenticated"}), 401
@@ -117,6 +128,7 @@ def admin_login():
 
     if AdminConfigManager.verify_password(password):
         session["admin_authenticated"] = True
+        session["admin_auth_at"] = time.time()
         login_rate_limiter.reset(client_ip)
         track("admin.login", category="admin", metadata={"method": "password"})
         return jsonify({"ok": True})
@@ -310,7 +322,14 @@ def admin_user_jobs(user_id: str):
     user = db.session.get(User, user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
-    jobs_list = TailoringJob.query.filter_by(user_id=user_id).order_by(TailoringJob.created_at.desc()).all()
+    # Full text fields are serialized below, so cap the row count — an
+    # unbounded query here can return hundreds of multi-100KB rows.
+    jobs_list = (
+        TailoringJob.query.filter_by(user_id=user_id)
+        .order_by(TailoringJob.created_at.desc())
+        .limit(100)
+        .all()
+    )
     return jsonify(
         {
             "user": {"id": user.id, "email": user.email, "name": user.name},
