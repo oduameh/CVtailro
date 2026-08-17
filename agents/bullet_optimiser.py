@@ -134,43 +134,59 @@ class BulletOptimiserAgent(BaseAgent["OptimisedBullets"]):
 
         This replicates the retry logic from ``BaseAgent.run`` but
         operates on a single user message rather than the full
-        ``prepare_user_message`` output.
+        ``prepare_user_message`` output. Like run(), a ':free' primary
+        model falls back down the free chain before giving up.
         """
         last_error: Exception | None = None
+        candidates = self._model_candidates()
+        total_attempts = 0
 
-        for attempt in range(1, self.MAX_RETRIES + 1):
-            try:
-                raw_text = self._call_llm_api(system_prompt, user_message)
-                logger.debug(f"[{self.AGENT_NAME}] Role {role_idx} response: {len(raw_text)} chars")
-                parsed_json = self._extract_json(raw_text)
-                result = OptimisedBullets.model_validate(parsed_json)
-                return result
+        for model_idx, model in enumerate(candidates):
+            max_attempts = self.MAX_RETRIES if model_idx == 0 else self.FALLBACK_RETRIES
+            if model_idx > 0:
+                logger.warning(f"[{self.AGENT_NAME}] Role {role_idx}: falling back to free model {model}")
 
-            except (ValidationError, json.JSONDecodeError, KeyError) as e:
-                last_error = e
-                logger.warning(
-                    f"[{self.AGENT_NAME}] Role {role_idx} attempt "
-                    f"{attempt}/{self.MAX_RETRIES} failed (parse): {e}"
-                )
-                if attempt < self.MAX_RETRIES:
-                    delay = self.RETRY_DELAY_BASE**attempt
-                    time.sleep(delay)
+            for attempt in range(1, max_attempts + 1):
+                total_attempts += 1
+                try:
+                    raw_text = self._call_llm_api(system_prompt, user_message, model)
+                    logger.debug(f"[{self.AGENT_NAME}] Role {role_idx} response: {len(raw_text)} chars")
+                    parsed_json = self._extract_json(raw_text)
+                    result = OptimisedBullets.model_validate(parsed_json)
+                    return result
 
-            except AgentError as e:
-                last_error = e
-                logger.warning(
-                    f"[{self.AGENT_NAME}] Role {role_idx} attempt {attempt}/{self.MAX_RETRIES} API error: {e}"
-                )
-                if "Invalid OpenRouter API key" in str(e) or "Insufficient" in str(e):
-                    break
-                if attempt < self.MAX_RETRIES:
-                    delay = self.RETRY_DELAY_BASE**attempt
-                    time.sleep(delay)
-                else:
-                    break
+                except (ValidationError, json.JSONDecodeError, KeyError) as e:
+                    last_error = e
+                    logger.warning(
+                        f"[{self.AGENT_NAME}] Role {role_idx} attempt "
+                        f"{attempt}/{max_attempts} on {model} failed (parse): {e}"
+                    )
+                    if attempt < max_attempts:
+                        delay = self.RETRY_DELAY_BASE**attempt
+                        time.sleep(delay)
+
+                except AgentError as e:
+                    last_error = e
+                    logger.warning(
+                        f"[{self.AGENT_NAME}] Role {role_idx} attempt "
+                        f"{attempt}/{max_attempts} on {model} API error: {e}"
+                    )
+                    if (
+                        "Invalid OpenRouter API key" in str(e)
+                        or "Insufficient" in str(e)
+                        or "Daily free-model limit" in str(e)
+                    ):
+                        raise AgentError(str(e)) from e
+                    if "Model unavailable" in str(e) or "Response truncated" in str(e):
+                        break
+                    if attempt < max_attempts:
+                        if "high demand" in str(e):
+                            continue
+                        delay = self.RETRY_DELAY_BASE**attempt
+                        time.sleep(delay)
 
         raise AgentError(
-            f"{self.AGENT_NAME} failed for role {role_idx} after {self.MAX_RETRIES} attempts: {last_error}"
+            f"{self.AGENT_NAME} failed for role {role_idx} after {total_attempts} attempts: {last_error}"
         )
 
     # ── Overridden run() with parallel splitting ─────────────────────────────
