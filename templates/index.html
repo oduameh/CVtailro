@@ -3949,12 +3949,17 @@
             if (format === 'docx' && fl.endsWith('.docx') && fl.indexOf('cover') === -1) { target = f; break; }
             // MD: there's only one resume MD per job
             if (format === 'md' && fl.endsWith('.md') && fl.indexOf('talking') === -1) { target = f; break; }
+            // JSON: the match report is the only JSON per job
+            if (format === 'json' && fl.indexOf('match') !== -1 && fl.endsWith('.json')) { target = f; break; }
         }
         if (target) {
             safeDownload('/api/download/' + currentJobId + '/' + target, target);
         } else {
             // Fallback: request template-specific PDF from DB regeneration
-            var fallbackName = 'Resume_' + tpl.charAt(0).toUpperCase() + tpl.slice(1) + '.' + (format === 'md' ? 'md' : format);
+            // (the match report is a fixed filename, not template-specific)
+            var fallbackName = (format === 'json')
+                ? 'match_report.json'
+                : 'Resume_' + tpl.charAt(0).toUpperCase() + tpl.slice(1) + '.' + (format === 'md' ? 'md' : format);
             safeDownload('/api/download/' + currentJobId + '/' + fallbackName, fallbackName);
         }
     }
@@ -4044,6 +4049,9 @@
     }
     function openHistoryDownload(jobId) {
         currentJobId = jobId;
+        // Clear stale filenames from a previous job — the fallback path
+        // regenerates the correct names for this job on demand.
+        currentFileList = [];
         openDownloadPopup();
     }
     window.openDownloadPopup = openDownloadPopup;
@@ -4362,14 +4370,6 @@
             window.history.replaceState({}, document.title, window.location.pathname);
         }
 
-        // Password reset token — show the reset overlay
-        var resetToken = params.get('reset_token');
-        if (resetToken) {
-            _pendingResetToken = resetToken;
-            document.getElementById('resetPwOverlay').classList.add('active');
-            document.body.style.overflow = 'hidden';
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
     })();
 
     // Check auth on page load
@@ -4499,10 +4499,6 @@
         if (e.key === 'Escape') {
             if (document.getElementById('authModalOverlay').classList.contains('active')) {
                 closeAuthModal();
-                return;
-            }
-            if (document.getElementById('resetPwOverlay').classList.contains('active')) {
-                closeResetOverlay();
                 return;
             }
             if (document.getElementById('profileOverlay').classList.contains('active')) {
@@ -4843,8 +4839,8 @@
                 var clPrefix = safeT + (safeC ? '_' + safeC : '');
                 document.getElementById("coverLetterContent").innerHTML =
                     '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">' +
-                    '<a href="/api/download/' + effectiveJobId + '/' + clPrefix + '_Cover_Letter.pdf" style="padding:10px 18px;background:var(--primary);color:#fff;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;">Download PDF</a>' +
-                    '<a href="/api/download/' + effectiveJobId + '/' + clPrefix + '_Cover_Letter.docx" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--primary);border-radius:10px;font-size:13px;font-weight:600;color:var(--primary);text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;">Download DOCX</a>' +
+                    '<a href="#" onclick="safeDownload(\'/api/download/' + effectiveJobId + '/' + clPrefix + '_Cover_Letter.pdf\',\'' + clPrefix + '_Cover_Letter.pdf\',event); return false;" style="padding:10px 18px;background:var(--primary);color:#fff;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;">Download PDF</a>' +
+                    '<a href="#" onclick="safeDownload(\'/api/download/' + effectiveJobId + '/' + clPrefix + '_Cover_Letter.docx\',\'' + clPrefix + '_Cover_Letter.docx\',event); return false;" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--primary);border-radius:10px;font-size:13px;font-weight:600;color:var(--primary);text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;">Download DOCX</a>' +
                     '<button onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.textContent).then(function(){showToast(\'Cover letter copied!\',\'success\');})" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;">Copy Text</button>' +
                     '<button onclick="this.parentElement.nextElementSibling.style.display=this.parentElement.nextElementSibling.style.display===\'none\'?\'block\':\'none\';this.textContent=this.parentElement.nextElementSibling.style.display===\'none\'?\'Show Preview\':\'Hide Preview\'" style="padding:10px 18px;background:var(--primary-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;">Show Preview</button>' +
                     '</div>' +
@@ -4940,8 +4936,14 @@
             return 'The AI model took too long to respond. Please try again' + (modelName ? ' or try a different model.' : '.');
         }
 
+        // Out of credits / payment required (check before token-limit —
+        // OpenRouter's 402 message mentions "tokens" too)
+        if (msg.match(/insufficient credits/i) || msg.match(/402/i) || msg.match(/payment required/i)) {
+            return 'The service is temporarily out of AI capacity. Please try again later.';
+        }
+
         // Context length / token limit
-        if (msg.match(/context.*length/i) || msg.match(/too.*long/i) || msg.match(/token/i)) {
+        if (msg.match(/context.*length/i) || msg.match(/maximum context/i) || msg.match(/max_tokens/i) || msg.match(/too.*long/i)) {
             return 'Your resume or job description is too long for this model. Try shortening it or using a different model.';
         }
 
@@ -5110,6 +5112,13 @@
 
     function dismissError() {
         document.getElementById("errorBanner").classList.remove("active");
+    }
+
+    // Restore the form after a tailoring failure so the user can retry —
+    // btnRun lives inside formSection, which startTailoring() hides.
+    function resetToFormOnError() {
+        document.getElementById('formSection').style.display = '';
+        document.getElementById('progressSection').classList.remove('active');
     }
 
     // --- Safe download via fetch (shows errors as toast instead of navigating away) ---
@@ -5298,12 +5307,14 @@
                 showError("The system is handling a lot of requests right now. Please wait 30 seconds and try again.");
                 btn.disabled = false; btn.textContent = "Tailor My Resume";
                 stopTipRotation(); stopElapsedTimer();
+                resetToFormOnError();
                 return;
             }
             if (r.status === 429) {
                 showError(d.error || "You've reached your limit for this demo session.");
                 btn.disabled = false; btn.textContent = "Tailor My Resume";
                 stopTipRotation(); stopElapsedTimer();
+                resetToFormOnError();
                 return;
             }
             if (!r.ok) {
@@ -5311,6 +5322,7 @@
                 btn.disabled = false; btn.textContent = "Tailor My Resume";
                 stopTipRotation();
                 stopElapsedTimer();
+                resetToFormOnError();
                 return;
             }
             var jobId = d.job_id;
@@ -5374,6 +5386,7 @@
                 document.getElementById('reconnectingBadge').classList.remove('visible');
                 showError(friendlyErrorMessage(msg, model));
                 btn.disabled = false; btn.textContent = "Tailor My Resume";
+                resetToFormOnError();
             }
 
             function connectSSE() {
@@ -5443,6 +5456,7 @@
             btn.disabled = false; btn.textContent = "Tailor My Resume";
             stopTipRotation();
             stopElapsedTimer();
+            resetToFormOnError();
         }
     }
 
@@ -5452,11 +5466,13 @@
             var r = await fetch('/api/result/' + jobId);
             if (r.status === 404) {
                 showError('Job not found. It may have expired or been cleaned up.');
+                resetToFormOnError();
                 return;
             }
             var d = await r.json();
             if (d.status === "error") {
                 showError(d.error || "The pipeline failed. Please try again.");
+                resetToFormOnError();
                 return;
             }
             if (d.status !== "complete") {
@@ -5465,11 +5481,13 @@
                     setTimeout(function() { loadResults(jobId, retryCount + 1); }, 2000);
                 } else {
                     showError("Results could not be loaded. Please try again.");
+                    resetToFormOnError();
                 }
                 return;
             }
             if (!d.result) {
                 showError("Pipeline completed but produced no results. Check the admin error log.");
+                resetToFormOnError();
                 return;
             }
         } catch(e) {
@@ -5477,6 +5495,7 @@
                 setTimeout(function() { loadResults(jobId, retryCount + 1); }, 2000);
             } else {
                 showError("Failed to load results: " + e.message);
+                resetToFormOnError();
             }
             return;
         }

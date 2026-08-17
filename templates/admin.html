@@ -2603,7 +2603,7 @@
 
         destroyChart('pipeFailures');
         var fctx = document.getElementById('pipeFailuresChart');
-        if (fctx && d.failures_per_day) {
+        if (fctx && d.failures_per_day && typeof Chart !== 'undefined') {
             chartInstances['pipeFailures'] = new Chart(fctx, {
                 type: 'bar',
                 data: {
@@ -2623,7 +2623,7 @@
 
         destroyChart('pipeModelErrors');
         var mctx = document.getElementById('pipeModelErrorsChart');
-        if (mctx && d.errors_by_model) {
+        if (mctx && d.errors_by_model && typeof Chart !== 'undefined') {
             var mLabels = Object.keys(d.errors_by_model).map(shortModel);
             var mValues = Object.values(d.errors_by_model);
             chartInstances['pipeModelErrors'] = new Chart(mctx, {
@@ -2701,7 +2701,7 @@
 
             destroyChart('costModelAll');
             var actx = document.getElementById('costModelAllChart');
-            if (actx && d.model_usage_all) {
+            if (actx && d.model_usage_all && typeof Chart !== 'undefined') {
                 var aLabels = Object.keys(d.model_usage_all).map(shortModel);
                 var aValues = Object.values(d.model_usage_all);
                 chartInstances['costModelAll'] = new Chart(actx, {
@@ -2713,7 +2713,7 @@
 
             destroyChart('costModel30d');
             var mctx = document.getElementById('costModel30dChart');
-            if (mctx && d.model_usage_30d) {
+            if (mctx && d.model_usage_30d && typeof Chart !== 'undefined') {
                 var mLabels = Object.keys(d.model_usage_30d).map(shortModel);
                 var mValues = Object.values(d.model_usage_30d);
                 chartInstances['costModel30d'] = new Chart(mctx, {
@@ -2894,7 +2894,7 @@
 
             destroyChart('auditFailures');
             var fctx = document.getElementById('auditFailuresChart');
-            if (fctx && d.auth_failures_by_day && d.auth_failures_by_day.length) {
+            if (fctx && d.auth_failures_by_day && d.auth_failures_by_day.length && typeof Chart !== 'undefined') {
                 chartInstances['auditFailures'] = new Chart(fctx, {
                     type: 'bar',
                     data: {
