@@ -37,9 +37,12 @@ def list_saved_resumes():
 @saved_resumes_bp.route("/api/saved-resumes", methods=["POST"])
 @login_required
 def save_resume():
-    data = request.get_json(force=True)
-    resume_text = data.get("resume_text", "").strip()
-    name = data.get("name", "My Resume").strip()[:255]
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"error": "Invalid request body"}), 400
+    # `or` (not .get defaults): an explicit JSON null must not 500 on .strip()
+    resume_text = (data.get("resume_text") or "").strip()
+    name = (data.get("name") or "My Resume").strip()[:255] or "My Resume"
     resume_id = data.get("id")
 
     # Text is required when creating; an update may be a rename only.

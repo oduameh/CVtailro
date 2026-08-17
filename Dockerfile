@@ -46,4 +46,8 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
 ENTRYPOINT ["tini", "--"]
 
 # Gunicorn — bind to Railway's PORT (default 5050 for local dev)
-CMD ["sh", "-c", "exec gunicorn wsgi:application --bind 0.0.0.0:${PORT:-5050} --workers 2 --threads 4 --timeout 300 --keep-alive 65 --preload --access-logfile - --error-logfile -"]
+# --threads 16: the workload is IO-bound (SSE progress streams pin a thread
+# each for a job's lifetime; LLM calls run in background threads). 2x4 gave
+# only 8 request slots app-wide — a handful of progress viewers could starve
+# every route including /api/health, failing Railway's healthcheck.
+CMD ["sh", "-c", "exec gunicorn wsgi:application --bind 0.0.0.0:${PORT:-5050} --workers 2 --threads 16 --timeout 300 --keep-alive 65 --preload --access-logfile - --error-logfile -"]

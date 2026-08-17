@@ -106,7 +106,13 @@ def update_application(app_id):
 
     for field in ("company", "job_title", "status", "url", "notes"):
         if field in data:
-            setattr(app, field, data[field])
+            value = data[field]
+            # company/job_title are NOT NULL columns — an explicit JSON null
+            # (or empty string) must 400, not 500 on commit.
+            if field in ("company", "job_title") and not (isinstance(value, str) and value.strip()):
+                db.session.rollback()
+                return jsonify({"error": f"{field} cannot be empty"}), 400
+            setattr(app, field, value)
     try:
         if "applied_date" in data:
             app.applied_date = _parse_date(data.get("applied_date"))

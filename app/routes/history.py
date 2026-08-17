@@ -2,6 +2,7 @@
 
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
+from sqlalchemy.orm import load_only
 
 from app.models import TailoringJob
 
@@ -13,7 +14,29 @@ history_bp = Blueprint("history", __name__)
 def get_history():
     page = request.args.get("page", 1, type=int)
     per_page = min(request.args.get("per_page", 20, type=int), 50)
-    query = TailoringJob.query.filter_by(user_id=current_user.id).order_by(TailoringJob.created_at.desc())
+    # List rows only need small scalar columns — without load_only every page
+    # also drags the full resume/cover-letter/JD Text columns (50-200KB per
+    # completed job) out of Postgres just to be discarded. ats_resume_md is
+    # kept (deferred loading would re-query per row for has_resume).
+    query = (
+        TailoringJob.query.options(
+            load_only(
+                TailoringJob.id,
+                TailoringJob.status,
+                TailoringJob.job_title,
+                TailoringJob.company,
+                TailoringJob.match_score,
+                TailoringJob.rewrite_mode,
+                TailoringJob.template,
+                TailoringJob.model_used,
+                TailoringJob.job_description_snippet,
+                TailoringJob.created_at,
+                TailoringJob.ats_resume_md,
+            )
+        )
+        .filter_by(user_id=current_user.id)
+        .order_by(TailoringJob.created_at.desc())
+    )
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     return jsonify(
         {

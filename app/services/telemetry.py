@@ -93,51 +93,24 @@ def track(
         {k: v for k, v in (safe_meta or {}).items() if k not in ("traceback",)} if safe_meta else "-",
     )
 
-    # Persist to DB in background thread (fire-and-forget)
+    # Persist to DB in background thread (fire-and-forget). The Flask app
+    # must be resolved HERE, while the caller's context is still active —
+    # app/request contexts are thread-local and do not exist in the spawned
+    # thread, so resolving current_app there would always fail silently.
+    try:
+        from flask import current_app, has_app_context
+
+        if not has_app_context():
+            return
+        app = current_app._get_current_object()
+    except Exception:
+        return
+
     threading.Thread(
-        target=_persist_event,
-        args=(event_name, category, user_id, job_id, rid, safe_meta),
+        target=_persist_event_with_app,
+        args=(app, event_name, category, user_id, job_id, rid, safe_meta),
         daemon=True,
     ).start()
-
-
-def _persist_event(
-    event_name: str,
-    category: str,
-    user_id: str | None,
-    job_id: str | None,
-    request_id: str | None,
-    metadata: dict | None,
-) -> None:
-    """Write event row to analytics_events (runs in daemon thread)."""
-    try:
-        # We need an app context for DB access
-        from flask import current_app
-
-        from app.extensions import db
-        from app.models.analytics import AnalyticsEvent, hash_user_id
-
-        try:
-            app = current_app._get_current_object()
-        except RuntimeError:
-            # No app context available (e.g. during startup). Try to get it
-            # from the global app reference.
-            return
-
-        with app.app_context():
-            evt = AnalyticsEvent(
-                event_name=event_name,
-                category=category,
-                event_time=datetime.now(timezone.utc),
-                user_id_hash=hash_user_id(user_id),
-                request_id=request_id,
-                job_id=job_id,
-                metadata_json=metadata,
-            )
-            db.session.add(evt)
-            db.session.commit()
-    except Exception:
-        logger.debug("Failed to persist analytics event %s", event_name, exc_info=True)
 
 
 def track_with_app(
