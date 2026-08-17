@@ -178,6 +178,16 @@ class BaseAgent(ABC, Generic[T]):
                     error_detail = response.json().get("error", {}).get("message", "")
                 except (ValueError, json.JSONDecodeError):
                     error_detail = response.text[:200]
+                # Retired/invalid model IDs and data-policy blocks won't fix
+                # themselves on retry — surface a clear, actionable message.
+                lowered = error_detail.lower()
+                if "not a valid model" in lowered or "no endpoints found" in lowered:
+                    raise AgentError(
+                        f"Model unavailable: '{self.config.model}' is not available on "
+                        f"OpenRouter (it may have been retired, or your OpenRouter privacy "
+                        f"settings block free models). Please pick a different model. "
+                        f"({error_detail})"
+                    )
                 raise AgentError(f"OpenRouter API error {response.status_code}: {error_detail}")
 
             try:
@@ -271,8 +281,13 @@ class BaseAgent(ABC, Generic[T]):
                 logger.warning(f"[{self.AGENT_NAME}] Attempt {attempt}/{self.MAX_RETRIES} API error: {e}")
                 if self.config.job_id:
                     pipeline_analytics.record_retry(self.config.job_id)
-                # Do NOT retry on auth errors — they won't self-resolve
-                if "Invalid OpenRouter API key" in str(e) or "Insufficient" in str(e):
+                # Do NOT retry on auth or model-availability errors — they
+                # won't self-resolve
+                if (
+                    "Invalid OpenRouter API key" in str(e)
+                    or "Insufficient" in str(e)
+                    or "Model unavailable" in str(e)
+                ):
                     break
                 if attempt < self.MAX_RETRIES:
                     delay = self.RETRY_DELAY_BASE**attempt

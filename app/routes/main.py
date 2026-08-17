@@ -117,12 +117,16 @@ def api_status():
 def list_models():
     config = AdminConfigManager.load()
     default = config.default_model if config.default_model else DEFAULT_MODEL
+
+    models = RECOMMENDED_MODELS
+    if not current_app.config.get("TESTING"):
+        from app.services.model_catalog import filter_available
+
+        models = filter_available(RECOMMENDED_MODELS)
+
     return jsonify(
         {
-            "models": [
-                {"id": model_id, "name": display_name}
-                for display_name, model_id in RECOMMENDED_MODELS.items()
-            ],
+            "models": [{"id": model_id, "name": display_name} for display_name, model_id in models.items()],
             "default": default,
             "user_selectable": config.allow_user_model_selection,
         }

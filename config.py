@@ -7,21 +7,22 @@ from dataclasses import dataclass
 from models import RewriteMode
 
 # Curated models that reliably produce structured JSON output.
-# Only 24B+ parameter models included — smaller ones fail on complex prompts.
+# Free-model lineup rotates frequently on OpenRouter — /api/models cross-checks
+# this dict against the live catalog and hides entries that have been retired.
 RECOMMENDED_MODELS: dict[str, str] = {
     # ── Free models (no credits needed) ───────────────────────────
     # Best free options for structured JSON resume output, ranked by reliability
-    "Qwen3 Coder 480B (Free)": "qwen/qwen3-coder:free",
-    "Qwen3 Next 80B (Free)": "qwen/qwen3-next-80b-a3b-instruct:free",
-    "Hermes 3 Llama 405B (Free)": "nousresearch/hermes-3-llama-3.1-405b:free",
-    "GPT-OSS 120B (Free)": "openai/gpt-oss-120b:free",
-    "Llama 3.3 70B (Free)": "meta-llama/llama-3.3-70b-instruct:free",
-    "Trinity Large (Free)": "arcee-ai/trinity-large-preview:free",
-    "NVIDIA Nemotron 30B (Free)": "nvidia/nemotron-3-nano-30b-a3b:free",
-    "StepFun 3.5 Flash (Free)": "stepfun/step-3.5-flash:free",
-    "Mistral Small 3.1 24B (Free)": "mistralai/mistral-small-3.1-24b-instruct:free",
-    "Gemma 3 27B (Free)": "google/gemma-3-27b-it:free",
-    "Solar Pro 3 (Free)": "upstage/solar-pro-3:free",
+    "GLM 5.2 (Free)": "z-ai/glm-5.2:free",
+    "Nemotron 3 Ultra 550B (Free)": "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "Nemotron 3 Super 120B (Free)": "nvidia/nemotron-3-super-120b-a12b:free",
+    "Nemotron 3.5 Lightning (Free)": "nvidia/nemotron-3.5-lightning:free",
+    "Gemma 4 31B (Free)": "google/gemma-4-31b-it:free",
+    "Gemma 4 26B (Free)": "google/gemma-4-26b-a4b-it:free",
+    "Nemotron 3 Nano 30B (Free)": "nvidia/nemotron-3-nano-30b-a3b:free",
+    "Nemotron 3 Nano Omni (Free)": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    "GPT-OSS 20B (Free)": "openai/gpt-oss-20b:free",
+    "Laguna S 2.1 (Free)": "poolside/laguna-s-2.1:free",
+    "North Mini Code (Free)": "cohere/north-mini-code:free",
     "Auto Router (Free)": "openrouter/free",
     # ── Paid models — Best Value ─────────────────────────────────
     "GPT-4o Mini": "openai/gpt-4o-mini",
@@ -36,7 +37,7 @@ RECOMMENDED_MODELS: dict[str, str] = {
     # ── Paid models — Frontier ────────────────────────────────────
     "Claude Opus 4.6": "anthropic/claude-opus-4.6",
     "o4-mini": "openai/o4-mini",
-    "Grok 3": "x-ai/grok-3",
+    "Grok 4.6": "x-ai/grok-4.6",
 }
 
 DEFAULT_MODEL = "openai/gpt-4o-mini"
