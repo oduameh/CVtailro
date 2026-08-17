@@ -22,7 +22,7 @@ import requests
 from pydantic import BaseModel, ValidationError
 
 from analytics import pipeline_analytics
-from config import AppConfig
+from config import FREE_FALLBACK_MODELS, AppConfig
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -75,6 +75,7 @@ class BaseAgent(ABC, Generic[T]):
     AGENT_MAX_TOKENS: int = 8192  # Subclasses can override for smaller outputs
 
     MAX_RETRIES: int = 5
+    FALLBACK_RETRIES: int = 2  # attempts per fallback model after the primary
     RETRY_DELAY_BASE: float = 2.0
     # Healthy calls complete well under 60s; a hanging model must not pin a
     # pipeline slot for 10 minutes per attempt (x5 retries ≈ 52 min worst case).
@@ -121,7 +122,7 @@ class BaseAgent(ABC, Generic[T]):
         """Optional hook for post-LLM transformations."""
         return parsed
 
-    def _call_llm_api(self, system_prompt: str, user_message: str) -> str:
+    def _call_llm_api(self, system_prompt: str, user_message: str, model: str | None = None) -> str:
         """Call the OpenRouter API and return the raw text response.
 
         Uses the module-level ``_http_session`` so that TCP/TLS connections
@@ -130,6 +131,8 @@ class BaseAgent(ABC, Generic[T]):
         Args:
             system_prompt: The system prompt string.
             user_message: The user message string.
+            model: Model ID override (defaults to the configured model);
+                used by the free-model fallback chain in run().
 
         Returns:
             The LLM's text response.
@@ -137,6 +140,7 @@ class BaseAgent(ABC, Generic[T]):
         Raises:
             AgentError: On HTTP errors, timeouts, or empty responses.
         """
+        model = model or self.config.model
         # Only the Authorization header varies per call; the rest are
         # already set on the shared session.
         auth_header = {
@@ -144,7 +148,7 @@ class BaseAgent(ABC, Generic[T]):
         }
 
         payload = {
-            "model": self.config.model,
+            "model": model,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message},
@@ -166,6 +170,19 @@ class BaseAgent(ABC, Generic[T]):
             if response.status_code == 402:
                 raise AgentError("Insufficient OpenRouter credits. Add credits at openrouter.ai.")
             if response.status_code == 429:
+                # The account-wide daily free-model cap can't be waited out or
+                # dodged by switching free models — surface it clearly instead.
+                try:
+                    body_msg = response.json().get("error", {}).get("message", "")
+                except (ValueError, json.JSONDecodeError):
+                    body_msg = ""
+                if "per-day" in body_msg or "per day" in body_msg:
+                    raise AgentError(
+                        "Daily free-model limit reached on the OpenRouter account. "
+                        "It resets daily — or add a one-time $10 credit balance at "
+                        "openrouter.ai to raise the free-model cap to 1000 requests/day. "
+                        f"({body_msg})"
+                    )
                 # Wait for rate limit to clear, then retry. Retry-After may be
                 # an HTTP-date rather than seconds — fall back to 10s.
                 try:
@@ -216,11 +233,8 @@ class BaseAgent(ABC, Generic[T]):
 
             # Check if actual model differs from requested model
             actual_model = data.get("model", "")
-            if actual_model and actual_model != self.config.model:
-                logger.debug(
-                    f"[{self.AGENT_NAME}] Model mismatch: "
-                    f"requested={self.config.model}, actual={actual_model}"
-                )
+            if actual_model and actual_model != model:
+                logger.debug(f"[{self.AGENT_NAME}] Model mismatch: requested={model}, actual={actual_model}")
 
             choices = data.get("choices", [])
             if not choices:
@@ -249,6 +263,18 @@ class BaseAgent(ABC, Generic[T]):
         except requests.exceptions.ConnectionError:
             raise AgentError("Could not reach the AI service. Please check your connection and try again.")
 
+    def _model_candidates(self) -> list[str]:
+        """Models to try, in order.
+
+        Paid models get no fallback (never trade the admin's explicit choice
+        for a different bill). Free models fall back down the free chain so
+        one flaky/capped free endpoint doesn't fail the whole job.
+        """
+        primary = self.config.model
+        if not primary.endswith(":free"):
+            return [primary]
+        return [primary] + [m for m in FREE_FALLBACK_MODELS if m != primary]
+
     def run(self, input_data: Any, **prompt_vars: Any) -> T:
         """Execute the full agent pipeline."""
         if self.OUTPUT_MODEL is None:
@@ -263,64 +289,76 @@ class BaseAgent(ABC, Generic[T]):
             f"[{self.AGENT_NAME}] System prompt: {len(system)} chars, User message: {len(user_message)} chars"
         )
 
+        candidates = self._model_candidates()
         last_error: Exception | None = None
+        total_attempts = 0
 
-        for attempt in range(1, self.MAX_RETRIES + 1):
-            try:
-                call_start = time.time()
-                raw_text = self._call_llm_api(system, user_message)
-                call_elapsed = time.time() - call_start
-                logger.info(f"[{self.AGENT_NAME}] LLM API call took {call_elapsed:.1f}s")
-                logger.debug(f"[{self.AGENT_NAME}] Response length: {len(raw_text)} chars")
+        for model_idx, model in enumerate(candidates):
+            max_attempts = self.MAX_RETRIES if model_idx == 0 else self.FALLBACK_RETRIES
+            if model_idx > 0:
+                logger.warning(f"[{self.AGENT_NAME}] Falling back to free model: {model}")
 
-                parsed_json = self._extract_json(raw_text)
-                result = self.OUTPUT_MODEL.model_validate(parsed_json)
-                result = self.post_process(result, input_data)
+            for attempt in range(1, max_attempts + 1):
+                total_attempts += 1
+                try:
+                    call_start = time.time()
+                    raw_text = self._call_llm_api(system, user_message, model)
+                    call_elapsed = time.time() - call_start
+                    logger.info(f"[{self.AGENT_NAME}] LLM API call took {call_elapsed:.1f}s ({model})")
+                    logger.debug(f"[{self.AGENT_NAME}] Response length: {len(raw_text)} chars")
 
-                logger.info(f"[{self.AGENT_NAME}] Completed successfully.")
-                return result
+                    parsed_json = self._extract_json(raw_text)
+                    result = self.OUTPUT_MODEL.model_validate(parsed_json)
+                    result = self.post_process(result, input_data)
 
-            except (ValidationError, json.JSONDecodeError, KeyError) as e:
-                last_error = e
-                logger.warning(
-                    f"[{self.AGENT_NAME}] Attempt {attempt}/{self.MAX_RETRIES} failed (parse/validation): {e}"
-                )
-                if self.config.job_id:
-                    pipeline_analytics.record_retry(self.config.job_id)
-                if attempt < self.MAX_RETRIES:
-                    delay = self.RETRY_DELAY_BASE**attempt
-                    logger.info(f"Retrying in {delay:.1f}s...")
-                    time.sleep(delay)
+                    logger.info(f"[{self.AGENT_NAME}] Completed successfully.")
+                    return result
 
-            except AgentError as e:
-                last_error = e
-                logger.warning(f"[{self.AGENT_NAME}] Attempt {attempt}/{self.MAX_RETRIES} API error: {e}")
-                if self.config.job_id:
-                    pipeline_analytics.record_retry(self.config.job_id)
-                # Do NOT retry on errors that won't self-resolve: bad keys,
-                # exhausted credits, retired models, deterministic truncation.
-                if (
-                    "Invalid OpenRouter API key" in str(e)
-                    or "Insufficient" in str(e)
-                    or "Model unavailable" in str(e)
-                    or "Response truncated" in str(e)
-                ):
-                    break
-                if attempt < self.MAX_RETRIES:
-                    if "high demand" in str(e):
-                        # 429 path already slept for Retry-After inside
-                        # _call_llm_api — don't stack exponential backoff on top.
-                        continue
-                    delay = self.RETRY_DELAY_BASE**attempt
-                    logger.info(f"Retrying in {delay:.1f}s...")
-                    time.sleep(delay)
-                else:
-                    break
+                except (ValidationError, json.JSONDecodeError, KeyError) as e:
+                    last_error = e
+                    logger.warning(
+                        f"[{self.AGENT_NAME}] Attempt {attempt}/{max_attempts} on {model} "
+                        f"failed (parse/validation): {e}"
+                    )
+                    if self.config.job_id:
+                        pipeline_analytics.record_retry(self.config.job_id)
+                    if attempt < max_attempts:
+                        delay = self.RETRY_DELAY_BASE**attempt
+                        logger.info(f"Retrying in {delay:.1f}s...")
+                        time.sleep(delay)
+
+                except AgentError as e:
+                    last_error = e
+                    logger.warning(
+                        f"[{self.AGENT_NAME}] Attempt {attempt}/{max_attempts} on {model} API error: {e}"
+                    )
+                    if self.config.job_id:
+                        pipeline_analytics.record_retry(self.config.job_id)
+                    # Account-level failures: no retry and no other model helps.
+                    if (
+                        "Invalid OpenRouter API key" in str(e)
+                        or "Insufficient" in str(e)
+                        or "Daily free-model limit" in str(e)
+                    ):
+                        raise AgentError(str(e)) from e
+                    # Model-level dead ends: skip straight to the next model.
+                    if "Model unavailable" in str(e) or "Response truncated" in str(e):
+                        break
+                    if attempt < max_attempts:
+                        if "high demand" in str(e):
+                            # 429 path already slept for Retry-After inside
+                            # _call_llm_api — don't stack backoff on top.
+                            continue
+                        delay = self.RETRY_DELAY_BASE**attempt
+                        logger.info(f"Retrying in {delay:.1f}s...")
+                        time.sleep(delay)
 
         # Include the actual error so users/admins can diagnose the issue
         cause = str(last_error) if last_error else "Unknown error"
         raise AgentError(
-            f"We couldn't complete this step after {self.MAX_RETRIES} attempts. Last error: {cause}"
+            f"We couldn't complete this step after {total_attempts} attempts"
+            f"{' across ' + str(len(candidates)) + ' free models' if len(candidates) > 1 else ''}. "
+            f"Last error: {cause}"
         ) from last_error
 
     @staticmethod

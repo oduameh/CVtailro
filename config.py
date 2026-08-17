@@ -40,7 +40,20 @@ RECOMMENDED_MODELS: dict[str, str] = {
     "Grok 4.6": "x-ai/grok-4.6",
 }
 
-DEFAULT_MODEL = "openai/gpt-4o-mini"
+# Default to a free model — the admin pays all API costs, so paid models are
+# opt-in via the admin panel. GLM 5.2 is the strongest free option for
+# structured JSON output as of 2026-08.
+DEFAULT_MODEL = "z-ai/glm-5.2:free"
+
+# Free endpoints are rate-limited and occasionally flaky. When a pipeline call
+# on a ':free' model exhausts its retries, BaseAgent falls back down this
+# chain — free to free ONLY, never silently onto a paid model.
+FREE_FALLBACK_MODELS: list[str] = [
+    "z-ai/glm-5.2:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "openai/gpt-oss-20b:free",
+]
 
 
 @dataclass(frozen=True)
