@@ -28,9 +28,7 @@ def _resume_data(num_roles: int = 3) -> ResumeData:
         Role(
             title=f"Engineer {i}",
             company=f"Co {i}",
-            bullets=[
-                BulletPoint(original_text=f"Bullet {i}-{j}") for j in range(2)
-            ],
+            bullets=[BulletPoint(original_text=f"Bullet {i}-{j}") for j in range(2)],
         )
         for i in range(num_roles)
     ]

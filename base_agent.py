@@ -71,9 +71,7 @@ def record_model_failure(model_id: str, now: float | None = None) -> None:
         entered_cooldown = False
         failures = 0
         with _model_health_lock:
-            entry = _model_health.setdefault(
-                model_id, {"consecutive_failures": 0, "cooldown_until": 0.0}
-            )
+            entry = _model_health.setdefault(model_id, {"consecutive_failures": 0, "cooldown_until": 0.0})
             entry["consecutive_failures"] += 1
             failures = entry["consecutive_failures"]
             if failures >= MODEL_HEALTH_FAILURE_THRESHOLD:
@@ -465,9 +463,7 @@ class BaseAgent(ABC, Generic[T]):
         # Include the actual error so users/admins can diagnose the issue
         cause = str(last_error) if last_error else "Unknown error"
         tried = ", ".join(dict.fromkeys(attempted_models))
-        cooling_note = (
-            f"; deprioritised while cooling: {', '.join(cooling)}" if cooling_deprioritised else ""
-        )
+        cooling_note = f"; deprioritised while cooling: {', '.join(cooling)}" if cooling_deprioritised else ""
         raise AgentError(
             f"We couldn't complete this step after {total_attempts} attempts"
             f"{' across ' + str(len(ordered_candidates)) + ' free models' if len(ordered_candidates) > 1 else ''}. "

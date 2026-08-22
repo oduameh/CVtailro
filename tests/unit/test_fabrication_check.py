@@ -36,7 +36,10 @@ class TestCheckBullet:
         assert check_bullet("Cut infrastructure spend by $10,000", "Trimmed infra costs $10000") == []
 
     def test_multiplier_survival(self):
-        assert check_bullet("Scaled deployment frequency 3x", "Grew deployment frequency 3x year over year") == []
+        assert (
+            check_bullet("Scaled deployment frequency 3x", "Grew deployment frequency 3x year over year")
+            == []
+        )
         assert check_bullet("Scaled deployment frequency 3x", "Increased deployment frequency") == ["3x"]
 
     def test_year_survival(self):

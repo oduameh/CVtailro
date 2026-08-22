@@ -131,9 +131,7 @@ class TestModelsEndpointFiltering:
         tiers = {m["id"]: m["tier"] for m in data["models"]}
         assert tiers.get(PAID_ID) == "premium"
         assert tiers.get(FREE_ID) == "free"
-        assert all(
-            tier == ("premium" if is_premium_model(mid) else "free") for mid, tier in tiers.items()
-        )
+        assert all(tier == ("premium" if is_premium_model(mid) else "free") for mid, tier in tiers.items())
 
     def test_admin_sees_premium_with_tiers(self, client, admin_user):
         _login(client, admin_user)

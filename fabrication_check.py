@@ -14,9 +14,7 @@ from dataclasses import dataclass, field
 
 # Fact patterns applied to ORIGINAL bullet text
 _PERCENT_RE = re.compile(r"\d+(?:\.\d+)?%")
-_CURRENCY_RE = re.compile(
-    r"[$€£]\s?\d[\d,.]*(?:\s?(?:k|m|bn|b|million|billion)\b)?", re.IGNORECASE
-)
+_CURRENCY_RE = re.compile(r"[$€£]\s?\d[\d,.]*(?:\s?(?:k|m|bn|b|million|billion)\b)?", re.IGNORECASE)
 _MULTIPLIER_RE = re.compile(r"\b\d+(?:\.\d+)?x\b")
 _YEAR_RE = re.compile(r"\b(?:19|20)\d{2}\b")
 

@@ -17,9 +17,7 @@ AUTO_FREE_ID = "openrouter/free"  # free group entry whose ID lacks the ':free' 
 
 
 def _enable_switch(monkeypatch, enabled=True):
-    monkeypatch.setattr(
-        AdminConfigManager, "get", staticmethod(lambda key: "true" if enabled else "false")
-    )
+    monkeypatch.setattr(AdminConfigManager, "get", staticmethod(lambda key: "true" if enabled else "false"))
 
 
 def _make_user(is_admin=False, granted=False) -> User:
