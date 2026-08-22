@@ -1,11 +1,13 @@
 """Main routes — index page, health check, status, model listing, and SEO assets."""
 
 from flask import Blueprint, Response, current_app, jsonify, render_template
+from flask_login import current_user
 from sqlalchemy import text
 
 from app.extensions import db
 from app.services.admin_config import AdminConfigManager
 from app.services.blog_content import list_posts
+from app.services.model_access import filter_catalog_for_user
 from config import DEFAULT_MODEL, RECOMMENDED_MODELS
 
 main_bp = Blueprint("main", __name__)
@@ -124,10 +126,10 @@ def list_models():
 
         models = filter_available(RECOMMENDED_MODELS)
 
-    return jsonify(
-        {
-            "models": [{"id": model_id, "name": display_name} for display_name, model_id in models.items()],
-            "default": default,
-            "user_selectable": config.allow_user_model_selection,
-        }
-    )
+    catalog = {
+        "models": [{"id": model_id, "name": display_name} for display_name, model_id in models.items()],
+        "default": default,
+        "user_selectable": config.allow_user_model_selection,
+    }
+    user = current_user if current_user.is_authenticated else None
+    return jsonify(filter_catalog_for_user(catalog, user))

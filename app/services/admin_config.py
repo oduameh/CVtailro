@@ -26,6 +26,7 @@ _SETTING_KEYS = [
     "api_key",
     "default_model",
     "allow_user_model_selection",
+    "premium_models_enabled",
     "rate_limit_per_hour",
     "daily_job_limit",
     "admin_password_hash",
@@ -38,6 +39,7 @@ class AdminConfig:
     api_key: str = ""
     default_model: str = ""
     allow_user_model_selection: bool = True
+    premium_models_enabled: bool = True
     rate_limit_per_hour: int = 0
     daily_job_limit: int = 10  # Max tailoring jobs per user per UTC day (0 = unlimited)
     admin_password_hash: str = ""
@@ -66,6 +68,8 @@ def _try_load_from_db() -> AdminConfig | None:
             config.default_model = data["default_model"]
         if "allow_user_model_selection" in data:
             config.allow_user_model_selection = data["allow_user_model_selection"] != "false"
+        if "premium_models_enabled" in data:
+            config.premium_models_enabled = data["premium_models_enabled"] != "false"
         if "rate_limit_per_hour" in data:
             try:
                 config.rate_limit_per_hour = int(data["rate_limit_per_hour"])
@@ -95,6 +99,7 @@ def _save_to_db(config: AdminConfig) -> bool:
             "api_key": config.api_key,
             "default_model": config.default_model,
             "allow_user_model_selection": str(config.allow_user_model_selection).lower(),
+            "premium_models_enabled": str(config.premium_models_enabled).lower(),
             "rate_limit_per_hour": str(config.rate_limit_per_hour),
             "daily_job_limit": str(config.daily_job_limit),
             "admin_password_hash": config.admin_password_hash,

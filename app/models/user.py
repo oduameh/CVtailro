@@ -24,6 +24,10 @@ class User(UserMixin, db.Model):
     picture_url = db.Column(db.String(1024), nullable=True)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
 
+    # Premium (paid) model access — granted per-user by an admin; admins always
+    # have it while the global premium_models_enabled setting is on.
+    can_use_premium_models = db.Column(db.Boolean, nullable=False, default=False, server_default="false")
+
     # Email/password auth fields
     password_hash = db.Column(db.String(255), nullable=True)
     email_verified = db.Column(db.Boolean, nullable=False, default=False)

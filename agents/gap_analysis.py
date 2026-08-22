@@ -21,6 +21,7 @@ from models import (
     ResumeData,
     SkillPriority,
 )
+from scoring import compute_match_score
 from similarity import keyword_frequency_analysis, resume_job_similarity
 
 logger = logging.getLogger(__name__)
@@ -197,8 +198,7 @@ class GapAnalysisAgent:
         total_weight = len(set(required)) * 3 + len(set(tools)) * 2 + len(set(preferred)) * 1
         missing_weight = sum(3 if s in required else (2 if s in tools else 1) for s in missing_keywords)
         keyword_coverage = max(0.0, 1.0 - (missing_weight / max(total_weight, 1)))
-        match_score = round((cos_sim * 40) + (keyword_coverage * 40) + 20, 1)
-        match_score = max(0.0, min(100.0, match_score))
+        match_score = compute_match_score(cos_sim, keyword_coverage)
 
         # ── Seniority calibration ──
         seniority_map = {

@@ -18,6 +18,7 @@ from app.extensions import db, limiter
 from app.models import TailoringJob
 from app.services.admin_config import AdminConfigManager
 from app.services.file_service import serve_download
+from app.services.model_access import can_use_premium_models, is_premium_model
 from app.services.pipeline import (
     cleanup_old_jobs,
     jobs,
@@ -76,6 +77,28 @@ def _resolve_model(admin_config) -> str:
     if requested and requested in set(RECOMMENDED_MODELS.values()):
         return requested
     return default
+
+
+def _premium_model_response():
+    """Return a 403 JSON response when a premium model was requested without access.
+
+    Fires only when the caller explicitly picked a curated model — unknown
+    values fall back to the admin default in _resolve_model and pass through.
+    """
+    requested = (request.form.get("model") or "").strip()
+    if not requested or requested not in set(RECOMMENDED_MODELS.values()):
+        return None
+    user = current_user if current_user.is_authenticated else None
+    if is_premium_model(requested) and not can_use_premium_models(user):
+        uid = current_user.id if current_user.is_authenticated else None
+        track(
+            "tailor.request.rejected",
+            category="tailor",
+            user_id=uid,
+            metadata={"reason": "premium_model_denied", "model": requested},
+        )
+        return jsonify({"error": "This model requires premium access."}), 403
+    return None
 
 
 def _daily_budget_response(admin_config, rate_key: str, needed: int = 1):
@@ -139,6 +162,10 @@ def start_tailoring():
         return jsonify({"error": "Service not configured. An admin must set the API key at /admin."}), 400
 
     model = _resolve_model(admin_config)
+
+    denied = _premium_model_response()
+    if denied:
+        return denied
 
     if queue_is_full():
         track("tailor.request.rejected", category="tailor", user_id=uid, metadata={"reason": "queue_full"})
@@ -565,6 +592,10 @@ def start_batch_tailoring():
         return jsonify({"error": "Service not configured"}), 400
 
     model = _resolve_model(admin_config)
+
+    denied = _premium_model_response()
+    if denied:
+        return denied
 
     if queue_is_full():
         track("tailor.request.rejected", category="tailor", user_id=uid, metadata={"reason": "queue_full"})

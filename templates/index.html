@@ -3021,7 +3021,7 @@
       "url": "https://cvtailro-production.up.railway.app",
       "applicationCategory": "BusinessApplication",
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-      "featureList": ["AI Resume Optimization", "ATS Compatibility", "3 PDF Templates", "Interview Talking Points", "Keyword Matching"]
+      "featureList": ["AI Resume Optimization", "ATS Compatibility", "8 ATS-Ready Templates", "Interview Talking Points", "Keyword Matching"]
     }
     </script>
     {% include 'partials/adsense.html' %}
@@ -3196,13 +3196,13 @@
         <!-- Stats Section (below form) -->
         <div class="stats-section reveal">
             <div class="stats-grid">
-                <div class="stat-item"><span class="stat-num">3</span><span class="stat-txt">Templates</span></div>
-                <div class="stat-sep"></div>
-                <div class="stat-item"><span class="stat-num">90%+</span><span class="stat-txt">ATS Score</span></div>
+                <div class="stat-item"><span class="stat-num">8</span><span class="stat-txt">ATS-Ready Templates</span></div>
                 <div class="stat-sep"></div>
                 <div class="stat-item"><span class="stat-num">2 min</span><span class="stat-txt">Optimization</span></div>
                 <div class="stat-sep"></div>
-                <div class="stat-item"><span class="stat-num">10k+</span><span class="stat-txt">Success Stories</span></div>
+                <div class="stat-item"><span class="stat-num">AI</span><span class="stat-txt">Cover Letter Included</span></div>
+                <div class="stat-sep"></div>
+                <div class="stat-item"><span class="stat-num">100%</span><span class="stat-txt">Free While in Beta</span></div>
             </div>
         </div>
 
@@ -3310,7 +3310,7 @@
                 <div class="related-articles-list" id="relatedArticlesList"></div>
             </div>
 
-            <!-- Preview with Editor and Side-by-Side (premium) -->
+            <!-- Preview with Editor and Side-by-Side -->
             <div class="card" id="previewCard">
                 <div class="preview-header">
                     <h2 style="margin-bottom:0;font-size:16px;font-weight:700;">Resume Preview</h2>
@@ -3363,7 +3363,7 @@
         </div>
     </div>
 
-    <!-- Tools Section (premium — hidden until paid tier) -->
+    <!-- Tools Section (shown for every signed-in user) -->
     <div class="container" id="toolsSection" style="margin-top:40px;display:none;">
         <h2 style="text-align:center;font-size:20px;font-weight:700;margin-bottom:24px;color:var(--text);">More Tools</h2>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:32px;">
@@ -3805,18 +3805,29 @@
             var modelsResp = await fetch('/api/models');
             var data = await modelsResp.json();
             userSelectable = data.user_selectable !== false;
+            var canUsePremium = !!data.user_can_use_premium;
+            var isPremiumTier = function(m) {
+                if (typeof m.tier === 'string') return m.tier === 'premium';
+                return m.name.indexOf('(Free)') === -1;
+            };
             selectedModel = localStorage.getItem('cvtailro_model') || data.default || '';
+            // Only offer models this user may use
+            var allowedModels = [];
             if (data.models && data.models.length > 0) {
-                var validIds = data.models.map(function(m) { return m.id; });
-                if (selectedModel && validIds.indexOf(selectedModel) === -1) {
-                    selectedModel = data.default || '';
+                allowedModels = data.models.filter(function(m) { return canUsePremium || !isPremiumTier(m); });
+            }
+            if (allowedModels.length > 0) {
+                var validIds = allowedModels.map(function(m) { return m.id; });
+                // Saved/selected model no longer allowed -> reset to default (or first allowed/free)
+                if (!selectedModel || validIds.indexOf(selectedModel) === -1) {
+                    selectedModel = (validIds.indexOf(data.default) !== -1) ? data.default : validIds[0];
                 }
             }
             // Show model selector if admin allows it
-            if (userSelectable && data.models && data.models.length > 0) {
+            if (userSelectable && allowedModels.length > 0) {
                 var select = document.getElementById('modelSelect');
-                var free = data.models.filter(function(m) { return m.name.indexOf('(Free)') !== -1; });
-                var paid = data.models.filter(function(m) { return m.name.indexOf('(Free)') === -1; });
+                var free = allowedModels.filter(function(m) { return !isPremiumTier(m); });
+                var paid = allowedModels.filter(function(m) { return isPremiumTier(m); });
                 var html = '';
                 if (free.length > 0) {
                     html += '<optgroup label="Free">';
@@ -3828,7 +3839,7 @@
                 if (paid.length > 0) {
                     html += '<optgroup label="Premium">';
                     paid.forEach(function(m) {
-                        html += '<option value="' + m.id + '"' + (m.id === selectedModel ? ' selected' : '') + '>' + m.name + '</option>';
+                        html += '<option value="' + m.id + '"' + (m.id === selectedModel ? ' selected' : '') + '>' + m.name.replace(' (Free)', '') + ' \u2014 Pro</option>';
                     });
                     html += '</optgroup>';
                 }
@@ -3885,9 +3896,7 @@
     function buildTemplateCards() {
         var grid = document.getElementById('templateGrid');
         if (!grid) return;
-        var isAdmin = authUser && authUser.is_admin;
-        var freeTemplates = ['modern', 'executive', 'minimal'];
-        var cards = isAdmin ? TEMPLATE_CARDS : TEMPLATE_CARDS.filter(function(t) { return freeTemplates.indexOf(t.id) !== -1; });
+        var cards = TEMPLATE_CARDS;
         grid.innerHTML = cards.map(function(t) {
             return '<div class="tpl-card" data-tpl="' + t.id + '" onclick="downloadFormat(\'' + t.id + '\',\'pdf\')">' +
                 '<div class="tpl-card-swatch" style="background:' + t.color + ';"></div>' +
@@ -4142,13 +4151,15 @@
             document.getElementById('dropdownUserName').textContent = authUser.name || '';
             document.getElementById('dropdownUserEmail').textContent = authUser.email || '';
 
-            // Show admin link + tools section if admin
+            // Admin link stays admin-only
             if (authUser.is_admin) {
                 document.getElementById('adminLink').style.display = 'flex';
                 document.getElementById('adminDivider').style.display = 'block';
-                var toolsSec = document.getElementById('toolsSection');
-                if (toolsSec) toolsSec.style.display = 'block';
             }
+
+            // Tools section for every signed-in user
+            var toolsSec = document.getElementById('toolsSection');
+            if (toolsSec) toolsSec.style.display = 'block';
 
             // Update CTA hint for signed-in users
             if (ctaHint) {
@@ -4783,7 +4794,7 @@
             // --- Downloads ---
             // Declared here (not below) so the Additional-downloads card check
             // at the end of this block sees the real value, not a hoisted undefined.
-            var isPremiumUser = authUser && authUser.is_admin;
+            var isPremiumUser = !!authUser; // all signed-in users get full output access
             var secondaryHtml = '';
             var seenCats = {};
             var effectiveJobId = jobId || s.job_id || s.id || '';
@@ -4820,9 +4831,9 @@
                 document.getElementById("additionalCard").style.display = "block";
             }
 
-            // --- Premium features (admin-only for now; isPremiumUser declared above) ---
+            // --- Premium features (included for all signed-in users; isPremiumUser declared above) ---
 
-            // --- Talking Points (premium) ---
+            // --- Talking Points ---
             if (s.talking_points_md && isPremiumUser) {
                 document.getElementById("talkingPointsCard").style.display = "block";
                 document.getElementById("talkingPointsContent").innerHTML = renderMarkdown(s.talking_points_md);
@@ -4849,7 +4860,7 @@
                 clContainer.style.display = "none";
             }
 
-            // --- Email Templates (premium) ---
+            // --- Email Templates ---
             var etContainer = document.getElementById("emailTemplatesCard");
             if (s.email_templates_md && isPremiumUser) {
                 etContainer.style.display = "block";
@@ -4876,7 +4887,7 @@
             document.getElementById("whatChangedCard").style.display = "block";
             document.getElementById("whatChangedContent").innerHTML = buildChangesPanel(s);
 
-            // --- Preview (premium) ---
+            // --- Preview ---
             currentResumeMd = s.ats_resume_md || '';
             originalResumeMd = s.original_resume_text || '';
             if (isPremiumUser) {
@@ -5570,6 +5581,30 @@
         summaryText += ' Rewrite mode: ' + modeText + '.';
         html += '<p class="change-summary">' + summaryText + '</p>';
         html += '</div>';
+
+        // Fabrication review flags
+        if (s.fabrication_report && s.fabrication_report.flagged_count > 0) {
+            var fr = s.fabrication_report;
+            var violations = fr.violations || [];
+            var shown = violations.slice(0, 5);
+            html += '<div class="change-section" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:16px;margin-top:12px;">';
+            html += '<h3 style="color:var(--text);margin:0 0 8px 0;">&#9888; Review ' + fr.flagged_count + ' bullet' + (fr.flagged_count !== 1 ? 's' : '') + '</h3>';
+            html += '<p style="font-size:13px;color:var(--text-secondary);margin:0 0 12px 0;">Some numbers/dates from your original bullets are missing from the tailored version. Review these before sending:</p>';
+            html += '<div style="display:flex;flex-direction:column;gap:10px;">';
+            shown.forEach(function(v) {
+                var orig = (v.original_text || '').trim();
+                if (orig.length > 90) orig = orig.substring(0, 90).trim() + '\u2026';
+                html += '<div>' +
+                    '<div style="font-size:12px;font-weight:600;color:var(--text);">Role ' + (v.role_index + 1) + ', Bullet ' + (v.bullet_index + 1) + ': missing ' + escapeHtml((v.missing_facts || []).join(', ')) + '</div>' +
+                    '<div style="font-size:11px;color:var(--text-secondary);font-style:italic;">' + escapeHtml(orig) + '</div>' +
+                '</div>';
+            });
+            html += '</div>';
+            if (violations.length > 5) {
+                html += '<div style="font-size:11px;color:var(--text-secondary);margin-top:10px;">+' + (violations.length - 5) + ' more \u2014 download the match report for details</div>';
+            }
+            html += '</div>';
+        }
 
         html += '</div>';
         return html;

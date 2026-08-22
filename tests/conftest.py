@@ -54,6 +54,21 @@ def _reset_rate_limits(flask_app):
     yield
 
 
+@pytest.fixture(scope="function", autouse=True)
+def _reset_model_health():
+    """Clear the base_agent model-health registry between tests.
+
+    The circuit-breaker registry is module-level state; failures recorded by
+    one test (e.g. a fake 503 in a fallback test) would otherwise cool models
+    down and reorder candidates in later tests that share the same model IDs.
+    """
+    import base_agent
+
+    base_agent._model_health.clear()
+    yield
+    base_agent._model_health.clear()
+
+
 @pytest.fixture(scope="function")
 def client(flask_app, db):
     """Flask test client with a fresh database."""

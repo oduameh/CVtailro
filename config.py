@@ -12,11 +12,11 @@ from models import RewriteMode
 RECOMMENDED_MODELS: dict[str, str] = {
     # ── Free models (no credits needed) ───────────────────────────
     # Best free options for structured JSON resume output, ranked by reliability
-    "GLM 5.2 (Free)": "z-ai/glm-5.2:free",
-    "Nemotron 3 Ultra 550B (Free)": "nvidia/nemotron-3-ultra-550b-a55b:free",
     "Nemotron 3 Super 120B (Free)": "nvidia/nemotron-3-super-120b-a12b:free",
-    "Nemotron 3.5 Lightning (Free)": "nvidia/nemotron-3.5-lightning:free",
+    "GLM 5.2 (Free)": "z-ai/glm-5.2:free",
     "Gemma 4 31B (Free)": "google/gemma-4-31b-it:free",
+    "Nemotron 3.5 Lightning (Free)": "nvidia/nemotron-3.5-lightning:free",
+    "Nemotron 3 Ultra 550B (Free)": "nvidia/nemotron-3-ultra-550b-a55b:free",
     "Gemma 4 26B (Free)": "google/gemma-4-26b-a4b-it:free",
     "Nemotron 3 Nano 30B (Free)": "nvidia/nemotron-3-nano-30b-a3b:free",
     "Nemotron 3 Nano Omni (Free)": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
@@ -40,7 +40,21 @@ RECOMMENDED_MODELS: dict[str, str] = {
     "Grok 4.6": "x-ai/grok-4.6",
 }
 
-DEFAULT_MODEL = "openai/gpt-4o-mini"
+# Default to a free model — the admin pays all API costs, so paid models are
+# opt-in via the admin panel. Nemotron 3 Super 120B has the most reliable
+# free endpoint as of 2026-08 (GLM 5.2 is stronger but its provider
+# intermittently 503s; it stays in the fallback chain).
+DEFAULT_MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
+
+# Free endpoints are rate-limited and occasionally flaky. When a pipeline call
+# on a ':free' model exhausts its retries, BaseAgent falls back down this
+# chain — free to free ONLY, never silently onto a paid model.
+FREE_FALLBACK_MODELS: list[str] = [
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "z-ai/glm-5.2:free",
+    "google/gemma-4-31b-it:free",
+    "openai/gpt-oss-20b:free",
+]
 
 
 @dataclass(frozen=True)
