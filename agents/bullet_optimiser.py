@@ -235,6 +235,7 @@ class BulletOptimiserAgent(BaseAgent["OptimisedBullets"]):
 
         # Fan out
         merged_bullets: list[OptimisedBullet] = []
+        failed_roles: list[int] = []
         summary_rewrite: str = ""
         mode_used: RewriteMode | None = None
 
@@ -253,7 +254,14 @@ class BulletOptimiserAgent(BaseAgent["OptimisedBullets"]):
 
             for future in as_completed(future_to_idx):
                 idx = future_to_idx[future]
-                result = future.result()  # raises on failure
+                try:
+                    result = future.result()
+                except Exception as exc:
+                    logger.warning(
+                        f"[{self.AGENT_NAME}] Role {idx} failed ({exc}); keeping original bullets for this role"
+                    )
+                    failed_roles.append(idx)
+                    continue
 
                 logger.info(f"[{self.AGENT_NAME}] Role {idx} completed at {time.time() - fanout_start:.1f}s")
 
@@ -271,6 +279,25 @@ class BulletOptimiserAgent(BaseAgent["OptimisedBullets"]):
         logger.info(
             f"[{self.AGENT_NAME}] Parallel fan-out completed in {fanout_elapsed:.1f}s for {num_roles} roles"
         )
+
+        # Salvage failed roles: keep their original bullets so one bad LLM
+        # response doesn't kill the entire job.
+        for idx in sorted(failed_roles):
+            for bi, bullet in enumerate(resume_data.roles[idx].bullets):
+                merged_bullets.append(
+                    OptimisedBullet(
+                        role_index=idx,
+                        bullet_index=bi,
+                        original_text=bullet.original_text,
+                        optimised_text=bullet.original_text,
+                        change_rationale="Optimisation failed for this role; original bullet kept unchanged",
+                        quality_score=5,
+                    )
+                )
+        if failed_roles:
+            logger.info(
+                f"[{self.AGENT_NAME}] Salvaged {len(failed_roles)} failed role(s) with original bullets: {sorted(failed_roles)}"
+            )
 
         # Sort bullets by (role_index, bullet_index) for deterministic order
         merged_bullets.sort(key=lambda b: (b.role_index, b.bullet_index))

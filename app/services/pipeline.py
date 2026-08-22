@@ -32,8 +32,10 @@ from app.services.cache import cache_get, cache_set
 from app.services.telemetry import track_with_app
 from config import AppConfig
 from docx_generator import generate_resume_docx
+from fabrication_check import check_bullets
 from models import JobAnalysis, MatchReport, ResumeData, RewriteMode
 from pdf_generator import ALL_TEMPLATE_NAMES, generate_resume_pdf
+from scoring import compute_match_score
 from similarity import resume_job_similarity
 from storage import r2_storage
 from utils import load_resume, save_json, save_markdown, setup_logging
@@ -369,6 +371,15 @@ def run_pipeline_job(
             required_skills=", ".join(job_analysis.required_skills[:10]),
         )
         save_json(optimised_bullets.model_dump(), output_dir / "04_optimised_bullets.json")
+
+        # Deterministic fabrication guard — hard facts from the original
+        # bullets must survive optimisation; LLM self-flags aren't enough.
+        fab_pairs = [
+            (b.role_index, b.bullet_index, b.original_text, b.optimised_text)
+            for b in optimised_bullets.bullets
+        ]
+        fab_report = check_bullets(fab_pairs)
+        save_json(fab_report.to_dict(), output_dir / "04_fabrication_check.json")
         fab_count = sum(1 for b in optimised_bullets.bullets if b.fabrication_flag)
         detail = f"{len(optimised_bullets.bullets)} bullets optimised"
         if fab_count:
@@ -462,9 +473,8 @@ def run_pipeline_job(
                     tailored_missing.append(s)
         total_skills = len(all_job_skills) or 1
         tailored_coverage = tailored_found / total_skills
-        scaled_cos = min(tailored_cos_sim * 2.5, 1.0)
-        tailored_match_score = round((scaled_cos * 25) + (tailored_coverage * 60) + 15, 1)
-        tailored_match_score = max(0.0, min(100.0, tailored_match_score))
+        # Same formula as gap analysis, so before/after scores are comparable
+        tailored_match_score = compute_match_score(tailored_cos_sim, tailored_coverage)
         logger.info(
             f"Original score: {gap_report.match_score:.0f}% -> Tailored score: {tailored_match_score:.0f}%"
         )
@@ -797,6 +807,7 @@ def run_pipeline_job(
                 "resume_quality": resume_quality_data,
                 "email_templates_md": email_templates_md,
                 "keyword_density": keyword_density_data,
+                "fabrication_report": fab_report.to_dict(),
                 "files": files_list,
             }
         progress_queue.put({"status": "complete"})
