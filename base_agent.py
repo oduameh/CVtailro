@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import threading
 import time
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -45,6 +46,90 @@ _http_session.headers.update(
 
 class AgentError(Exception):
     """Raised when an agent fails after all retries."""
+
+
+# ── Model health registry (lightweight circuit breaker) ──────────────────────
+# Free models on OpenRouter frequently 429/503 or get retired. Without shared
+# state, every job re-attempts dead models from the top of the fallback chain,
+# burning minutes per stage. This in-process registry remembers recent failures
+# so candidates are tried healthy-first; cooling models only run if nothing
+# else is available. Best-effort by design: bookkeeping must never break a call.
+_model_health_lock = threading.Lock()
+_model_health: dict[str, dict] = {}  # model_id -> {"consecutive_failures": int, "cooldown_until": float}
+MODEL_HEALTH_FAILURE_THRESHOLD = 2  # consecutive failures before cooldown
+MODEL_HEALTH_COOLDOWN_SECONDS = 600  # 10 min
+
+
+def record_model_failure(model_id: str, now: float | None = None) -> None:
+    """Record a failed attempt against ``model_id``.
+
+    Increments the consecutive-failure counter; from the threshold onwards
+    each failure (re)arms a cooldown window. Best-effort: never raises.
+    """
+    try:
+        ts = time.time() if now is None else now
+        entered_cooldown = False
+        failures = 0
+        with _model_health_lock:
+            entry = _model_health.setdefault(
+                model_id, {"consecutive_failures": 0, "cooldown_until": 0.0}
+            )
+            entry["consecutive_failures"] += 1
+            failures = entry["consecutive_failures"]
+            if failures >= MODEL_HEALTH_FAILURE_THRESHOLD:
+                entry["cooldown_until"] = ts + MODEL_HEALTH_COOLDOWN_SECONDS
+                entered_cooldown = True
+        if entered_cooldown and failures == MODEL_HEALTH_FAILURE_THRESHOLD:
+            logger.info(
+                f"Model {model_id} cooling down {MODEL_HEALTH_COOLDOWN_SECONDS}s "
+                f"after {failures} consecutive failures"
+            )
+    except Exception:
+        logger.debug("Model-health bookkeeping failed for %s", model_id, exc_info=True)
+
+
+def record_model_success(model_id: str, now: float | None = None) -> None:
+    """Reset failure/cooldown state for ``model_id`` after a healthy call.
+
+    Best-effort: never raises. ``now`` is accepted for signature symmetry
+    with the other helpers (and future TTL'd entries).
+    """
+    try:
+        with _model_health_lock:
+            entry = _model_health.get(model_id)
+            if entry is not None:
+                entry["consecutive_failures"] = 0
+                entry["cooldown_until"] = 0.0
+    except Exception:
+        logger.debug("Model-health bookkeeping failed for %s", model_id, exc_info=True)
+
+
+def is_model_cooling(model_id: str, now: float | None = None) -> bool:
+    """True while ``model_id`` is inside its cooldown window."""
+    try:
+        ts = time.time() if now is None else now
+        with _model_health_lock:
+            entry = _model_health.get(model_id)
+            return bool(entry) and entry["cooldown_until"] > ts
+    except Exception:
+        return False
+
+
+def _order_candidates_by_health(
+    candidates: list[str], now: float | None = None
+) -> tuple[list[str], list[str]]:
+    """Partition model candidates into ``(healthy, cooling)`` try-order groups.
+
+    Both lists preserve the original candidate order; callers try ``healthy``
+    first and only fall back to ``cooling`` when nothing healthy remains.
+    """
+    try:
+        ts = time.time() if now is None else now
+        healthy = [m for m in candidates if not is_model_cooling(m, ts)]
+        cooling = [m for m in candidates if is_model_cooling(m, ts)]
+        return healthy, cooling
+    except Exception:
+        return list(candidates), []
 
 
 def _mask_key(key: str) -> str:
@@ -293,10 +378,26 @@ class BaseAgent(ABC, Generic[T]):
         )
 
         candidates = self._model_candidates()
+        healthy, cooling = _order_candidates_by_health(candidates)
+        ordered_candidates = healthy + cooling
+        cooling_deprioritised = bool(healthy and cooling)
+        if cooling_deprioritised:
+            logger.info(
+                f"[{self.AGENT_NAME}] Deprioritising cooling models {cooling}; "
+                f"trying healthy candidates first: {healthy}"
+            )
+        elif cooling:
+            logger.info(
+                f"[{self.AGENT_NAME}] All {len(cooling)} candidate models are cooling down; "
+                f"trying them anyway: {cooling}"
+            )
+
         last_error: Exception | None = None
         total_attempts = 0
+        attempted_models: list[str] = []
 
-        for model_idx, model in enumerate(candidates):
+        for model_idx, model in enumerate(ordered_candidates):
+            attempted_models.append(model)
             max_attempts = self.MAX_RETRIES if model_idx == 0 else self.FALLBACK_RETRIES
             if model_idx > 0:
                 logger.warning(f"[{self.AGENT_NAME}] Falling back to free model: {model}")
@@ -312,6 +413,7 @@ class BaseAgent(ABC, Generic[T]):
 
                     parsed_json = self._extract_json(raw_text)
                     result = self.OUTPUT_MODEL.model_validate(parsed_json)
+                    record_model_success(model)
                     result = self.post_process(result, input_data)
 
                     logger.info(f"[{self.AGENT_NAME}] Completed successfully.")
@@ -319,6 +421,7 @@ class BaseAgent(ABC, Generic[T]):
 
                 except (ValidationError, json.JSONDecodeError, KeyError) as e:
                     last_error = e
+                    record_model_failure(model)
                     logger.warning(
                         f"[{self.AGENT_NAME}] Attempt {attempt}/{max_attempts} on {model} "
                         f"failed (parse/validation): {e}"
@@ -344,6 +447,9 @@ class BaseAgent(ABC, Generic[T]):
                         or "Daily free-model limit" in str(e)
                     ):
                         raise AgentError(str(e)) from e
+                    # Account-wide problems don't say anything about this
+                    # model's health — only record genuine model failures.
+                    record_model_failure(model)
                     # Model-level dead ends: skip straight to the next model.
                     if "Model unavailable" in str(e) or "Response truncated" in str(e):
                         break
@@ -358,10 +464,14 @@ class BaseAgent(ABC, Generic[T]):
 
         # Include the actual error so users/admins can diagnose the issue
         cause = str(last_error) if last_error else "Unknown error"
+        tried = ", ".join(dict.fromkeys(attempted_models))
+        cooling_note = (
+            f"; deprioritised while cooling: {', '.join(cooling)}" if cooling_deprioritised else ""
+        )
         raise AgentError(
             f"We couldn't complete this step after {total_attempts} attempts"
-            f"{' across ' + str(len(candidates)) + ' free models' if len(candidates) > 1 else ''}. "
-            f"Last error: {cause}"
+            f"{' across ' + str(len(ordered_candidates)) + ' free models' if len(ordered_candidates) > 1 else ''}. "
+            f"Last error: {cause} [tried: {tried}{cooling_note}]"
         ) from last_error
 
     @staticmethod
