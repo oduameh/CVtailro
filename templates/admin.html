@@ -1431,6 +1431,12 @@
                                 </label>
                             </div>
                             <div class="form-group">
+                                <label class="form-toggle">
+                                    <input type="checkbox" id="cfgPremiumModels">
+                                    Enable premium models for granted users
+                                </label>
+                            </div>
+                            <div class="form-group">
                                 <label for="rateLimit">Rate Limit (requests/hour, 0 = unlimited)</label>
                                 <input type="number" id="rateLimit" min="0" value="0">
                             </div>
@@ -1991,6 +1997,7 @@
             apiInput.value = config.api_key || '';
         }
         document.getElementById('allowUserModel').checked = config.allow_user_model_selection !== false;
+        document.getElementById('cfgPremiumModels').checked = config.premium_models_enabled !== false;
         document.getElementById('rateLimit').value = config.rate_limit_per_hour || 0;
         document.getElementById('dailyJobLimit').value = (config.daily_job_limit != null) ? config.daily_job_limit : 10;
         document.getElementById('lastUpdated').textContent = config.updated_at ? 'Last saved: ' + config.updated_at : '';
@@ -2426,6 +2433,9 @@
                     : '<div class="activity-avatar">' + initials + '</div>';
                 var adminBadge = u.is_admin ? ' <span class="pill pill-info">Admin</span>' : '';
                 var lastLogin = u.last_login ? relativeTime(u.last_login) : 'Never';
+                var premiumBtn = u.can_use_premium_models
+                    ? '<button class="btn btn-xs btn-secondary" onclick="setUserPremiumModels(\'' + u.id + '\',false)">Premium models: On</button>'
+                    : '<button class="btn btn-xs btn-secondary" onclick="setUserPremiumModels(\'' + u.id + '\',true)">Premium models: Off</button>';
                 return '<div class="user-card" data-name="' + (u.name || '').toLowerCase() + '" data-email="' + (u.email || '').toLowerCase() + '" data-user-id="' + esc(u.id) + '" onclick="loadUserJobs(this.dataset.userId)">' +
                     pic +
                     '<div style="flex:1;min-width:0;">' +
@@ -2438,6 +2448,7 @@
                             '<div style="font-size:11px;color:var(--text-secondary);">jobs</div>' +
                         '</div>' +
                         '<div class="table-actions" onclick="event.stopPropagation();">' +
+                            premiumBtn +
                             (u.is_admin
                                 ? '<button class="btn btn-xs btn-secondary" onclick="setUserAdmin(\'' + u.id + '\',false)">Demote</button>'
                                 : '<button class="btn btn-xs btn-primary" onclick="setUserAdmin(\'' + u.id + '\',true)">Admin</button>') +
@@ -2457,6 +2468,19 @@
             });
             if (r.ok) {
                 showToast(isAdmin ? 'User promoted to admin' : 'User demoted from admin', 'success');
+                loadUsersList();
+            }
+        } catch(e) { showToast('Failed to update user', 'error'); }
+    }
+
+    async function setUserPremiumModels(userId, enabled) {
+        try {
+            var r = await fetch('/admin/api/users/' + userId + '/premium-models', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ enabled: enabled })
+            });
+            if (r.ok) {
+                showToast(enabled ? 'Premium models enabled for user' : 'Premium models disabled for user', 'success');
                 loadUsersList();
             }
         } catch(e) { showToast('Failed to update user', 'error'); }
@@ -3016,6 +3040,7 @@
             api_key: document.getElementById('apiKeyInput').value.trim(),
             default_model: document.getElementById('defaultModel').value,
             allow_user_model_selection: document.getElementById('allowUserModel').checked,
+            premium_models_enabled: document.getElementById('cfgPremiumModels').checked,
             rate_limit_per_hour: parseInt(document.getElementById('rateLimit').value) || 0,
             daily_job_limit: parseInt(document.getElementById('dailyJobLimit').value) || 0
         };

@@ -1,6 +1,6 @@
 # CVtailro
 
-AI-powered resume tailoring SaaS. Upload a PDF resume, paste a job description, and get an AI-optimized resume in 3 PDF templates (Modern/Executive/Minimal), DOCX, match report, and interview talking points.
+AI-powered resume tailoring SaaS. Upload a PDF resume, paste a job description, and get an AI-optimized resume in 8 PDF templates (Modern, Executive, Minimal, Creative, Compact, Professional, Tech, Elegant) plus recruiter versions with contact info stripped, DOCX, match report, AI cover letter, and interview talking points.
 
 **Live:** [cvtailro-production.up.railway.app](https://cvtailro-production.up.railway.app)
 
@@ -8,10 +8,12 @@ AI-powered resume tailoring SaaS. Upload a PDF resume, paste a job description, 
 
 - **Google OAuth** — Sign in with your Google account
 - **6-stage pipeline** — Job intelligence, resume parsing, gap analysis, bullet optimisation, resume optimisation, talking points
-- **3 PDF templates** — Modern, Executive, Minimal — pick your style when downloading
+- **8 PDF templates** — Modern, Executive, Minimal, Creative, Compact, Professional, Tech, Elegant — plus recruiter-friendly versions with contact info stripped; DOCX + Markdown exports included
 - **Match report** — Before/after scores, missing keywords, section breakdown
 - **Interview prep** — STAR-format talking points generated per job
-- **OpenRouter** — Uses GPT-4o-mini by default (configurable via admin panel)
+- **Fabrication guard** — deterministic check that original metrics/dates survive tailoring
+- **Job application tracker + saved master resumes** — track every application and reuse your master resume
+- **OpenRouter** — Free models by default with automatic free-model fallback (configurable via admin panel)
 
 ## Architecture
 
@@ -22,7 +24,7 @@ Stage 4: Bullet Optimiser (parallel per role if 3+ roles)
 Stages 5+6 PARALLEL: Resume Optimiser + Talking Points
 ```
 
-One unified resume output. All 3 PDF templates generated per job.
+One unified resume output. All 8 PDF templates generated per job.
 
 ## Quick Start
 
@@ -74,7 +76,7 @@ CVtailro/
 ├── prompts/                # LLM prompt templates
 ├── config.py               # Pipeline config, models
 ├── base_agent.py           # OpenRouter API client
-├── pdf_generator.py        # 3 CSS templates → PDF
+├── pdf_generator.py        # 8 CSS templates → PDF
 ├── docx_generator.py       # Markdown → DOCX
 ├── app.py                  # Dev entry point
 ├── wsgi.py                 # Gunicorn entry point
