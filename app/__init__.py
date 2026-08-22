@@ -338,6 +338,7 @@ def _apply_column_migrations() -> None:
             ("email_verified", "BOOLEAN DEFAULT FALSE"),
             ("email_verified_at", "TIMESTAMP WITH TIME ZONE"),
             ("auth_provider", "VARCHAR(20) DEFAULT 'google'"),
+            ("can_use_premium_models", "BOOLEAN DEFAULT FALSE"),
         ]
         for col_name, col_type in user_new_columns:
             if col_name not in user_columns:
