@@ -157,6 +157,7 @@ def admin_get_config():
             "api_key": masked_key,
             "default_model": config.default_model,
             "allow_user_model_selection": config.allow_user_model_selection,
+            "premium_models_enabled": config.premium_models_enabled,
             "rate_limit_per_hour": config.rate_limit_per_hour,
             "daily_job_limit": config.daily_job_limit,
             "updated_at": config.updated_at,
@@ -179,6 +180,8 @@ def admin_save_config():
         config.default_model = data["default_model"]
     if "allow_user_model_selection" in data:
         config.allow_user_model_selection = bool(data["allow_user_model_selection"])
+    if "premium_models_enabled" in data:
+        config.premium_models_enabled = bool(data["premium_models_enabled"])
     if "rate_limit_per_hour" in data:
         config.rate_limit_per_hour = int(data["rate_limit_per_hour"])
     if "daily_job_limit" in data:
@@ -198,6 +201,7 @@ def admin_save_config():
             "api_key",
             "default_model",
             "allow_user_model_selection",
+            "premium_models_enabled",
             "rate_limit_per_hour",
             "daily_job_limit",
         )
@@ -306,6 +310,7 @@ def admin_users():
                     "name": u.name,
                     "picture": u.picture_url,
                     "is_admin": u.is_admin,
+                    "can_use_premium_models": u.can_use_premium_models,
                     "created_at": u.created_at.isoformat() if u.created_at else None,
                     "last_login": u.last_login_at.isoformat() if u.last_login_at else None,
                     "jobs_count": jobs_count,
@@ -720,6 +725,41 @@ def admin_set_user_admin(user_id: str):
     action = "admin.user.promoted" if is_admin else "admin.user.demoted"
     track(action, category="admin", user_id=user_id)
     return jsonify({"ok": True, "user_id": user_id, "is_admin": is_admin})
+
+
+@admin_bp.route("/admin/api/users/<user_id>/premium-models", methods=["POST"])
+@_admin_required
+def admin_set_user_premium_models(user_id: str):
+    """Grant or revoke a user's access to premium (paid) models."""
+    data = request.get_json(force=True) or {}
+    enabled = bool(data.get("enabled", False)) if data else False
+
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    user.can_use_premium_models = enabled
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        logger.exception("Failed to update user premium-model access")
+        return jsonify({"error": f"Failed to update: {e}"}), 500
+    track(
+        "admin.user.premium_models",
+        category="admin",
+        user_id=user.id,
+        metadata={"enabled": enabled},
+    )
+    return jsonify(
+        {
+            "ok": True,
+            "user_id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "can_use_premium_models": user.can_use_premium_models,
+        }
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
