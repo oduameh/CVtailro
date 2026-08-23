@@ -21,9 +21,8 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/blog.css">
-    <meta name="theme-color" content="#f8fafc" id="theme-color-meta">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#FAFAFA" id="theme-color-meta">
     <meta name="color-scheme" content="light dark">
 
     {% include 'partials/adsense.html' %}
@@ -42,6 +41,380 @@
         localStorage.setItem('cvtailro-theme', isDark ? 'dark' : 'light');
     }
     </script>
+
+    <style>
+        :root {
+            --primary: #EA580C;
+            --primary-hover: #C2410C;
+            --primary-bg: rgba(234, 88, 12, 0.07);
+            --accent: #EA580C;
+            --accent-light: rgba(234, 88, 12, 0.08);
+            --accent-glow: rgba(234, 88, 12, 0.12);
+            --score-high: #15803D;
+            --score-mid: #B45309;
+            --score-low: #DC2626;
+            --bg: #FAFAFA;
+            --card: #FFFFFF;
+            --border: #E4E4E7;
+            --border-light: #F4F4F5;
+            --text: #09090B;
+            --text-secondary: #52525B;
+            --text-tertiary: #A1A1AA;
+            --error: #DC2626;
+            --radius: 3px;
+            --radius-lg: 6px;
+            --shadow-sm: none;
+            --shadow-md: none;
+            --shadow-lg: none;
+            --font-display: 'Space Grotesk', system-ui, sans-serif;
+            --font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+        }
+
+        html.dark {
+            --primary: #FF4D00;
+            --primary-hover: #FF6A33;
+            --primary-bg: rgba(255, 77, 0, 0.10);
+            --accent: #FF4D00;
+            --accent-light: rgba(255, 77, 0, 0.12);
+            --accent-glow: rgba(255, 77, 0, 0.18);
+            --score-high: #4ADE80;
+            --score-mid: #FBBF24;
+            --score-low: #F87171;
+            --error: #F87171;
+            --bg: #09090B;
+            --card: #18181B;
+            --border: #27272A;
+            --border-light: #1F1F23;
+            --text: #F4F4F5;
+            --text-secondary: #A1A1AA;
+            --text-tertiary: #71717A;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        ::selection { background: var(--accent-light); }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            font-size: 15px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        a { color: inherit; }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* --- Sticky Header (matches app shell) --- */
+        .site-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            height: 60px;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+        }
+        .header-links {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: 16px;
+        }
+        .header-link {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 6px 10px;
+            border-radius: 3px;
+            transition: color 0.15s ease;
+        }
+        .header-link::before {
+            content: '// ';
+            opacity: 0.45;
+        }
+        .header-link:hover { color: var(--text); }
+
+        .site-logo {
+            font-family: var(--font-display);
+            font-size: 19px;
+            font-weight: 700;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0;
+            letter-spacing: -0.02em;
+        }
+        .site-logo .cv { color: var(--text); }
+        .site-logo .tailro { color: var(--text); }
+        .site-logo .tailro::after { content: '.'; color: var(--primary); }
+
+        /* --- Theme Toggle --- */
+        .theme-toggle {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 6px 8px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.15s ease, border-color 0.15s ease;
+        }
+        .theme-toggle:hover {
+            color: var(--text);
+            border-color: var(--text-secondary);
+        }
+
+        /* --- Article Layout --- */
+        .blog-layout {
+            max-width: 800px;
+            display: block;
+            padding-top: 48px;
+            padding-bottom: 64px;
+        }
+        .post-head { margin-bottom: 28px; }
+        .post-meta {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-tertiary);
+            font-variant-numeric: tabular-nums;
+            margin-bottom: 16px;
+        }
+        .post-title {
+            font-family: var(--font-display);
+            font-size: clamp(30px, 4.5vw, 44px);
+            font-weight: 600;
+            line-height: 1.12;
+            letter-spacing: -0.02em;
+            margin-bottom: 14px;
+        }
+        .post-deck {
+            color: var(--text-secondary);
+            font-size: 17px;
+            line-height: 1.7;
+            max-width: 60ch;
+        }
+
+        /* --- Article Prose --- */
+        .blog-content {
+            border-top: 1px solid var(--border-light);
+            padding-top: 32px;
+            font-size: 17px;
+            line-height: 1.7;
+        }
+        .blog-content p {
+            margin: 18px 0;
+            max-width: 68ch;
+        }
+        .blog-content h2,
+        .blog-content h3,
+        .blog-content h4 {
+            font-family: var(--font-display);
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            color: var(--text);
+        }
+        .blog-content h2 {
+            font-size: 26px;
+            line-height: 1.25;
+            margin: 40px 0 14px;
+        }
+        .blog-content h3 {
+            font-size: 20px;
+            line-height: 1.3;
+            margin: 32px 0 10px;
+        }
+        .blog-content h4 {
+            font-size: 17px;
+            margin: 24px 0 8px;
+        }
+        .blog-content a {
+            color: var(--primary);
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            transition: color 0.15s ease;
+        }
+        .blog-content a:hover { color: var(--primary-hover); }
+        .blog-content ul,
+        .blog-content ol {
+            margin: 18px 0;
+            padding-left: 22px;
+            max-width: 68ch;
+        }
+        .blog-content li { margin: 8px 0; }
+        .blog-content li::marker { color: var(--text-tertiary); }
+        .blog-content strong { font-weight: 600; color: var(--text); }
+
+        /* --- Blockquote: accent left border, flat tint --- */
+        .blog-content blockquote {
+            border-left: 3px solid var(--primary);
+            background: var(--primary-bg);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            padding: 14px 20px;
+            margin: 22px 0;
+        }
+        .blog-content blockquote p { margin: 8px 0; }
+
+        /* --- Code --- */
+        .blog-content code {
+            font-family: var(--font-mono);
+            font-size: 0.82em;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 1px 5px;
+        }
+        .blog-content pre {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 16px 18px;
+            overflow-x: auto;
+            margin: 22px 0;
+        }
+        .blog-content pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .blog-content hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 36px 0;
+        }
+        .blog-content img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+        .blog-content table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 15px;
+            margin: 22px 0;
+        }
+        .blog-content th {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            text-align: left;
+            color: var(--text-secondary);
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .blog-content td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        /* --- Back link --- */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 36px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
+        .back-link::before { content: '\2190'; }
+        .back-link:hover { color: var(--text); }
+
+        /* --- Ad slot --- */
+        .ad-slot {
+            margin: 28px 0;
+            text-align: center;
+        }
+
+        /* --- Footer (matches app shell) --- */
+        .site-footer {
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 56px 24px 48px;
+            font-size: 13px;
+        }
+        .footer-brand {
+            font-family: var(--font-display);
+            color: var(--text);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        .footer-brand .cv { color: var(--text); }
+        .footer-brand::after { content: '.'; color: var(--primary); }
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 12px;
+        }
+        .footer-links a {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
+        .footer-links a:hover { color: var(--text); }
+        .footer-copy {
+            font-family: var(--font-mono);
+            color: var(--text-tertiary);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .footer-col-label {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-tertiary);
+            margin-bottom: 14px;
+        }
+
+        @media (max-width: 700px) {
+            .container { padding: 0 16px; }
+            .blog-layout { padding-top: 36px; padding-bottom: 48px; }
+            .blog-content { font-size: 16px; padding-top: 26px; }
+            .blog-content h2 { font-size: 23px; }
+            .blog-content h3 { font-size: 19px; }
+        }
+    </style>
 </head>
 <body>
     <header class="site-header" role="banner">
@@ -58,10 +431,10 @@
     </header>
 
     <main class="container blog-layout">
-        <div>
+        <div class="post-head">
             <div class="post-meta">{{ post.publish_date or '2026-03-03' }} · {{ post.reading_time }} · {{ post.category }}</div>
-            <h1>{{ post.title }}</h1>
-            <p>{{ post.description or post.excerpt }}</p>
+            <h1 class="post-title">{{ post.title }}</h1>
+            <p class="post-deck">{{ post.description or post.excerpt }}</p>
         </div>
 
         {% if ads_config.enabled and ads_config.slot_top %}
@@ -94,6 +467,8 @@
             {{ post.html_rest|safe }}
         </article>
 
+        <a class="back-link" href="/blog">Back to all posts</a>
+
         {% if ads_config.enabled and ads_config.slot_bottom %}
         <div class="ad-slot">
             <ins class="adsbygoogle"
@@ -107,8 +482,44 @@
         {% endif %}
     </main>
 
-    <footer class="footer">
-        <a href="/blog">Back to all posts</a>
+    <footer class="site-footer">
+        <div style="max-width:1080px;margin:0 auto;">
+            <div style="display:flex;justify-content:space-between;gap:40px;flex-wrap:wrap;margin-bottom:40px;">
+                <div style="max-width:280px;">
+                    <div style="margin-bottom:8px;">
+                        <span class="footer-brand" style="font-size:16px;"><span class="cv">CV</span>tailro</span>
+                    </div>
+                    <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;">Precision resume tailoring. Engineered for ATS algorithms and the humans behind them.</div>
+                </div>
+                <div style="display:flex;gap:48px;flex-wrap:wrap;">
+                    <div>
+                        <div class="footer-col-label">PRODUCT</div>
+                        <div class="footer-links" style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;margin-bottom:0;">
+                            <a href="/">Resume Tailoring</a>
+                            <a href="/pricing">Pricing</a>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="footer-col-label">COMPANY</div>
+                        <div class="footer-links" style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;margin-bottom:0;">
+                            <a href="/blog">Blog</a>
+                            <a href="/contact">Contact</a>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="footer-col-label">LEGAL</div>
+                        <div class="footer-links" style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;margin-bottom:0;">
+                            <a href="/privacy">Privacy</a>
+                            <a href="/terms">Terms</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="border-top:1px solid var(--border);padding-top:20px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                <div class="footer-copy">&copy; 2026 CVtailro AI. Built for the modern job seeker.</div>
+                <div class="footer-copy">CVTAILRO_INSTRUMENT_v3.0</div>
+            </div>
+        </div>
     </footer>
 </body>
 </html>
