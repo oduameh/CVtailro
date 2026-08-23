@@ -7,11 +7,11 @@
     <meta name="description" content="Contact CVtailro.">
     <meta name="author" content="CVtailro">
     <meta name="color-scheme" content="light dark">
-    <meta name="theme-color" content="#f8fafc" id="theme-color-meta">
+    <meta name="theme-color" content="#FAFAFA" id="theme-color-meta">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%232563eb' width='100' height='100' rx='12'/><text x='50' y='68' font-size='60' font-weight='bold' text-anchor='middle' fill='%23FFFFFF' font-family='system-ui'>CV</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23EA580C' width='100' height='100' rx='10'/><text x='50' y='68' font-size='60' font-weight='bold' text-anchor='middle' fill='%23FFFFFF' font-family='system-ui'>CV</text></svg>">
     <script>
     (function() {
         var saved = localStorage.getItem('cvtailro-theme');
@@ -24,46 +24,61 @@
     {% include 'partials/adsense.html' %}
     <style>
         :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --primary-bg: #eff6ff;
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --border: #e2e8f0;
-            --text: #0f172a;
-            --text-secondary: #64748b;
-            --radius: 12px;
-            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --primary: #EA580C;
+            --primary-hover: #C2410C;
+            --primary-bg: rgba(234, 88, 12, 0.07);
+            --accent: #EA580C;
+            --accent-light: rgba(234, 88, 12, 0.08);
+            --bg: #FAFAFA;
+            --card: #FFFFFF;
+            --border: #E4E4E7;
+            --border-light: #F4F4F5;
+            --text: #09090B;
+            --text-secondary: #52525B;
+            --text-tertiary: #A1A1AA;
+            --radius: 3px;
+            --radius-lg: 6px;
         }
 
         html.dark {
-            --bg: #0f172a;
-            --card: #1e293b;
-            --border: #334155;
-            --text: #f8fafc;
-            --text-secondary: #cbd5e1;
-            --primary-bg: rgba(37, 99, 235, 0.15);
+            --primary-bg: rgba(255, 77, 0, 0.10);
+            --accent-light: rgba(255, 77, 0, 0.12);
+            --bg: #09090B;
+            --card: #18181B;
+            --border: #27272A;
+            --border-light: #1F1F23;
+            --text: #F4F4F5;
+            --text-secondary: #A1A1AA;
+            --text-tertiary: #71717A;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: var(--bg);
             color: var(--text);
-            line-height: 1.7;
-            font-size: 16px;
+            line-height: 1.6;
+            font-size: 15px;
             padding-left: env(safe-area-inset-left);
             padding-right: env(safe-area-inset-right);
             padding-bottom: env(safe-area-inset-bottom);
         }
 
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        /* --- Header --- */
         .site-header {
             position: sticky;
             top: 0;
             z-index: 10;
             height: 56px;
-            background: var(--card);
+            background: var(--bg);
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
@@ -72,110 +87,325 @@
         }
 
         .site-logo {
-            font-size: 22px;
+            font-family: 'Space Grotesk', system-ui, sans-serif;
+            font-size: 20px;
             font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text);
             text-decoration: none;
-            display: flex;
-            align-items: center;
-            letter-spacing: -0.5px;
         }
 
-        .site-logo .cv { color: var(--primary); }
-        .site-logo .tailro { color: var(--text); }
+        .site-logo .dot { color: var(--primary); }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
 
         .nav-links {
             display: flex;
+            flex-wrap: wrap;
             gap: 16px;
-            font-size: 14px;
-            font-weight: 600;
         }
 
         .nav-links a {
+            font-family: 'JetBrains Mono', ui-monospace, monospace;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
             color: var(--text-secondary);
             text-decoration: none;
+            transition: color 0.15s ease;
         }
 
         .nav-links a.active { color: var(--primary); }
         .nav-links a:hover { color: var(--text); }
 
-        .page {
-            max-width: 860px;
-            margin: 32px auto 64px;
-            padding: 0 24px;
-        }
-
-        .page h1 {
-            font-size: 32px;
-            margin-bottom: 8px;
-        }
-
-        .page p {
-            color: var(--text-secondary);
-            margin: 10px 0;
-        }
-
-        .callout {
-            margin-top: 18px;
-            padding: 16px;
-            background: var(--primary-bg);
-            border: 1px solid var(--border);
+        .theme-toggle {
+            width: 30px;
+            height: 30px;
             border-radius: var(--radius);
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            line-height: 1;
+            transition: border-color 0.15s ease, color 0.15s ease;
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--text);
             color: var(--text);
         }
 
-        .callout strong { display: block; margin-bottom: 6px; }
+        /* --- Page --- */
+        .page {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 64px 24px 96px;
+        }
 
+        .kicker {
+            font-family: 'JetBrains Mono', ui-monospace, monospace;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--primary);
+            margin-bottom: 16px;
+        }
+
+        .page h1 {
+            font-family: 'Space Grotesk', system-ui, sans-serif;
+            font-size: clamp(32px, 5vw, 48px);
+            font-weight: 600;
+            line-height: 1.08;
+            letter-spacing: -0.02em;
+            margin-bottom: 14px;
+        }
+
+        .page > p {
+            color: var(--text-secondary);
+            margin: 10px 0;
+            max-width: 60ch;
+        }
+
+        .page p a {
+            color: var(--primary);
+            font-weight: 500;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        .page p a:hover { color: var(--primary-hover); }
+
+        /* --- Control panel --- */
+        .panel {
+            margin-top: 32px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+        }
+
+        .panel-marker {
+            font-family: 'JetBrains Mono', ui-monospace, monospace;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 14px;
+        }
+
+        .panel-marker .idx { color: var(--primary); }
+
+        .field {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text);
+            font-family: 'JetBrains Mono', ui-monospace, monospace;
+            font-size: 13px;
+            font-weight: 500;
+            transition: border-color 0.15s ease;
+        }
+
+        .field:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .field-caption {
+            font-family: 'JetBrains Mono', ui-monospace, monospace;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-tertiary);
+            margin-top: 8px;
+        }
+
+        .panel-section + .panel-section {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-light);
+        }
+
+        html.dark .panel-section + .panel-section { border-top-color: var(--border); }
+
+        .panel-section p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 18px;
+        }
+
+        /* --- Buttons --- */
+        .btn-ghost {
+            display: inline-block;
+            padding: 11px 22px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: transparent;
+            color: var(--text);
+            font-family: 'JetBrains Mono', ui-monospace, monospace;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+            transition: border-color 0.15s ease, color 0.15s ease;
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--text);
+            color: var(--text);
+        }
+
+        /* --- Footer --- */
         .site-footer {
             border-top: 1px solid var(--border);
-            padding: 24px;
+            padding: 40px 24px;
             text-align: center;
             color: var(--text-secondary);
-            font-size: 13px;
         }
 
-        .site-footer a {
+        .footer-brand {
+            font-family: 'Space Grotesk', system-ui, sans-serif;
+            color: var(--text);
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .footer-brand .dot { color: var(--primary); }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .footer-links a {
+            font-family: 'JetBrains Mono', ui-monospace, monospace;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
             color: var(--text-secondary);
             text-decoration: none;
-            margin: 0 8px;
+            transition: color 0.15s ease;
         }
 
-        .site-footer a:hover { color: var(--text); }
+        .footer-links a:hover { color: var(--primary); }
+
+        .footer-copy {
+            font-family: 'JetBrains Mono', ui-monospace, monospace;
+            color: var(--text-tertiary);
+            font-size: 10px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-top: 8px;
+        }
+
+        /* --- Responsive --- */
+        @media (max-width: 768px) {
+            .site-header { padding: 0 16px; }
+            .header-right { gap: 12px; }
+            .nav-links { gap: 12px; }
+
+            .page { padding: 48px 16px 64px; }
+
+            .panel { padding: 20px; }
+
+            .site-footer { padding: 32px 16px; }
+        }
+
+        @media (max-width: 640px) {
+            .page { padding: 40px 16px 56px; }
+
+            .panel { padding: 18px; }
+            .btn-ghost { width: 100%; }
+        }
     </style>
 </head>
 <body>
     <header class="site-header">
-        <a class="site-logo" href="/">
-            <span class="cv">CV</span><span class="tailro">tailro</span>
-        </a>
-        <nav class="nav-links">
-            <a href="/">Home</a>
-            <a href="/pricing">Pricing</a>
-            <a href="/privacy">Privacy</a>
-            <a href="/terms">Terms</a>
-            <a href="/contact" class="active" aria-current="page">Contact</a>
-        </nav>
+        <a class="site-logo" href="/">CVtailro<span class="dot">.</span></a>
+        <div class="header-right">
+            <nav class="nav-links">
+                <a href="/">Home</a>
+                <a href="/pricing">Pricing</a>
+                <a href="/privacy">Privacy</a>
+                <a href="/terms">Terms</a>
+                <a href="/contact" class="active" aria-current="page">Contact</a>
+            </nav>
+            <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme" id="themeToggle">☀</button>
+        </div>
     </header>
 
     <main class="page">
+        <div class="kicker">// CONTACT</div>
         <h1>Contact</h1>
         <p>Need help or want to share feedback? Email us at <a href="mailto:support@cvtailro.app">support@cvtailro.app</a>.</p>
         <p>For privacy or deletion requests, include the email address you use to sign in.</p>
 
-        <div class="callout">
-            <strong>Response times</strong>
-            We typically respond within 2 business days.
+        <div class="panel">
+            <div class="panel-section">
+                <div class="panel-marker"><span class="idx">01</span> · SUPPORT INBOX</div>
+                <input class="field" type="text" value="support@cvtailro.app" readonly aria-label="Support email address">
+                <div class="field-caption">MONITORED · NO ATTACHMENTS OVER 10MB</div>
+                <p style="margin-top: 18px;">We read every message and reply from this address.</p>
+                <a class="btn-ghost" href="mailto:support@cvtailro.app">Email Support →</a>
+            </div>
+            <div class="panel-section">
+                <div class="panel-marker"><span class="idx">02</span> · RESPONSE TIME</div>
+                <p style="margin-bottom: 0;">We typically respond within 2 business days.</p>
+            </div>
         </div>
     </main>
 
     <footer class="site-footer">
-        <div>CVtailro - AI-powered resume optimization</div>
-        <div>
+        <div class="footer-links">
+            <a href="/">Home</a>
             <a href="/pricing">Pricing</a>
             <a href="/privacy">Privacy</a>
             <a href="/terms">Terms</a>
             <a href="/contact">Contact</a>
         </div>
-        <div>&copy; 2026 CVtailro. All rights reserved.</div>
+        <div style="margin-bottom: 8px;">
+            <span class="footer-brand">CVtailro<span class="dot">.</span></span>
+        </div>
+        <div class="footer-copy">&copy; 2026 CVtailro. All rights reserved.</div>
     </footer>
+
+    <script>
+    function toggleTheme() {
+        var html = document.documentElement;
+        var isDark = html.classList.toggle('dark');
+        localStorage.setItem('cvtailro-theme', isDark ? 'dark' : 'light');
+        var meta = document.getElementById('theme-color-meta');
+        if (meta) meta.content = isDark ? '#09090B' : '#FAFAFA';
+        document.getElementById('themeToggle').textContent = isDark ? '☾' : '☀';
+    }
+
+    (function() {
+        if (document.documentElement.classList.contains('dark')) {
+            document.getElementById('themeToggle').textContent = '☾';
+        }
+    })();
+    </script>
 </body>
 </html>
